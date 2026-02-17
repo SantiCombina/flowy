@@ -166,7 +166,7 @@ export function SellersTable({ sellers, onEdit }: SellersTableProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} variant="destructive">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

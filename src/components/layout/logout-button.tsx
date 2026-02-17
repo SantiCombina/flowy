@@ -53,7 +53,7 @@ export function LogoutButton() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLogout} disabled={isPending} className="bg-red-600 hover:bg-red-700">
+          <AlertDialogAction onClick={handleLogout} disabled={isPending} variant="destructive">
             {isPending ? 'Cerrando...' : 'Cerrar sesión'}
           </AlertDialogAction>
         </AlertDialogFooter>
