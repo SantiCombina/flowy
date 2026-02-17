@@ -50,10 +50,7 @@ export function LoginForm() {
 
     if (result?.data?.success) {
       setRedirecting(true);
-      await Promise.all([
-        router.push('/'),
-        router.refresh(),
-      ]);
+      await Promise.all([router.push('/'), router.refresh()]);
     } else if (result?.data?.error) {
       setError(result.data.error);
     }

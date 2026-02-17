@@ -246,7 +246,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
       header: COLUMN_LABELS.presentation,
       cell: (variant) => {
         const presentation = variant.presentation;
-        return <span className="font-medium">{presentation?.label || '-'}</span>;
+        return <span>{presentation?.label || '-'}</span>;
       },
     },
     stock: {
@@ -262,7 +262,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
         } else if (ratio < 2) {
           return <Badge className="bg-orange-400 hover:bg-orange-500 text-white border-orange-400">{stock}</Badge>;
         } else {
-          return <span>{stock}</span>;
+          return <Badge className="bg-white text-foreground border border-gray-200 shadow-none">{stock}</Badge>;
         }
       },
     },

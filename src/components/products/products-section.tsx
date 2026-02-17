@@ -104,10 +104,10 @@ export function ProductsSection() {
             <Button
               onClick={handleOpenCreateModal}
               disabled={isLoadingData}
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white h-11"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3 gap-1"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-1 h-4 w-4" />
               {isLoadingData ? 'Cargando...' : 'Nuevo producto'}
             </Button>
           ) : undefined

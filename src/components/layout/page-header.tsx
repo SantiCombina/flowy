@@ -41,12 +41,14 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
       </header>
 
       <div className="p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{title}</h1>
-            <p className="text-muted-foreground">{description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-4 h-full">
+          <div className="flex flex-col justify-between flex-1">
+            <div>
+              <h1 className="text-2xl font-bold">{title}</h1>
+              <p className="text-muted-foreground">{description}</p>
+            </div>
           </div>
-          {actions && <div className="shrink-0">{actions}</div>}
+          {actions && <div className="flex items-end sm:items-end shrink-0 h-full">{actions}</div>}
         </div>
       </div>
     </>
