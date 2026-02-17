@@ -79,6 +79,7 @@ export interface Config {
     'product-custom-fields': ProductCustomField;
     clients: Client;
     settings: Setting;
+    'stock-movements': StockMovement;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     'product-custom-fields': ProductCustomFieldsSelect<false> | ProductCustomFieldsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
+    'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -451,6 +453,40 @@ export interface Setting {
   createdAt: string;
 }
 /**
+ * Registro de todos los movimientos de inventario
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements".
+ */
+export interface StockMovement {
+  id: number;
+  variant: number | ProductVariant;
+  type: 'entry' | 'exit' | 'adjustment';
+  /**
+   * Cantidad del movimiento (positivo para entrada, negativo para salida)
+   */
+  quantity: number;
+  /**
+   * Stock antes del movimiento
+   */
+  previousStock: number;
+  /**
+   * Stock después del movimiento
+   */
+  newStock: number;
+  /**
+   * Descripción del motivo del movimiento
+   */
+  reason?: string | null;
+  owner?: (number | null) | User;
+  /**
+   * Usuario que registró el movimiento
+   */
+  createdBy: number | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -521,6 +557,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'settings';
         value: number | Setting;
+      } | null)
+    | ({
+        relationTo: 'stock-movements';
+        value: number | StockMovement;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -769,6 +809,22 @@ export interface SettingsSelect<T extends boolean = true> {
         id?: T;
       };
   itemsPerPage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements_select".
+ */
+export interface StockMovementsSelect<T extends boolean = true> {
+  variant?: T;
+  type?: T;
+  quantity?: T;
+  previousStock?: T;
+  newStock?: T;
+  reason?: T;
+  owner?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

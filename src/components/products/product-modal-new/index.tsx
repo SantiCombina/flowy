@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+import { DeleteConfirmationDialog } from './components/delete-confirmation-dialog';
 import { EntityDialog } from './components/entity-dialog';
 import { ProductAttributesSection } from './components/product-attributes-section';
 import { ProductInfoSection } from './components/product-info-section';
@@ -61,9 +62,14 @@ export function ProductModal({
     entityName,
     setEntityName,
     openCreateEntity,
+    openDeleteEntity,
     closeEntityDialog,
     handleSaveEntity,
+    confirmDelete,
+    closeConfirmDelete,
+    handleDeleteEntity,
     getEntityLabel,
+    isExecuting: isEntityExecuting,
   } = useEntityDialog({
     setBrands,
     setCategories,
@@ -78,7 +84,7 @@ export function ProductModal({
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isEditing ? 'Editar Producto' : 'Nuevo Producto'}</DialogTitle>
+            <DialogTitle>{isEditing ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
             <DialogDescription>
               {isEditing ? 'Modifica los datos del producto.' : 'Completa los datos del producto y sus presentaciones.'}
             </DialogDescription>
@@ -98,6 +104,7 @@ export function ProductModal({
                 categories={categories}
                 qualities={qualities}
                 onCreateEntity={openCreateEntity}
+                onDeleteEntity={openDeleteEntity}
               />
 
               <ProductVariantsSection
@@ -109,6 +116,7 @@ export function ProductModal({
                 onRemoveVariant={handleRemoveVariant}
                 presentations={presentations}
                 onCreatePresentation={() => openCreateEntity('presentation')}
+                onDeletePresentation={(id, label) => openDeleteEntity('presentation', id, label)}
               />
 
               <DialogFooter className="gap-2">
@@ -131,6 +139,16 @@ export function ProductModal({
         onClose={closeEntityDialog}
         onSave={handleSaveEntity}
         getEntityLabel={getEntityLabel}
+        isExecuting={isEntityExecuting}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={confirmDelete.isOpen}
+        entityName={confirmDelete.name}
+        entityLabel={confirmDelete.type ? getEntityLabel(confirmDelete.type) : ''}
+        onConfirm={handleDeleteEntity}
+        onCancel={closeConfirmDelete}
+        isExecuting={isEntityExecuting}
       />
     </>
   );

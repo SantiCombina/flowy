@@ -1,8 +1,8 @@
 'use client';
 
-import { ImageOff, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { ImageOff, MoreVertical, PackagePlus, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -30,13 +30,18 @@ import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { Product } from '@/payload-types';
 
 import { getVariantsAction, deleteProductAction } from './actions';
+import { StockMovementModal } from './stock-movement-modal';
 
 interface ProductsTableProps {
   searchQuery?: string;
   onEdit?: (productId: number) => void;
 }
 
-export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) {
+export interface ProductsTableRef {
+  refresh: () => Promise<void>;
+}
+
+export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({ searchQuery = '', onEdit }, ref) => {
   const router = useRouter();
   const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading } = useSettings();
 
@@ -48,6 +53,7 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
 
   useEffect(() => {
     if (!isSettingsLoading) {
@@ -99,8 +105,10 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
   const handleDelete = async () => {
     if (!productToDelete) return;
 
+    const productId = productToDelete.id;
+
     try {
-      const result = await deleteProductAction({ id: productToDelete.id });
+      const result = await deleteProductAction({ id: productId });
 
       if (result?.serverError) {
         toast.error(result.serverError);
@@ -108,8 +116,9 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
       }
 
       if (result?.data?.success) {
-        toast.success('Producto eliminado');
-        loadVariants();
+        toast.success('Producto eliminado correctamente');
+        // Optimistic update: remove from local state
+        removeVariantsByProduct(productId);
       } else {
         toast.error('Error al eliminar producto');
       }
@@ -130,9 +139,36 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
     setPage(1);
   };
 
-  const shouldShowColumn = (columnKey: string): boolean => {
-    return visibleColumns.includes(columnKey);
-  };
+  // Expose refresh method to parent
+  useImperativeHandle(ref, () => ({
+    refresh: loadVariants,
+  }));
+
+  // Optimistic update for stock changes
+  const updateVariantStock = useCallback((variantId: number, newStock: number) => {
+    setVariants((prev) =>
+      prev.map((variant) => (variant.id === variantId ? { ...variant, stock: newStock } : variant)),
+    );
+  }, []);
+
+  // Remove variants by product ID (optimistic delete)
+  const removeVariantsByProduct = useCallback((productId: number) => {
+    setVariants((prev) => {
+      const filtered = prev.filter((variant) => variant.product.id !== productId);
+      const removedCount = prev.length - filtered.length;
+      if (removedCount > 0) {
+        setTotalItems((prevTotal) => prevTotal - removedCount);
+      }
+      return filtered;
+    });
+  }, []);
+
+  const shouldShowColumn = useCallback(
+    (columnKey: string) => {
+      return visibleColumns.includes(columnKey);
+    },
+    [visibleColumns],
+  );
 
   const allColumns: Record<string, Column<PopulatedProductVariant>> = {
     image: {
@@ -285,6 +321,10 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setVariantForMovement(variant)}>
+              <PackagePlus className="mr-2 h-4 w-4" />
+              Registrar movimiento
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setProductToDelete(product)}
               className="text-destructive focus:text-destructive"
@@ -343,6 +383,18 @@ export function ProductsTable({ searchQuery = '', onEdit }: ProductsTableProps) 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <StockMovementModal
+        isOpen={variantForMovement !== null}
+        onClose={() => setVariantForMovement(null)}
+        variant={variantForMovement}
+        onSuccess={(variantId, newStock) => {
+          // Optimistic update: only update the specific variant's stock
+          updateVariantStock(variantId, newStock);
+        }}
+      />
     </>
   );
-}
+});
+
+ProductsTable.displayName = 'ProductsTable';

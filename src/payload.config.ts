@@ -19,6 +19,7 @@ import { Products } from './collections/Products';
 import { ProductVariants } from './collections/ProductVariants';
 import { Qualities } from './collections/Qualities';
 import { Settings } from './collections/Settings';
+import { StockMovements } from './collections/StockMovements';
 import { Users } from './collections/Users';
 
 const filename = fileURLToPath(import.meta.url);
@@ -44,6 +45,7 @@ export default buildConfig({
     ProductCustomFields,
     Clients,
     Settings,
+    StockMovements,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

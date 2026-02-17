@@ -5,7 +5,7 @@ export type EntityType = 'brand' | 'category' | 'quality' | 'presentation';
 export interface EntityDialogState {
   isOpen: boolean;
   type: EntityType | null;
-  mode: 'create' | 'edit';
+  mode: 'create' | 'edit' | 'delete';
   id?: number;
   currentValue?: string;
 }
@@ -29,6 +29,7 @@ export interface EntitySelectFieldProps {
   options: Array<{ id: number; name: string }>;
   entityType: EntityType;
   onCreateEntity: (type: EntityType) => void;
+  onDeleteEntity: (type: EntityType, id: number, name: string) => void;
   emptyMessage?: string;
 }
 
@@ -38,4 +39,5 @@ export interface VariantCardProps {
   onDelete: (index: number) => void;
   presentations: Presentation[];
   onCreatePresentation: () => void;
+  onDeletePresentation: (id: number, label: string) => void;
 }

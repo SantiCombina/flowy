@@ -34,7 +34,7 @@ interface ProductInfoSectionProps {
 export function ProductInfoSection({ register, control, errors }: ProductInfoSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg border-b pb-2">Información General</h3>
+      <h3 className="font-semibold text-lg">Información general</h3>
 
       <div className="space-y-2">
         <Label htmlFor="name">Nombre *</Label>
@@ -44,7 +44,14 @@ export function ProductInfoSection({ register, control, errors }: ProductInfoSec
 
       <div className="space-y-2">
         <Label htmlFor="description">Descripción</Label>
-        <Textarea id="description" {...register('description')} placeholder="Descripción del producto..." rows={3} />
+        <Textarea
+          id="description"
+          {...register('description')}
+          placeholder="Descripción del producto..."
+          rows={3}
+          maxLength={500}
+        />
+        <p className="text-xs text-muted-foreground">Máximo 500 caracteres</p>
       </div>
 
       <div className="flex items-center space-x-2">

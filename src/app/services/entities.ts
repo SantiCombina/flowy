@@ -45,6 +45,16 @@ export async function updateBrand(id: number, name: string): Promise<Brand> {
   return brand;
 }
 
+export async function deleteBrand(id: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  await payload.delete({
+    collection: 'brands',
+    id,
+    overrideAccess: true,
+  });
+}
+
 export async function getCategories(ownerId: number): Promise<Category[]> {
   const payload = await getPayloadClient();
 
@@ -85,6 +95,16 @@ export async function updateCategory(id: number, name: string): Promise<Category
   });
 
   return category;
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  await payload.delete({
+    collection: 'categories',
+    id,
+    overrideAccess: true,
+  });
 }
 
 export async function getQualities(ownerId: number): Promise<Quality[]> {
@@ -129,6 +149,16 @@ export async function updateQuality(id: number, name: string): Promise<Quality> 
   return quality;
 }
 
+export async function deleteQuality(id: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  await payload.delete({
+    collection: 'qualities',
+    id,
+    overrideAccess: true,
+  });
+}
+
 export async function getPresentations(ownerId: number): Promise<Presentation[]> {
   const payload = await getPayloadClient();
 
@@ -171,4 +201,14 @@ export async function updatePresentation(id: number, label: string): Promise<Pre
   });
 
   return presentation;
+}
+
+export async function deletePresentation(id: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  await payload.delete({
+    collection: 'presentations',
+    id,
+    overrideAccess: true,
+  });
 }

@@ -97,6 +97,26 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           }
         })
         .finally(() => setIsLoading(false));
+    } else if (!isEditing && isOpen) {
+      // Reset form to default values when opening in create mode
+      reset({
+        name: '',
+        description: '',
+        brandId: '',
+        categoryId: '',
+        qualityId: '',
+        isActive: true,
+        variants: [
+          {
+            presentationId: '',
+            code: '',
+            stock: 0,
+            minStock: 0,
+            price: 0,
+          },
+        ],
+      });
+      setVariantsToDelete([]);
     }
   }, [isEditing, productId, isOpen, reset]);
 

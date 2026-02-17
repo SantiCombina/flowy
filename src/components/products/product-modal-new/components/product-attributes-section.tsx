@@ -32,6 +32,7 @@ interface ProductAttributesSectionProps {
   categories: Category[];
   qualities: Quality[];
   onCreateEntity: (type: EntityType) => void;
+  onDeleteEntity: (type: EntityType, id: number, name: string) => void;
 }
 
 export function ProductAttributesSection({
@@ -40,10 +41,11 @@ export function ProductAttributesSection({
   categories,
   qualities,
   onCreateEntity,
+  onDeleteEntity,
 }: ProductAttributesSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg border-b pb-2">Atributos</h3>
+      <h3 className="font-semibold text-lg">Atributos</h3>
 
       <div className="space-y-4">
         <Controller
@@ -57,6 +59,7 @@ export function ProductAttributesSection({
               options={brands.map((b) => ({ id: b.id, name: b.name }))}
               entityType="brand"
               onCreateEntity={onCreateEntity}
+              onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin marcas"
             />
           )}
@@ -73,6 +76,7 @@ export function ProductAttributesSection({
               options={categories.map((c) => ({ id: c.id, name: c.name }))}
               entityType="category"
               onCreateEntity={onCreateEntity}
+              onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin categorías"
             />
           )}
@@ -89,6 +93,7 @@ export function ProductAttributesSection({
               options={qualities.map((q) => ({ id: q.id, name: q.name }))}
               entityType="quality"
               onCreateEntity={onCreateEntity}
+              onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin calidades"
             />
           )}
