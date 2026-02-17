@@ -23,68 +23,18 @@ import {
 import { getPayloadClient } from '@/lib/payload';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
-
-const productFiltersSchema = z.object({
-  search: z.string().optional(),
-  brand: z.number().optional(),
-  category: z.number().optional(),
-  quality: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-const variantFiltersSchema = z.object({
-  search: z.string().optional(),
-  brand: z.number().optional(),
-  category: z.number().optional(),
-  quality: z.number().optional(),
-  presentation: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-const paginationSchema = z.object({
-  limit: z.number().min(1).max(100).default(10),
-  page: z.number().min(1).default(1),
-  sort: z.string().default('name'),
-});
-
-const createProductSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  description: z.string().optional(),
-  brand: z.number().optional(),
-  category: z.number().optional(),
-  quality: z.number().optional(),
-  image: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-const updateProductSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  brand: z.number().optional(),
-  category: z.number().optional(),
-  quality: z.number().optional(),
-  image: z.number().optional(),
-  isActive: z.boolean().optional(),
-});
-
-const createVariantSchema = z.object({
-  code: z.string().optional(),
-  product: z.number(),
-  presentation: z.number().optional(),
-  stock: z.number().min(0).default(0),
-  minStock: z.number().min(0).default(0),
-  price: z.number().min(0, 'El precio debe ser positivo'),
-});
-
-const updateVariantSchema = z.object({
-  id: z.number(),
-  code: z.string().optional(),
-  presentation: z.number().optional(),
-  stock: z.number().min(0).optional(),
-  minStock: z.number().min(0).optional(),
-  price: z.number().min(0).optional(),
-});
+import {
+  productFiltersSchema,
+  variantFiltersSchema,
+  paginationSchema,
+  createProductActionSchema,
+  updateProductActionSchema,
+  createVariantActionSchema,
+  updateVariantActionSchema,
+  deleteProductActionSchema,
+  deleteVariantActionSchema,
+  createEntitySchema,
+} from '@/schemas/products/product-actions-schema';
 
 export const getProductsAction = actionClient
   .schema(
@@ -196,7 +146,7 @@ export const getVariantsByProductIdAction = actionClient
     };
   });
 
-export const createProductAction = actionClient.schema(createProductSchema).action(async ({ parsedInput }) => {
+export const createProductAction = actionClient.schema(createProductActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -222,7 +172,7 @@ export const createProductAction = actionClient.schema(createProductSchema).acti
   };
 });
 
-export const updateProductAction = actionClient.schema(updateProductSchema).action(async ({ parsedInput }) => {
+export const updateProductAction = actionClient.schema(updateProductActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -249,7 +199,7 @@ export const updateProductAction = actionClient.schema(updateProductSchema).acti
   };
 });
 
-export const deleteProductAction = actionClient.schema(z.object({ id: z.number() })).action(async ({ parsedInput }) => {
+export const deleteProductAction = actionClient.schema(deleteProductActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -263,11 +213,6 @@ export const deleteProductAction = actionClient.schema(z.object({ id: z.number()
   return {
     success: true,
   };
-});
-
-const createEntitySchema = z.object({
-  type: z.enum(['brand', 'category', 'quality', 'presentation']),
-  name: z.string().min(1),
 });
 
 export const createEntityAction = actionClient.schema(createEntitySchema).action(async ({ parsedInput }) => {
@@ -383,7 +328,7 @@ export const getProductVariantsAction = actionClient
     };
   });
 
-export const createVariantAction = actionClient.schema(createVariantSchema).action(async ({ parsedInput }) => {
+export const createVariantAction = actionClient.schema(createVariantActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -408,7 +353,7 @@ export const createVariantAction = actionClient.schema(createVariantSchema).acti
   };
 });
 
-export const updateVariantAction = actionClient.schema(updateVariantSchema).action(async ({ parsedInput }) => {
+export const updateVariantAction = actionClient.schema(updateVariantActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -433,7 +378,7 @@ export const updateVariantAction = actionClient.schema(updateVariantSchema).acti
   };
 });
 
-export const deleteVariantAction = actionClient.schema(z.object({ id: z.number() })).action(async ({ parsedInput }) => {
+export const deleteVariantAction = actionClient.schema(deleteVariantActionSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {

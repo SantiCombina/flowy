@@ -6,21 +6,14 @@ import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { inviteSellerSchema, type InviteSellerValues } from '@/schemas/sellers/invite-seller-schema';
 
 import { inviteSellerAction } from './actions';
-
-const inviteSellerSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido'),
-});
-
-type InviteSellerFormData = z.infer<typeof inviteSellerSchema>;
 
 interface InviteSellerModalProps {
   isOpen: boolean;
@@ -32,7 +25,7 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
   const { executeAsync, isExecuting } = useAction(inviteSellerAction);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const form = useForm<InviteSellerFormData>({
+  const form = useForm<InviteSellerValues>({
     resolver: zodResolver(inviteSellerSchema),
     defaultValues: {
       name: '',
@@ -46,7 +39,7 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
     }
   }, [isOpen, form]);
 
-  const onSubmit = async (data: InviteSellerFormData) => {
+  const onSubmit = async (data: InviteSellerValues) => {
     const result = await executeAsync(data);
 
     if (result?.serverError) {

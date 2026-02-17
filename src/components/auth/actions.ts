@@ -1,16 +1,12 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { z } from 'zod';
 
 import { markInvitationAsUsed, validateInvitation } from '@/app/services/invitations';
 import { createUser, loginUser as loginUserService } from '@/app/services/users';
 import { actionClient } from '@/lib/safe-action';
-
-const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es requerida'),
-});
+import { loginSchema } from '@/schemas/auth/login-schema';
+import { registerSchema } from '@/schemas/auth/register-schema';
 
 export const loginUser = actionClient.schema(loginSchema).action(async ({ parsedInput }) => {
   const { email, password } = parsedInput;
@@ -30,13 +26,6 @@ export const loginUser = actionClient.schema(loginSchema).action(async ({ parsed
   });
 
   return { success: true };
-});
-
-const registerSchema = z.object({
-  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  token: z.string().min(1, 'Token requerido'),
 });
 
 export const registerUser = actionClient.schema(registerSchema).action(async ({ parsedInput }) => {

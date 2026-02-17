@@ -5,21 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { loginSchema, type LoginValues } from '@/schemas/auth/login-schema';
 
 import { loginUser } from './actions';
-
-const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es requerida'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
@@ -30,7 +23,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -38,7 +31,7 @@ export function LoginForm() {
     },
   });
 
-  async function onSubmit(data: LoginFormValues) {
+  async function onSubmit(data: LoginValues) {
     setError(null);
     setRedirecting(false);
     const result = await executeAsync(data);

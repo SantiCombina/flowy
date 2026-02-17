@@ -1,20 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 
 import { registerStockMovement } from '@/app/services/stock-movements';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
-
-const registerStockMovementSchema = z.object({
-  variantId: z.number().positive('ID de variante inválido'),
-  type: z.enum(['entry', 'exit', 'adjustment'], {
-    required_error: 'El tipo de movimiento es requerido',
-  }),
-  quantity: z.number().positive('La cantidad debe ser mayor a 0'),
-  reason: z.string().optional(),
-});
+import { registerStockMovementSchema } from '@/schemas/stock-movements/stock-movement-schema';
 
 export const registerStockMovementAction = actionClient
   .schema(registerStockMovementSchema)

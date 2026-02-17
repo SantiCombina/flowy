@@ -5,27 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { registerSchema, type RegisterValues } from '@/schemas/auth/register-schema';
 
 import { registerUser } from './actions';
-
-const registerSchema = z
-  .object({
-    name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Las contraseñas no coinciden',
-    path: ['confirmPassword'],
-  });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
 
 interface RegisterFormProps {
   token?: string;
@@ -39,25 +26,22 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
   const { executeAsync, status } = useAction(registerUser);
   const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<RegisterFormValues>({
+  const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
+      email: email ?? '',
       password: '',
       confirmPassword: '',
+      token: token ?? '',
     },
   });
 
-  async function onSubmit(data: RegisterFormValues) {
+  async function onSubmit(data: RegisterValues) {
     if (!token || !email) return;
 
     setError(null);
-    const result = await executeAsync({
-      name: data.name,
-      email,
-      password: data.password,
-      token,
-    });
+    const result = await executeAsync(data);
 
     if (result?.serverError) {
       setError(result.serverError);

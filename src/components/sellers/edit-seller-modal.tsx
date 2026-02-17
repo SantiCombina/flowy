@@ -6,7 +6,6 @@ import { useAction } from 'next-safe-action/hooks';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,28 +13,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { User } from '@/payload-types';
+import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
 
 import { updateSellerAction } from './actions';
-
-const editSellerSchema = z.object({
-  name: z.string().min(1, 'El nombre es requerido'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
-  dni: z
-    .string()
-    .regex(/^\d{7,8}$/, 'El DNI debe tener 7 u 8 dígitos')
-    .optional()
-    .or(z.literal('')),
-  cuitCuil: z
-    .string()
-    .regex(/^\d{2}-\d{8}-\d{1}$/, 'Formato inválido. Usar XX-XXXXXXXX-X')
-    .optional()
-    .or(z.literal('')),
-  cbu: z.string().max(50, 'Máximo 50 caracteres').optional().or(z.literal('')),
-  isActive: z.boolean(),
-});
-
-type EditSellerFormData = z.infer<typeof editSellerSchema>;
 
 interface EditSellerModalProps {
   isOpen: boolean;
@@ -47,7 +27,7 @@ interface EditSellerModalProps {
 export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSellerModalProps) {
   const { executeAsync, isExecuting } = useAction(updateSellerAction);
 
-  const form = useForm<EditSellerFormData>({
+  const form = useForm<EditSellerValues>({
     resolver: zodResolver(editSellerSchema),
     defaultValues: {
       name: '',
@@ -74,7 +54,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
     }
   }, [seller, form]);
 
-  const onSubmit = async (data: EditSellerFormData) => {
+  const onSubmit = async (data: EditSellerValues) => {
     if (!seller) return;
 
     const result = await executeAsync({
