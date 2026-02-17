@@ -1,3 +1,4 @@
+import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -6,12 +7,16 @@ import type { Brand, Category, Quality, Presentation } from '@/payload-types';
 import {
   createBrandAction,
   updateBrandAction,
+  deleteBrandAction,
   createCategoryAction,
   updateCategoryAction,
+  deleteCategoryAction,
   createQualityAction,
   updateQualityAction,
+  deleteQualityAction,
   createPresentationAction,
   updatePresentationAction,
+  deletePresentationAction,
 } from '../../entity-actions';
 import type { EntityType, EntityDialogState } from '../types';
 
@@ -32,12 +37,50 @@ export function useEntityDialog({
   setValue,
   onRefreshEntities,
 }: UseEntityDialogProps) {
+  const { executeAsync: createBrand, isExecuting: isCreatingBrand } = useAction(createBrandAction);
+  const { executeAsync: updateBrand, isExecuting: isUpdatingBrand } = useAction(updateBrandAction);
+  const { executeAsync: deleteBrand, isExecuting: isDeletingBrand } = useAction(deleteBrandAction);
+  const { executeAsync: createCategory, isExecuting: isCreatingCategory } = useAction(createCategoryAction);
+  const { executeAsync: updateCategory, isExecuting: isUpdatingCategory } = useAction(updateCategoryAction);
+  const { executeAsync: deleteCategory, isExecuting: isDeletingCategory } = useAction(deleteCategoryAction);
+  const { executeAsync: createQuality, isExecuting: isCreatingQuality } = useAction(createQualityAction);
+  const { executeAsync: updateQuality, isExecuting: isUpdatingQuality } = useAction(updateQualityAction);
+  const { executeAsync: deleteQuality, isExecuting: isDeletingQuality } = useAction(deleteQualityAction);
+  const { executeAsync: createPresentation, isExecuting: isCreatingPresentation } = useAction(createPresentationAction);
+  const { executeAsync: updatePresentation, isExecuting: isUpdatingPresentation } = useAction(updatePresentationAction);
+  const { executeAsync: deletePresentation, isExecuting: isDeletingPresentation } = useAction(deletePresentationAction);
+
+  const isExecuting =
+    isCreatingBrand ||
+    isUpdatingBrand ||
+    isDeletingBrand ||
+    isCreatingCategory ||
+    isUpdatingCategory ||
+    isDeletingCategory ||
+    isCreatingQuality ||
+    isUpdatingQuality ||
+    isDeletingQuality ||
+    isCreatingPresentation ||
+    isUpdatingPresentation ||
+    isDeletingPresentation;
+
   const [entityDialog, setEntityDialog] = useState<EntityDialogState>({
     isOpen: false,
     type: null,
     mode: 'create',
   });
   const [entityName, setEntityName] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<{
+    isOpen: boolean;
+    type: EntityType | null;
+    id: number | null;
+    name: string;
+  }>({
+    isOpen: false,
+    type: null,
+    id: null,
+    name: '',
+  });
 
   const openCreateEntity = (type: EntityType) => {
     setEntityDialog({ isOpen: true, type, mode: 'create' });
@@ -49,17 +92,25 @@ export function useEntityDialog({
     setEntityName(currentValue);
   };
 
+  const openDeleteEntity = (type: EntityType, id: number, name: string) => {
+    setConfirmDelete({ isOpen: true, type, id, name });
+  };
+
   const closeEntityDialog = () => {
     setEntityDialog({ isOpen: false, type: null, mode: 'create' });
     setEntityName('');
   };
 
+  const closeConfirmDelete = () => {
+    setConfirmDelete({ isOpen: false, type: null, id: null, name: '' });
+  };
+
   const getEntityLabel = (type: EntityType) => {
     const labels = {
-      brand: 'Marca',
-      category: 'Categoría',
-      quality: 'Calidad',
-      presentation: 'Presentación',
+      brand: 'marca',
+      category: 'categoría',
+      quality: 'calidad',
+      presentation: 'presentación',
     };
     return labels[type];
   };
@@ -69,15 +120,18 @@ export function useEntityDialog({
 
     try {
       const { type, mode, id } = entityDialog;
+      const label = getEntityLabel(type);
 
       if (mode === 'create') {
+        let result:
+          | Awaited<
+              ReturnType<typeof createBrand | typeof createCategory | typeof createQuality | typeof createPresentation>
+            >
+          | undefined;
+
         switch (type) {
           case 'brand': {
-            const result = await createBrandAction({ name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await createBrand({ name: entityName });
             if (result?.data?.brand) {
               const { brand } = result.data;
               setBrands((prev) => [...prev, brand]);
@@ -86,11 +140,7 @@ export function useEntityDialog({
             break;
           }
           case 'category': {
-            const result = await createCategoryAction({ name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await createCategory({ name: entityName });
             if (result?.data?.category) {
               const { category } = result.data;
               setCategories((prev) => [...prev, category]);
@@ -99,11 +149,7 @@ export function useEntityDialog({
             break;
           }
           case 'quality': {
-            const result = await createQualityAction({ name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await createQuality({ name: entityName });
             if (result?.data?.quality) {
               const { quality } = result.data;
               setQualities((prev) => [...prev, quality]);
@@ -112,13 +158,7 @@ export function useEntityDialog({
             break;
           }
           case 'presentation': {
-            const result = await createPresentationAction({
-              label: entityName,
-            });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await createPresentation({ label: entityName });
             if (result?.data?.presentation) {
               const { presentation } = result.data;
               setPresentations((prev) => [...prev, presentation]);
@@ -126,15 +166,23 @@ export function useEntityDialog({
             break;
           }
         }
-        toast.success(`${getEntityLabel(type)} creada exitosamente`);
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+
+        toast.success(`${label} creada exitosamente`);
       } else if (mode === 'edit' && id) {
+        let result:
+          | Awaited<
+              ReturnType<typeof updateBrand | typeof updateCategory | typeof updateQuality | typeof updatePresentation>
+            >
+          | undefined;
+
         switch (type) {
           case 'brand': {
-            const result = await updateBrandAction({ id, name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await updateBrand({ id, name: entityName });
             if (result?.data?.brand) {
               const { brand } = result.data;
               setBrands((prev) => prev.map((b) => (b.id === id ? brand : b)));
@@ -142,11 +190,7 @@ export function useEntityDialog({
             break;
           }
           case 'category': {
-            const result = await updateCategoryAction({ id, name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await updateCategory({ id, name: entityName });
             if (result?.data?.category) {
               const { category } = result.data;
               setCategories((prev) => prev.map((c) => (c.id === id ? category : c)));
@@ -154,11 +198,7 @@ export function useEntityDialog({
             break;
           }
           case 'quality': {
-            const result = await updateQualityAction({ id, name: entityName });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await updateQuality({ id, name: entityName });
             if (result?.data?.quality) {
               const { quality } = result.data;
               setQualities((prev) => prev.map((q) => (q.id === id ? quality : q)));
@@ -166,14 +206,7 @@ export function useEntityDialog({
             break;
           }
           case 'presentation': {
-            const result = await updatePresentationAction({
-              id,
-              label: entityName,
-            });
-            if (result?.serverError) {
-              toast.error(result.serverError);
-              return;
-            }
+            result = await updatePresentation({ id, label: entityName });
             if (result?.data?.presentation) {
               const { presentation } = result.data;
               setPresentations((prev) => prev.map((p) => (p.id === id ? presentation : p)));
@@ -181,7 +214,13 @@ export function useEntityDialog({
             break;
           }
         }
-        toast.success(`${getEntityLabel(type)} actualizada exitosamente`);
+
+        if (result?.serverError) {
+          toast.error(result.serverError);
+          return;
+        }
+
+        toast.success(`${label} actualizada exitosamente`);
       }
 
       closeEntityDialog();
@@ -191,14 +230,78 @@ export function useEntityDialog({
     }
   };
 
+  const handleDeleteEntity = async () => {
+    if (!confirmDelete.type || !confirmDelete.id) return;
+
+    try {
+      const { type, id } = confirmDelete;
+      const label = getEntityLabel(type);
+      let result:
+        | Awaited<
+            ReturnType<typeof deleteBrand | typeof deleteCategory | typeof deleteQuality | typeof deletePresentation>
+          >
+        | undefined;
+
+      switch (type) {
+        case 'brand': {
+          result = await deleteBrand({ id });
+          if (result?.data?.success) {
+            setBrands((prev) => prev.filter((b) => b.id !== id));
+            setValue('brandId', '');
+          }
+          break;
+        }
+        case 'category': {
+          result = await deleteCategory({ id });
+          if (result?.data?.success) {
+            setCategories((prev) => prev.filter((c) => c.id !== id));
+            setValue('categoryId', '');
+          }
+          break;
+        }
+        case 'quality': {
+          result = await deleteQuality({ id });
+          if (result?.data?.success) {
+            setQualities((prev) => prev.filter((q) => q.id !== id));
+            setValue('qualityId', '');
+          }
+          break;
+        }
+        case 'presentation': {
+          result = await deletePresentation({ id });
+          if (result?.data?.success) {
+            setPresentations((prev) => prev.filter((p) => p.id !== id));
+          }
+          break;
+        }
+      }
+
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+
+      toast.success(`${label} eliminada exitosamente`);
+      closeConfirmDelete();
+      onRefreshEntities();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al eliminar');
+    }
+  };
+
   return {
     entityDialog,
     entityName,
     setEntityName,
     openCreateEntity,
     openEditEntity,
+    openDeleteEntity,
     closeEntityDialog,
     handleSaveEntity,
+    confirmDelete,
+    closeConfirmDelete,
+    handleDeleteEntity,
     getEntityLabel,
+    isExecuting,
   };
 }

@@ -34,6 +34,7 @@ interface ProductVariantsSectionProps {
   onRemoveVariant: (index: number) => void;
   presentations: Presentation[];
   onCreatePresentation: () => void;
+  onDeletePresentation: (id: number, label: string) => void;
 }
 
 export function ProductVariantsSection({
@@ -45,11 +46,12 @@ export function ProductVariantsSection({
   onRemoveVariant,
   presentations,
   onCreatePresentation,
+  onDeletePresentation,
 }: ProductVariantsSectionProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-2">
-        <h3 className="font-semibold text-lg">Presentaciones y Precios *</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-lg">Presentaciones y precios *</h3>
         <Button type="button" variant="outline" size="sm" onClick={onAddVariant}>
           <Plus className="mr-2 h-4 w-4" />
           Agregar presentación
@@ -67,6 +69,7 @@ export function ProductVariantsSection({
             onDelete={onRemoveVariant}
             presentations={presentations}
             onCreatePresentation={onCreatePresentation}
+            onDeletePresentation={onDeletePresentation}
             register={register}
             control={control}
             errors={errors}

@@ -1,16 +1,21 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import {
   createBrand,
   updateBrand,
+  deleteBrand,
   createCategory,
   updateCategory,
+  deleteCategory,
   createQuality,
   updateQuality,
+  deleteQuality,
   createPresentation,
   updatePresentation,
+  deletePresentation,
 } from '@/app/services/entities';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
@@ -25,6 +30,7 @@ export const createBrandAction = actionClient
     }
 
     const brand: Brand = await createBrand(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, brand };
   });
 
@@ -37,6 +43,7 @@ export const updateBrandAction = actionClient
     }
 
     const brand: Brand = await updateBrand(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, brand };
   });
 
@@ -49,6 +56,7 @@ export const createCategoryAction = actionClient
     }
 
     const category: Category = await createCategory(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, category };
   });
 
@@ -61,6 +69,7 @@ export const updateCategoryAction = actionClient
     }
 
     const category: Category = await updateCategory(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, category };
   });
 
@@ -73,6 +82,7 @@ export const createQualityAction = actionClient
     }
 
     const quality: Quality = await createQuality(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, quality };
   });
 
@@ -85,6 +95,7 @@ export const updateQualityAction = actionClient
     }
 
     const quality: Quality = await updateQuality(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, quality };
   });
 
@@ -97,6 +108,7 @@ export const createPresentationAction = actionClient
     }
 
     const presentation: Presentation = await createPresentation(parsedInput.label, user.id);
+    revalidatePath('/products');
     return { success: true, presentation };
   });
 
@@ -109,5 +121,54 @@ export const updatePresentationAction = actionClient
     }
 
     const presentation: Presentation = await updatePresentation(parsedInput.id, parsedInput.label);
+    revalidatePath('/products');
     return { success: true, presentation };
+  });
+
+export const deleteBrandAction = actionClient.schema(z.object({ id: z.number() })).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+  if (!user || user.role !== 'owner') {
+    throw new Error('No autorizado');
+  }
+
+  await deleteBrand(parsedInput.id);
+  revalidatePath('/products');
+  return { success: true };
+});
+
+export const deleteCategoryAction = actionClient
+  .schema(z.object({ id: z.number() }))
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'owner') {
+      throw new Error('No autorizado');
+    }
+
+    await deleteCategory(parsedInput.id);
+    revalidatePath('/products');
+    return { success: true };
+  });
+
+export const deleteQualityAction = actionClient.schema(z.object({ id: z.number() })).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+  if (!user || user.role !== 'owner') {
+    throw new Error('No autorizado');
+  }
+
+  await deleteQuality(parsedInput.id);
+  revalidatePath('/products');
+  return { success: true };
+});
+
+export const deletePresentationAction = actionClient
+  .schema(z.object({ id: z.number() }))
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'owner') {
+      throw new Error('No autorizado');
+    }
+
+    await deletePresentation(parsedInput.id);
+    revalidatePath('/products');
+    return { success: true };
   });

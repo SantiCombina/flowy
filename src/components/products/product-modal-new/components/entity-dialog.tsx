@@ -21,6 +21,7 @@ interface EntityDialogProps {
   onClose: () => void;
   onSave: () => void;
   getEntityLabel: (type: EntityType) => string;
+  isExecuting?: boolean;
 }
 
 export function EntityDialog({
@@ -30,6 +31,7 @@ export function EntityDialog({
   onClose,
   onSave,
   getEntityLabel,
+  isExecuting = false,
 }: EntityDialogProps) {
   return (
     <AlertDialog open={entityDialog.isOpen} onOpenChange={onClose}>
@@ -41,15 +43,15 @@ export function EntityDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {entityDialog.mode === 'create'
-              ? `Ingresa el nombre de la nueva ${entityDialog.type && getEntityLabel(entityDialog.type).toLowerCase()}.`
-              : `Modifica el nombre de la ${entityDialog.type && getEntityLabel(entityDialog.type).toLowerCase()}.`}
+              ? `Ingresa el nombre de la nueva ${entityDialog.type && getEntityLabel(entityDialog.type)}.`
+              : `Modifica el nombre de la ${entityDialog.type && getEntityLabel(entityDialog.type)}.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-4">
           <Input
             value={entityName}
             onChange={(e) => onEntityNameChange(e.target.value)}
-            placeholder={`Nombre de ${entityDialog.type && getEntityLabel(entityDialog.type).toLowerCase()}`}
+            placeholder={`Nombre de ${entityDialog.type && getEntityLabel(entityDialog.type)}`}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -60,9 +62,11 @@ export function EntityDialog({
           />
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onSave} disabled={!entityName.trim()}>
-            {entityDialog.mode === 'create' ? 'Crear' : 'Guardar'}
+          <AlertDialogCancel onClick={onClose} disabled={isExecuting}>
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onSave} disabled={!entityName.trim() || isExecuting}>
+            {isExecuting ? 'Guardando...' : entityDialog.mode === 'create' ? 'Crear' : 'Guardar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

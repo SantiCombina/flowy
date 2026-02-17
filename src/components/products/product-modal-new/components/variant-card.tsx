@@ -1,13 +1,13 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import type { VariantCardProps } from '../types';
 
@@ -40,6 +40,7 @@ export function VariantCard({
   onDelete,
   presentations,
   onCreatePresentation,
+  onDeletePresentation,
   register,
   control,
   errors,
@@ -70,7 +71,17 @@ export function VariantCard({
                   onCreatePresentation();
                   return;
                 }
+                if (newValue === '__clear__') {
+                  field.onChange('');
+                  return;
+                }
                 field.onChange(newValue);
+              };
+
+              const handleDeleteClick = (e: React.MouseEvent, presId: number, presLabel: string) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDeletePresentation(presId, presLabel);
               };
 
               return (
@@ -82,14 +93,26 @@ export function VariantCard({
                     <SelectItem value="__create__" className="text-primary font-medium cursor-pointer">
                       + Crear nueva presentación
                     </SelectItem>
+                    {field.value && (
+                      <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
+                        ✕ Sin presentación
+                      </SelectItem>
+                    )}
                     {presentations.length === 0 ? (
                       <SelectItem value="_empty" disabled>
                         Sin presentaciones
                       </SelectItem>
                     ) : (
                       presentations.map((pres) => (
-                        <SelectItem key={pres.id} value={pres.id.toString()}>
-                          {pres.label}
+                        <SelectItem key={pres.id} value={pres.id.toString()} className="pr-16">
+                          <SelectItemText>{pres.label}</SelectItemText>
+                          <button
+                            type="button"
+                            onMouseDown={(e) => handleDeleteClick(e, pres.id, pres.label)}
+                            className="absolute right-8 p-1 rounded hover:bg-destructive/10 text-destructive transition-colors z-10"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </SelectItem>
                       ))
                     )}
@@ -119,9 +142,13 @@ export function VariantCard({
           <Input
             type="number"
             {...register(`variants.${index}.stock`, {
-              valueAsNumber: true,
+              setValueAs: (value) => {
+                const num = parseFloat(value);
+                return isNaN(num) ? 0 : num;
+              },
             })}
             placeholder="0"
+            defaultValue={0}
           />
           {errors.variants?.[index]?.stock && (
             <p className="text-xs text-destructive">{errors.variants[index]?.stock?.message}</p>
@@ -133,9 +160,13 @@ export function VariantCard({
           <Input
             type="number"
             {...register(`variants.${index}.minStock`, {
-              valueAsNumber: true,
+              setValueAs: (value) => {
+                const num = parseFloat(value);
+                return isNaN(num) ? 0 : num;
+              },
             })}
             placeholder="0"
+            defaultValue={0}
           />
         </div>
 
@@ -145,7 +176,10 @@ export function VariantCard({
             type="number"
             step="0.01"
             {...register(`variants.${index}.price`, {
-              valueAsNumber: true,
+              setValueAs: (value) => {
+                const num = parseFloat(value);
+                return isNaN(num) ? 0 : num;
+              },
             })}
             placeholder="0.00"
           />

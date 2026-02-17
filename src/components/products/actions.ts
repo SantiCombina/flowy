@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import {
@@ -213,6 +214,8 @@ export const createProductAction = actionClient.schema(createProductSchema).acti
   };
   const product = await createProduct(productData, user.id);
 
+  revalidatePath('/products');
+
   return {
     success: true,
     product,
@@ -238,6 +241,8 @@ export const updateProductAction = actionClient.schema(updateProductSchema).acti
   };
   const product = await updateProduct(id, productData);
 
+  revalidatePath('/products');
+
   return {
     success: true,
     product,
@@ -252,6 +257,8 @@ export const deleteProductAction = actionClient.schema(z.object({ id: z.number()
   }
 
   await deleteProduct(parsedInput.id);
+
+  revalidatePath('/products');
 
   return {
     success: true,
@@ -393,6 +400,8 @@ export const createVariantAction = actionClient.schema(createVariantSchema).acti
   };
   const variant = await createVariant(variantData, user.id);
 
+  revalidatePath('/products');
+
   return {
     success: true,
     variant,
@@ -416,6 +425,8 @@ export const updateVariantAction = actionClient.schema(updateVariantSchema).acti
   };
   const variant = await updateVariant(id, variantData);
 
+  revalidatePath('/products');
+
   return {
     success: true,
     variant,
@@ -430,6 +441,8 @@ export const deleteVariantAction = actionClient.schema(z.object({ id: z.number()
   }
 
   await deleteVariant(parsedInput.id);
+
+  revalidatePath('/products');
 
   return {
     success: true,

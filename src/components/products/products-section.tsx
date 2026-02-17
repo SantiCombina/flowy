@@ -1,7 +1,8 @@
 'use client';
 
 import { Plus, Search } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/layout/page-header';
@@ -12,11 +13,13 @@ import type { Brand, Category, Quality, Presentation } from '@/payload-types';
 
 import { getReferenceDataAction } from './actions';
 import { ProductModal } from './product-modal-new/index';
-import { ProductsTable } from './products-table';
+import { ProductsTable, type ProductsTableRef } from './products-table';
 
 export function ProductsSection() {
+  const router = useRouter();
   const user = useUserOptional();
   const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
+  const tableRef = useRef<ProductsTableRef>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,9 +82,12 @@ export function ProductsSection() {
     }
   };
 
-  const handleSuccess = useCallback(() => {
-    window.location.reload();
-  }, []);
+  const handleSuccess = useCallback(async () => {
+    // Refresh table data manually for immediate UI update
+    await tableRef.current?.refresh();
+    // Also trigger Next.js revalidation in background
+    router.refresh();
+  }, [router]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -124,7 +130,11 @@ export function ProductsSection() {
         </div>
 
         {/* Products Table */}
-        <ProductsTable searchQuery={searchQuery} onEdit={canCreateProduct ? handleOpenEditModal : undefined} />
+        <ProductsTable
+          ref={tableRef}
+          searchQuery={searchQuery}
+          onEdit={canCreateProduct ? handleOpenEditModal : undefined}
+        />
       </main>
 
       {/* Product Modal (Create/Edit) */}
