@@ -163,25 +163,132 @@ Las rutas protegidas por feature flags se definen en `src/middleware.ts`.
 
 ### TypeScript
 
-- Usar tipos estrictos, evitar `any` (eslint: `@typescript-eslint/no-explicit-any: error`)
+**REGLAS ESTRICTAS:**
+- **SIEMPRE** usar tipos de `src/payload-types.ts` para entidades de Payload
+- **NUNCA** usar `any` (eslint: `@typescript-eslint/no-explicit-any: error`)
+- **EVITAR** usar `as` - Preferir type guards y validación explícita
+- Solo usar `as` cuando sea absolutamente necesario (ej: `result.docs as Brand[]` en respuestas de Payload)
 - Preferir interfaces sobre types para objetos
-- Usar `src/payload-types.ts` para tipos generados
 - No usar `console.log` en producción (permitido en desarrollo)
+
+**Ejemplo correcto:**
+```typescript
+import type { Brand, Product } from '@/payload-types';
+
+export async function getBrands(ownerId: number): Promise<Brand[]> {
+  const result = await payload.find({ collection: 'brands' });
+  return result.docs as Brand[]; // ✅ Permitido: casting de Payload response
+}
+```
+
+**Ejemplo incorrecto:**
+```typescript
+const brand: any = await getBrand(); // ❌ NUNCA usar any
+const product = data as Product; // ❌ EVITAR as innecesario
+```
 
 ### Code Quality
 
 **⚠️ PROHIBIDO dejar comentarios en el código**
 - El código debe ser auto-explicativo
 - Usar nombres descriptivos de variables y funciones
-- Si necesitas explicar algo, probablemente el código necesita refactorizarse
-- Excepciones: JSDoc para funciones públicas de servicios (solo cuando sea necesario)
+- Si necesitas explicar algo, el código necesita refactorizarse
+- **NO** usar comentarios para explicar qué hace el código
+- Excepciones: JSDoc para funciones públicas de servicios (solo cuando sea necesario para documentación)
 
 ### Components
 
-- **Server Components por defecto** - Solo usar `'use client'` cuando sea necesario
-- Usar `'use client'` para: event listeners, state hooks, effects, browser APIs
+**Server Components por defecto:**
+- **SIEMPRE** usar `'use server'` cuando sea posible
+- **Solo** usar `'use client'` cuando sea estrictamente necesario:
+  - Event listeners (onClick, onChange, etc.)
+  - React hooks (useState, useEffect, useContext)
+  - Browser APIs (window, localStorage, etc.)
+  - Librerías que requieren client-side (react-hook-form, etc.)
+- **Componentizar al máximo** - Separar lógica de cliente de servidor
 - Props con interfaces nombradas `[Component]Props`
-- Usar shadcn/ui para componentes base
+
+**Ejemplo de componentización:**
+```typescript
+// ✅ CORRECTO: Page es Server Component, Form es Client Component
+// app/products/page.tsx
+export default async function ProductsPage() {
+  const products = await getProducts(); // Server-side
+  return <ProductsSection products={products} />;
+}
+
+// components/products/products-section.tsx
+'use client';
+export function ProductsSection({ products }: ProductsSectionProps) {
+  // Client-side: interactividad
+}
+```
+
+### UI Components
+
+**SIEMPRE usar shadcn/ui:**
+- Todos los componentes base deben ser de shadcn/ui (`src/components/ui/`)
+- No crear componentes UI propios si existe equivalente en shadcn
+- Importar y usar directamente: `import { Button } from '@/components/ui/button'`
+
+**SIEMPRE usar Lucide React para iconos:**
+- Importar de `lucide-react`
+- No usar SVGs inline
+- No usar otras librerías de iconos
+
+```typescript
+// ✅ CORRECTO
+import { PackagePlus, Pencil, Trash2 } from 'lucide-react';
+
+// ❌ INCORRECTO
+<svg>...</svg> // No usar SVG inline
+import { FaIcon } from 'react-icons'; // No usar otras librerías
+```
+
+### Forms
+
+**SIEMPRE usar shadcn Form + React Hook Form + Zod:**
+- Componente `Form` de shadcn/ui
+- `react-hook-form` para manejo de estado
+- `zod` como resolver para validación
+- Usar `zodResolver` de `@hookform/resolvers/zod`
+
+**Pattern obligatorio:**
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const schema = z.object({
+  name: z.string().min(1, 'Requerido'),
+});
+
+export function MyForm() {
+  const form = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { name: '' },
+  });
+
+  return (
+    <Form {...form}>
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nombre</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </Form>
+  );
+}
+```
 
 ### Server Actions Architecture
 
@@ -195,6 +302,10 @@ Client Component -> Server Action -> Service Layer
 #### 1. Service Layer (`src/app/services/[entity].ts`)
 
 **TODA la lógica de negocio va aquí:**
+
+- **Ubicación**: Un archivo por colección en `src/app/services/`
+- **Contenido**: ÚNICAMENTE lógica de negocio y operaciones de base de datos
+- **Sin**: Autenticación, validación, o autorización (eso va en actions)
 
 ```typescript
 'use server';
@@ -240,6 +351,12 @@ export async function createBrand(name: string, ownerId: number): Promise<Brand>
 
 **Solo autenticación, autorización y validación:**
 
+- **Ubicación**: Archivo `actions.ts` en la carpeta del feature que lo usa
+  - Ejemplo: `src/components/products/actions.ts`
+  - Ejemplo: `src/components/sellers/actions.ts`
+- **Usar SIEMPRE**: `actionClient` de next-safe-action
+- **Contenido**: Auth + Validation + Llamada a servicios
+
 ```typescript
 'use server';
 
@@ -281,7 +398,7 @@ if (result?.serverError) {
 }
 ```
 
-**✅ CORRECTO - Usar hook `useAction`:**
+**✅ CORRECTO - Usar hook `useAction` con `executeAsync`:**
 
 ```typescript
 import { useAction } from 'next-safe-action/hooks';
@@ -312,8 +429,8 @@ export function BrandForm() {
 ```
 
 **Reglas de Client Components:**
-- SIEMPRE usar `useAction` hook, NUNCA llamar actions directamente
-- Desestructurar `executeAsync` e `isExecuting` del hook
+- **SIEMPRE** usar `useAction` hook, NUNCA llamar actions directamente
+- **SIEMPRE** desestructurar `executeAsync` e `isExecuting` del hook
 - Validar `serverError` antes de `data`
 - Usar `isExecuting` para estados de carga
 - Manejar errores con toast/UI apropiada
@@ -341,6 +458,9 @@ export async function createBrand() {
 
 // ✅ SÍ: Separación clara de responsabilidades
 Service: Lógica de DB
+Action: Auth + Validation + Llamada a Service
+Component: useAction + UI
+```
 Action: Auth + Validation + Llamada a Service
 Component: useAction + UI
 ```

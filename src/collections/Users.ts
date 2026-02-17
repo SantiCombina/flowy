@@ -73,5 +73,37 @@ export const Users: CollectionConfig = {
         description: 'Si está desactivado, el usuario no puede iniciar sesión',
       },
     },
+    {
+      name: 'phone',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'seller',
+        description: 'Número de teléfono del vendedor',
+      },
+    },
+    {
+      name: 'dni',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'seller',
+        description: 'Documento Nacional de Identidad',
+      },
+    },
+    {
+      name: 'cuitCuil',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'seller',
+        description: 'CUIT/CUIL del vendedor',
+      },
+    },
+    {
+      name: 'cbu',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'seller',
+        description: 'Clave Bancaria Uniforme para pagos',
+      },
+    },
   ],
 };

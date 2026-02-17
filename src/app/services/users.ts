@@ -1,4 +1,7 @@
+'use server';
+
 import { getPayloadClient } from '@/lib/payload';
+import type { User } from '@/payload-types';
 
 interface CreateUserData {
   name: string;
@@ -89,4 +92,53 @@ export async function loginUser(data: LoginUserData): Promise<LoginUserResult> {
   } catch {
     return { success: false, error: 'Credenciales inválidas' };
   }
+}
+
+export async function getSellers(ownerId: number): Promise<User[]> {
+  const payload = await getPayloadClient();
+
+  const result = await payload.find({
+    collection: 'users',
+    where: {
+      and: [{ owner: { equals: ownerId } }, { role: { equals: 'seller' } }],
+    },
+    sort: '-createdAt',
+    limit: 1000,
+    overrideAccess: true,
+  });
+
+  return result.docs as User[];
+}
+
+interface UpdateSellerData {
+  name?: string;
+  email?: string;
+  isActive?: boolean;
+  phone?: string;
+  dni?: string;
+  cuitCuil?: string;
+  cbu?: string;
+}
+
+export async function updateSeller(sellerId: number, data: UpdateSellerData): Promise<User> {
+  const payload = await getPayloadClient();
+
+  const user = await payload.update({
+    collection: 'users',
+    id: sellerId,
+    data,
+    overrideAccess: true,
+  });
+
+  return user as User;
+}
+
+export async function deleteSeller(sellerId: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  await payload.delete({
+    collection: 'users',
+    id: sellerId,
+    overrideAccess: true,
+  });
 }

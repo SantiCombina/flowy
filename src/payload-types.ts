@@ -152,6 +152,22 @@ export interface User {
    * Si está desactivado, el usuario no puede iniciar sesión
    */
   isActive?: boolean | null;
+  /**
+   * Número de teléfono del vendedor
+   */
+  phone?: string | null;
+  /**
+   * Documento Nacional de Identidad
+   */
+  dni?: string | null;
+  /**
+   * CUIT/CUIL del vendedor
+   */
+  cuitCuil?: string | null;
+  /**
+   * Clave Bancaria Uniforme para pagos
+   */
+  cbu?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -613,6 +629,10 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   owner?: T;
   isActive?: T;
+  phone?: T;
+  dni?: T;
+  cuitCuil?: T;
+  cbu?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

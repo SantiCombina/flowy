@@ -1,4 +1,7 @@
+'use server';
+
 import { getPayloadClient } from '@/lib/payload';
+import type { Invitation } from '@/payload-types';
 
 interface ValidateInvitationResult {
   valid: boolean;
@@ -9,6 +12,22 @@ interface ValidateInvitationResult {
     createdBy: number | null;
   };
   error?: string;
+}
+
+export async function createInvitation(email: string, ownerId: number): Promise<Invitation> {
+  const payload = await getPayloadClient();
+
+  const invitation = await payload.create({
+    collection: 'invitations',
+    data: {
+      email,
+      role: 'seller',
+      createdBy: ownerId,
+    },
+    overrideAccess: true,
+  });
+
+  return invitation as Invitation;
 }
 
 export async function validateInvitation(token: string): Promise<ValidateInvitationResult> {
