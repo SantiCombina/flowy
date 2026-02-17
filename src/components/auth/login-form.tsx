@@ -28,6 +28,7 @@ export function LoginForm() {
 
   const { executeAsync, status } = useAction(loginUser);
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -39,6 +40,7 @@ export function LoginForm() {
 
   async function onSubmit(data: LoginFormValues) {
     setError(null);
+    setRedirecting(false);
     const result = await executeAsync(data);
 
     if (result?.serverError) {
@@ -47,8 +49,11 @@ export function LoginForm() {
     }
 
     if (result?.data?.success) {
-      router.push('/');
-      router.refresh();
+      setRedirecting(true);
+      await Promise.all([
+        router.push('/'),
+        router.refresh(),
+      ]);
     } else if (result?.data?.error) {
       setError(result.data.error);
     }
@@ -59,8 +64,8 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-        <CardDescription>Ingresá tus credenciales para acceder</CardDescription>
+        <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
+        <CardDescription className="mb-2">Ingresá tus credenciales para acceder</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -104,8 +109,8 @@ export function LoginForm() {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isExecuting}>
-              {isExecuting ? 'Ingresando...' : 'Ingresar'}
+            <Button type="submit" className="w-full" disabled={isExecuting || redirecting}>
+              {isExecuting || redirecting ? 'Ingresando...' : 'Ingresar'}
             </Button>
           </form>
         </Form>

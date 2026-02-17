@@ -37,11 +37,11 @@ export function LogoutButton() {
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <SidebarMenuButton
-          tooltip="Cerrar Sesión"
+          tooltip="Cerrar sesión"
           className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10"
         >
           <LogOut />
-          <span>Cerrar Sesión</span>
+          <span>Cerrar sesión</span>
         </SidebarMenuButton>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -54,7 +54,7 @@ export function LogoutButton() {
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={handleLogout} disabled={isPending} className="bg-red-600 hover:bg-red-700">
-            {isPending ? 'Cerrando...' : 'Cerrar Sesión'}
+            {isPending ? 'Cerrando...' : 'Cerrar sesión'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
