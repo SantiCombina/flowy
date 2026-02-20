@@ -6,7 +6,13 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'name', 'role', 'isActive'],
   },
-  auth: {},
+  auth: {
+    tokenExpiration: 60 * 60 * 24 * 30,
+    cookies: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+    },
+  },
   access: {
     create: ({ req: { user } }) => user?.role === 'admin',
     read: ({ req: { user } }) => {
