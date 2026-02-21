@@ -24,6 +24,7 @@ export function SellersSection({ sellers }: SellersSectionProps) {
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
 
+  const [searchQuery, setSearchQuery] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sellerToEdit, setSellerToEdit] = useState<User | null>(null);
@@ -73,11 +74,17 @@ export function SellersSection({ sellers }: SellersSectionProps) {
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Buscar por nombre..." className="pl-8" />
+            <Input
+              type="search"
+              placeholder="Buscar por nombre, email..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <ColumnVisibilityDropdown tableName="sellers" />
         </div>
-        <SellersTable sellers={sellers} onEdit={handleOpenEditModal} />
+        <SellersTable sellers={sellers} searchQuery={searchQuery} onEdit={handleOpenEditModal} />
       </main>
 
       <InviteSellerModal isOpen={isInviteModalOpen} onClose={handleCloseInviteModal} onSuccess={handleSuccess} />

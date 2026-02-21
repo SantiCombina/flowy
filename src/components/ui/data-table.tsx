@@ -47,7 +47,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className="space-y-3">
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -96,7 +96,7 @@ export function DataTable<T>({
             <>
               <span>Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => onItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-8 w-17.5">
+                <SelectTrigger className="h-8 w-17.5 bg-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -121,7 +121,7 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-white"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1 || isLoading}
             >
@@ -130,7 +130,7 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-white"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages || isLoading}
             >

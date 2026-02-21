@@ -74,8 +74,8 @@ export const paginationSchema = z.object({
     .min(1, {
       message: 'El límite debe ser al menos 1.',
     })
-    .max(100, {
-      message: 'El límite no puede ser mayor a 100.',
+    .max(10000, {
+      message: 'El límite no puede ser mayor a 10000.',
     })
     .default(10),
   page: z

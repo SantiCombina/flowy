@@ -2,7 +2,7 @@
 
 import { ImageOff, MoreVertical, PackagePlus, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -32,6 +32,9 @@ import type { Product } from '@/payload-types';
 import { getVariantsAction, deleteProductAction } from './actions';
 import { StockMovementModal } from './stock-movement-modal';
 
+const variantsCache: { data: PopulatedProductVariant[]; timestamp: number } = { data: [], timestamp: 0 };
+const STALE_TIME = 2 * 60 * 1000;
+
 interface ProductsTableProps {
   searchQuery?: string;
   onEdit?: (productId: number) => void;
@@ -43,59 +46,85 @@ export interface ProductsTableRef {
 
 export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({ searchQuery = '', onEdit }, ref) => {
   const router = useRouter();
-  const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading } = useSettings();
+  const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
 
-  const [variants, setVariants] = useState<PopulatedProductVariant[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allVariants, setAllVariants] = useState<PopulatedProductVariant[]>(variantsCache.data);
+  const [isLoading, setIsLoading] = useState(variantsCache.data.length === 0);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
+  const itemsPerPageSyncedRef = useRef(false);
+
+  const filteredVariants = useMemo(() => {
+    if (!searchQuery.trim()) return allVariants;
+    const q = searchQuery.toLowerCase();
+    return allVariants.filter((v) => {
+      const brand = typeof v.product.brand === 'object' ? v.product.brand?.name : '';
+      return (
+        v.product.name.toLowerCase().includes(q) ||
+        (v.code && v.code.toLowerCase().includes(q)) ||
+        (brand && brand.toLowerCase().includes(q))
+      );
+    });
+  }, [allVariants, searchQuery]);
+
+  const totalItems = filteredVariants.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const paginatedVariants = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredVariants.slice(start, start + itemsPerPage);
+  }, [filteredVariants, page, itemsPerPage]);
 
   useEffect(() => {
     if (!isSettingsLoading) {
-      setItemsPerPage(getItemsPerPage());
+      if (!itemsPerPageSyncedRef.current) {
+        setItemsPerPage(getItemsPerPage());
+        itemsPerPageSyncedRef.current = true;
+      }
       setVisibleColumns(getVisibleColumns('products'));
     }
   }, [isSettingsLoading, getItemsPerPage, getVisibleColumns]);
 
-  const loadVariants = useCallback(async () => {
-    setIsLoading(true);
+  const loadVariants = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const result = await getVariantsAction({
-        filters: searchQuery ? { search: searchQuery } : undefined,
         options: {
-          page,
-          limit: itemsPerPage,
+          limit: 10000,
           sort: 'product',
         },
       });
 
       if (result?.serverError) {
-        toast.error(result.serverError);
+        if (!silent) toast.error(result.serverError);
         return;
       }
 
       if (result?.data?.success) {
-        setVariants(result.data.docs);
-        setTotalPages(result.data.totalPages);
-        setTotalItems(result.data.totalDocs);
+        variantsCache.data = result.data.docs;
+        variantsCache.timestamp = Date.now();
+        setAllVariants(result.data.docs);
       } else {
-        toast.error('Error al cargar productos');
+        if (!silent) toast.error('Error al cargar productos');
       }
     } catch (error) {
       console.error('Exception loading variants:', error);
-      toast.error('Error al cargar productos');
+      if (!silent) toast.error('Error al cargar productos');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
-  }, [page, itemsPerPage, searchQuery]);
+  }, []);
 
   useEffect(() => {
-    loadVariants();
+    if (variantsCache.data.length > 0) {
+      if (Date.now() - variantsCache.timestamp > STALE_TIME) {
+        void loadVariants(true);
+      }
+    } else {
+      void loadVariants(false);
+    }
   }, [loadVariants]);
 
   useEffect(() => {
@@ -117,7 +146,6 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
 
       if (result?.data?.success) {
         toast.success('Producto eliminado correctamente');
-        // Optimistic update: remove from local state
         removeVariantsByProduct(productId);
       } else {
         toast.error('Error al eliminar producto');
@@ -137,28 +165,25 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
     setPage(1);
+    void updateItemsPerPage(newItemsPerPage as Parameters<typeof updateItemsPerPage>[0]);
   };
 
-  // Expose refresh method to parent
   useImperativeHandle(ref, () => ({
-    refresh: loadVariants,
+    refresh: () => loadVariants(false),
   }));
 
-  // Optimistic update for stock changes
   const updateVariantStock = useCallback((variantId: number, newStock: number) => {
-    setVariants((prev) =>
-      prev.map((variant) => (variant.id === variantId ? { ...variant, stock: newStock } : variant)),
-    );
+    setAllVariants((prev) => {
+      const updated = prev.map((variant) => (variant.id === variantId ? { ...variant, stock: newStock } : variant));
+      variantsCache.data = updated;
+      return updated;
+    });
   }, []);
 
-  // Remove variants by product ID (optimistic delete)
   const removeVariantsByProduct = useCallback((productId: number) => {
-    setVariants((prev) => {
+    setAllVariants((prev) => {
       const filtered = prev.filter((variant) => variant.product.id !== productId);
-      const removedCount = prev.length - filtered.length;
-      if (removedCount > 0) {
-        setTotalItems((prevTotal) => prevTotal - removedCount);
-      }
+      variantsCache.data = filtered;
       return filtered;
     });
   }, []);
@@ -351,7 +376,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
     <>
       <DataTable
         columns={columns}
-        data={variants}
+        data={paginatedVariants}
         keyExtractor={(v) => `${v.id}-${v.product.id}`}
         isLoading={isLoading || isSettingsLoading}
         emptyMessage={searchQuery ? 'No se encontraron productos' : 'No hay productos'}
@@ -386,7 +411,6 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
         onClose={() => setVariantForMovement(null)}
         variant={variantForMovement}
         onSuccess={(variantId, newStock) => {
-          // Optimistic update: only update the specific variant's stock
           updateVariantStock(variantId, newStock);
         }}
       />

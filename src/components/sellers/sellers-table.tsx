@@ -2,7 +2,7 @@
 
 import { CheckCircle2, MoreVertical, Pencil, Trash2, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -32,14 +32,23 @@ import { deleteSellerAction } from './actions';
 
 interface SellersTableProps {
   sellers: User[];
+  searchQuery?: string;
   onEdit?: (seller: User) => void;
 }
 
-export function SellersTable({ sellers, onEdit }: SellersTableProps) {
+export function SellersTable({ sellers, searchQuery = '', onEdit }: SellersTableProps) {
   const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sellers');
   const [sellerToDelete, setSellerToDelete] = useState<User | null>(null);
+
+  const filteredSellers = useMemo(() => {
+    if (!searchQuery.trim()) return sellers;
+    const q = searchQuery.toLowerCase();
+    return sellers.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+    );
+  }, [sellers, searchQuery]);
 
   const handlePageChange = () => {
     return;
@@ -161,15 +170,15 @@ export function SellersTable({ sellers, onEdit }: SellersTableProps) {
   return (
     <>
       <DataTable<User>
-        data={sellers}
+        data={filteredSellers}
         columns={columns}
         keyExtractor={(seller) => seller.id}
-        emptyMessage="No hay vendedores registrados aún"
+        emptyMessage={searchQuery ? 'No se encontraron vendedores' : 'No hay vendedores registrados aún'}
         page={1}
         totalPages={1}
         onPageChange={handlePageChange}
-        itemsPerPage={sellers.length || 10}
-        totalItems={sellers.length}
+        itemsPerPage={filteredSellers.length || 10}
+        totalItems={filteredSellers.length}
       />
 
       <AlertDialog open={!!sellerToDelete} onOpenChange={() => setSellerToDelete(null)}>

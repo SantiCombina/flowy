@@ -84,9 +84,7 @@ export function ProductsSection() {
   };
 
   const handleSuccess = useCallback(async () => {
-    // Refresh table data manually for immediate UI update
     await tableRef.current?.refresh();
-    // Also trigger Next.js revalidation in background
     router.refresh();
   }, [router]);
 
@@ -121,7 +119,7 @@ export function ProductsSection() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar por nombre, código..."
+              placeholder="Buscar por nombre, código, marca..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -130,7 +128,6 @@ export function ProductsSection() {
           <ColumnVisibilityDropdown tableName="products" />
         </div>
 
-        {/* Products Table */}
         <ProductsTable
           ref={tableRef}
           searchQuery={searchQuery}
@@ -138,7 +135,6 @@ export function ProductsSection() {
         />
       </main>
 
-      {/* Product Modal (Create/Edit) */}
       {referenceData && (
         <ProductModal
           isOpen={isModalOpen}
