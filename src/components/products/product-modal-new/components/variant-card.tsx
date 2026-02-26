@@ -7,6 +7,7 @@ import { Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import type { VariantCardProps } from '../types';
@@ -172,16 +173,10 @@ export function VariantCard({
 
         <div className="space-y-2">
           <Label>Precio *</Label>
-          <Input
-            type="number"
-            step="0.01"
-            {...register(`variants.${index}.price`, {
-              setValueAs: (value) => {
-                const num = parseFloat(value);
-                return isNaN(num) ? 0 : num;
-              },
-            })}
-            placeholder="0.00"
+          <Controller
+            name={`variants.${index}.price`}
+            control={control}
+            render={({ field }) => <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />}
           />
           {errors.variants?.[index]?.price && (
             <p className="text-xs text-destructive">{errors.variants[index]?.price?.message}</p>

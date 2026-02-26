@@ -4,6 +4,7 @@ import {
   BarChart3,
   Box,
   ClipboardList,
+  Contact,
   History,
   LayoutDashboard,
   Package,
@@ -55,6 +56,7 @@ const mainNavItems: NavItem[] = [
   { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments' },
   { title: 'Historial', href: '/history', icon: History, feature: 'history' },
   { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
+  { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
   { title: 'Estadísticas', href: '/statistics', icon: BarChart3, feature: 'statistics' },
   {
     title: 'Mi Inventario',
