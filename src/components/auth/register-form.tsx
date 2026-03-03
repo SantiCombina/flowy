@@ -71,10 +71,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
         <CardDescription>
-          Registrándose como{' '}
-          <span className="font-medium capitalize">
-            {role === 'owner' ? 'Dueño' : 'Vendedor'}
-          </span>
+          Registrándose como <span className="font-medium capitalize">{role === 'owner' ? 'Dueño' : 'Vendedor'}</span>
           <br />
           <span className="text-foreground">{email}</span>
         </CardDescription>

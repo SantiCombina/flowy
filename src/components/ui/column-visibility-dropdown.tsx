@@ -14,12 +14,13 @@ import { COLUMN_LABELS, TABLE_COLUMNS, type TableName } from '@/lib/constants/ta
 
 interface ColumnVisibilityDropdownProps {
   tableName: TableName;
+  excludeColumns?: string[];
 }
 
-export function ColumnVisibilityDropdown({ tableName }: ColumnVisibilityDropdownProps) {
+export function ColumnVisibilityDropdown({ tableName, excludeColumns = [] }: ColumnVisibilityDropdownProps) {
   const { getVisibleColumns, updateTableColumns } = useSettings();
 
-  const allColumns = TABLE_COLUMNS[tableName] as readonly string[];
+  const allColumns = (TABLE_COLUMNS[tableName] as readonly string[]).filter((c) => !excludeColumns.includes(c));
   const visibleColumns = getVisibleColumns(tableName);
 
   const handleToggle = (columnKey: string, checked: boolean) => {

@@ -1,0 +1,391 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
+import { useEffect, useState } from 'react';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+
+import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { PriceInput } from '@/components/ui/price-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
+
+import { createSaleAction, getSaleOptionsAction } from './actions';
+
+interface NewSaleDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  check: 'Cheque',
+};
+
+function ItemRow({
+  index,
+  variants,
+  onRemove,
+  form,
+}: {
+  index: number;
+  variants: SaleVariantOption[];
+  onRemove: () => void;
+  form: ReturnType<typeof useForm<SaleValues>>;
+}) {
+  const { control, setValue, watch } = form;
+  const variantId = watch(`items.${index}.variantId`);
+  const stockSource = watch(`items.${index}.stockSource`);
+  const quantity = watch(`items.${index}.quantity`);
+  const selectedVariant = variants.find((v) => v.variantId === variantId);
+
+  const warehouseStock = selectedVariant?.warehouseStock ?? 0;
+  const personalStock = selectedVariant?.personalStock ?? 0;
+  const availableStock = stockSource === 'personal' ? personalStock : warehouseStock;
+
+  const handleVariantChange = (value: string) => {
+    const id = Number(value);
+    setValue(`items.${index}.variantId`, id);
+    setValue(`items.${index}.quantity`, 1);
+
+    const variant = variants.find((v) => v.variantId === id);
+    if (variant) {
+      setValue(`items.${index}.unitPrice`, variant.price);
+
+      if (variant.warehouseStock > 0) {
+        setValue(`items.${index}.stockSource`, 'warehouse');
+      } else if (variant.personalStock > 0) {
+        setValue(`items.${index}.stockSource`, 'personal');
+      }
+    }
+  };
+
+  const handleStockSourceChange = (v: string) => {
+    const source = v as 'warehouse' | 'personal';
+    const newMax = source === 'personal' ? personalStock : warehouseStock;
+    setValue(`items.${index}.stockSource`, source);
+    if (quantity > newMax) {
+      setValue(`items.${index}.quantity`, newMax);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2 items-start">
+      <Controller
+        control={control}
+        name={`items.${index}.variantId`}
+        render={({ field, fieldState }) => (
+          <div>
+            <Select value={field.value ? String(field.value) : ''} onValueChange={handleVariantChange}>
+              <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Producto..." />
+              </SelectTrigger>
+              <SelectContent>
+                {variants.map((v) => {
+                  const totalStock = v.warehouseStock + v.personalStock;
+                  return (
+                    <SelectItem key={v.variantId} value={String(v.variantId)} disabled={totalStock === 0}>
+                      {v.productName}
+                      {v.presentationLabel ? ` · ${v.presentationLabel}` : ''}
+                      {totalStock === 0 ? ' (sin stock)' : ''}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name={`items.${index}.quantity`}
+        render={({ field, fieldState }) => (
+          <div>
+            <Input
+              type="number"
+              min={1}
+              max={availableStock || undefined}
+              step={1}
+              placeholder="1"
+              value={field.value || ''}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                field.onChange(availableStock ? Math.min(val, availableStock) : val);
+              }}
+              className={fieldState.error ? 'border-destructive' : ''}
+              disabled={!variantId || availableStock === 0}
+            />
+            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name={`items.${index}.unitPrice`}
+        render={({ field, fieldState }) => (
+          <div>
+            <PriceInput
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              className={fieldState.error ? 'border-destructive' : ''}
+            />
+            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+          </div>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name={`items.${index}.stockSource`}
+        render={({ field, fieldState }) => (
+          <div>
+            <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
+              <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Origen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="warehouse" disabled={warehouseStock === 0}>
+                  Depósito ({warehouseStock})
+                </SelectItem>
+                <SelectItem value="personal" disabled={personalStock === 0}>
+                  Mi inventario ({personalStock})
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+          </div>
+        )}
+      />
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onRemove}
+        className="h-9 w-8 text-muted-foreground hover:text-destructive shrink-0"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
+  const {
+    executeAsync: fetchOptions,
+    isExecuting: isLoadingOptions,
+    result: optionsResult,
+  } = useAction(getSaleOptionsAction);
+  const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const variants: SaleVariantOption[] = optionsResult?.data?.variants ?? [];
+  const clients: SaleClientOption[] = optionsResult?.data?.clients ?? [];
+
+  const form = useForm<SaleValues>({
+    resolver: zodResolver(saleSchema),
+    defaultValues: {
+      paymentMethod: 'cash',
+      items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' });
+
+  const watchedItems = useWatch({ control: form.control, name: 'items' });
+  const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+  const hasUnselectedVariant = (watchedItems ?? []).some((item) => !item.variantId || item.variantId === 0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    void fetchOptions();
+  }, [isOpen]);
+
+  const onSubmit = async (data: SaleValues) => {
+    setServerError(null);
+    const result = await submitSale(data);
+
+    if (result?.serverError) {
+      setServerError(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      setShowSuccess(true);
+      onSuccess();
+      setTimeout(onClose, 2000);
+    }
+  };
+
+  const formatTotal = (value: number) =>
+    value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Registrar venta</DialogTitle>
+          <DialogDescription>Completá los datos de la venta para registrarla.</DialogDescription>
+        </DialogHeader>
+
+        {showSuccess ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
+              <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
+            </div>
+          </div>
+        ) : isLoadingOptions ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-sm text-muted-foreground">Cargando productos...</p>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 gap-4">
+              <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">Producto</p>
+                  <p className="text-xs font-medium text-muted-foreground">Cant.</p>
+                  <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>
+                  <p className="text-xs font-medium text-muted-foreground">Origen</p>
+                  <div />
+                </div>
+
+                {fields.map((field, index) => (
+                  <ItemRow
+                    key={field.id}
+                    index={index}
+                    variants={variants}
+                    onRemove={() => remove(index)}
+                    form={form}
+                  />
+                ))}
+
+                {form.formState.errors.items?.root && (
+                  <p className="text-sm text-destructive">{form.formState.errors.items.root.message}</p>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
+                  disabled={variants.length === 0}
+                >
+                  + Agregar producto
+                </Button>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                  <FormField
+                    control={form.control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cliente (opcional)</FormLabel>
+                        <Select
+                          value={field.value ? String(field.value) : ''}
+                          onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sin cliente" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {clients.map((c) => (
+                              <SelectItem key={c.id} value={String(c.id)}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="paymentMethod"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Método de pago</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas (opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Observaciones..." rows={2} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {serverError && (
+                <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-sm text-destructive">{serverError}</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <p className="text-base font-semibold">
+                  Total: <span className="text-primary">$ {formatTotal(total)}</span>
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
+                    {isSubmitting ? 'Registrando...' : 'Registrar venta'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

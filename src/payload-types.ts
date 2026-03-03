@@ -78,6 +78,7 @@ export interface Config {
     'product-variants': ProductVariant;
     'product-custom-fields': ProductCustomField;
     clients: Client;
+    sales: Sale;
     settings: Setting;
     'stock-movements': StockMovement;
     'mobile-seller-inventory': MobileSellerInventory;
@@ -99,6 +100,7 @@ export interface Config {
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'product-custom-fields': ProductCustomFieldsSelect<false> | ProductCustomFieldsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
+    sales: SalesSelect<false> | SalesSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'mobile-seller-inventory': MobileSellerInventorySelect<false> | MobileSellerInventorySelect<true>;
@@ -398,6 +400,29 @@ export interface Client {
   createdAt: string;
 }
 /**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sales".
+ */
+export interface Sale {
+  id: number;
+  seller: number | User;
+  owner: number | User;
+  client?: (number | null) | Client;
+  date: string;
+  paymentMethod: 'cash' | 'transfer' | 'check';
+  items: {
+    variant: number | ProductVariant;
+    quantity: number;
+    unitPrice: number;
+    stockSource: 'warehouse' | 'personal';
+    id?: string | null;
+  }[];
+  total: number;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Configuración de preferencias del usuario
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -593,6 +618,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'clients';
         value: number | Client;
+      } | null)
+    | ({
+        relationTo: 'sales';
+        value: number | Sale;
       } | null)
     | ({
         relationTo: 'settings';
@@ -811,6 +840,30 @@ export interface ClientsSelect<T extends boolean = true> {
   address?: T;
   createdBy?: T;
   owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sales_select".
+ */
+export interface SalesSelect<T extends boolean = true> {
+  seller?: T;
+  owner?: T;
+  client?: T;
+  date?: T;
+  paymentMethod?: T;
+  items?:
+    | T
+    | {
+        variant?: T;
+        quantity?: T;
+        unitPrice?: T;
+        stockSource?: T;
+        id?: T;
+      };
+  total?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

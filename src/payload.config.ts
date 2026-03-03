@@ -19,6 +19,7 @@ import { ProductCustomFields } from './collections/ProductCustomFields';
 import { Products } from './collections/Products';
 import { ProductVariants } from './collections/ProductVariants';
 import { Qualities } from './collections/Qualities';
+import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
 import { StockMovements } from './collections/StockMovements';
 import { Users } from './collections/Users';
@@ -45,6 +46,7 @@ export default buildConfig({
     ProductVariants,
     ProductCustomFields,
     Clients,
+    Sales,
     Settings,
     StockMovements,
     MobileSellerInventory,

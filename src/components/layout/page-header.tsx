@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { useUser } from '@/components/providers/user-provider';
+import { NewSaleButton } from '@/components/sales/new-sale-button';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -23,6 +24,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
       <header className="flex h-14 items-center justify-between border-b bg-card px-4">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
+          {user?.role === 'seller' && <NewSaleButton />}
           <Button variant="ghost" size="icon" className="relative rounded-full">
             <Bell className="h-5 w-5" />
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">

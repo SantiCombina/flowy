@@ -45,11 +45,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <RegisterForm
-        email={invitation.email}
-        token={token}
-        role={invitation.role}
-      />
+      <RegisterForm email={invitation.email} token={token} role={invitation.role} />
     </div>
   );
 }
