@@ -20,8 +20,8 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
-    minStock: number;
-    price: number;
+    costPrice: number;
+    profitMargin: number;
   }>;
 }
 
@@ -50,8 +50,10 @@ export function ProductVariantsSection({
 }: ProductVariantsSectionProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg">Presentaciones y precios *</h3>
+      <div className="flex items-center justify-between pb-2 border-b">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Presentaciones y precios
+        </h3>
         <Button type="button" variant="outline" size="sm" onClick={onAddVariant}>
           <Plus className="mr-2 h-4 w-4" />
           Agregar presentación

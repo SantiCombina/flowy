@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  BarChart3,
   Box,
   ClipboardList,
   Contact,
@@ -24,6 +23,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -55,7 +55,6 @@ const mainNavItems: NavItem[] = [
   { title: 'Historial', href: '/history', icon: History, feature: 'history', roleOnly: 'owner' },
   { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
-  { title: 'Estadísticas', href: '/statistics', icon: BarChart3, feature: 'statistics', roleOnly: 'owner' },
   { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
 ];
 
@@ -89,6 +88,9 @@ export function AppSidebar({ features }: AppSidebarProps) {
     [features],
   );
 
+  const getIsActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-16 p-2 transition-all duration-200 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
@@ -110,21 +112,19 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredMainNav.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                      <Link href={item.href} onClick={handleNavClick}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {filteredMainNav.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={getIsActive(item.href)} tooltip={item.title}>
+                    <Link href={item.href} onClick={handleNavClick}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -132,21 +132,18 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
       <SidebarSeparator className="mx-0" />
 
-      <SidebarFooter>
+      <SidebarFooter className="gap-0 pb-2">
         <SidebarMenu>
-          {filteredFooterNav.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                  <Link href={item.href} onClick={handleNavClick}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
+          {filteredFooterNav.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton asChild isActive={getIsActive(item.href)} tooltip={item.title}>
+                <Link href={item.href} onClick={handleNavClick}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
           <SidebarMenuItem>
             <LogoutButton />
           </SidebarMenuItem>

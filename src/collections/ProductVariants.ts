@@ -4,7 +4,7 @@ export const ProductVariants: CollectionConfig = {
   slug: 'product-variants',
   admin: {
     useAsTitle: 'code',
-    defaultColumns: ['code', 'product', 'presentation', 'stock', 'minStock', 'price'],
+    defaultColumns: ['code', 'product', 'presentation', 'stock', 'costPrice', 'profitMargin'],
   },
   access: {
     create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'owner',
@@ -57,22 +57,22 @@ export const ProductVariants: CollectionConfig = {
       },
     },
     {
-      name: 'minStock',
+      name: 'costPrice',
       type: 'number',
       required: true,
-      defaultValue: 0,
-      label: 'Stock mínimo',
+      label: 'Precio de costo',
       admin: {
-        description: 'Alerta cuando el stock esté por debajo de este valor',
+        description: 'Costo de adquisición de esta presentación',
       },
     },
     {
-      name: 'price',
+      name: 'profitMargin',
       type: 'number',
-      required: true,
-      label: 'Precio de venta',
+      required: false,
+      defaultValue: 0,
+      label: 'Margen de ganancia (%)',
       admin: {
-        description: 'Precio de venta de esta presentación',
+        description: 'Porcentaje de ganancia sobre el costo (ej: 20 = 20%)',
       },
     },
     {

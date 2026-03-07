@@ -24,21 +24,21 @@ export const variantSchema = z.object({
     .min(0, {
       message: 'El stock no puede ser negativo.',
     }),
-  minStock: z
+  costPrice: z
     .number({
-      required_error: 'El stock mínimo es requerido.',
-      invalid_type_error: 'El stock mínimo debe ser un número.',
+      required_error: 'El precio de costo es requerido.',
+      invalid_type_error: 'El precio de costo debe ser un número.',
     })
     .min(0, {
-      message: 'El stock mínimo no puede ser negativo.',
+      message: 'El precio de costo no puede ser negativo.',
     }),
-  price: z
+  profitMargin: z
     .number({
-      required_error: 'El precio es requerido.',
-      invalid_type_error: 'El precio debe ser un número.',
+      required_error: 'El margen de ganancia es requerido.',
+      invalid_type_error: 'El margen debe ser un número.',
     })
-    .min(0.01, {
-      message: 'El precio debe ser mayor a 0.',
+    .min(0, {
+      message: 'El margen no puede ser negativo.',
     }),
 });
 

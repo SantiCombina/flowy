@@ -2,7 +2,7 @@
 
 import { Trash2, X } from 'lucide-react';
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
-import { Controller } from 'react-hook-form';
+import { Controller, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,8 +24,8 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
-    minStock: number;
-    price: number;
+    costPrice: number;
+    profitMargin: number;
   }>;
 }
 
@@ -46,8 +46,12 @@ export function VariantCard({
   control,
   errors,
 }: ExtendedVariantCardProps) {
+  const costPrice = useWatch({ control, name: `variants.${index}.costPrice` }) ?? 0;
+  const profitMargin = useWatch({ control, name: `variants.${index}.profitMargin` }) ?? 0;
+  const suggestedPrice = costPrice > 0 ? costPrice * (1 + profitMargin / 100) : null;
+
   return (
-    <div className="relative border rounded-lg p-4 bg-muted/30 space-y-3">
+    <div className="relative rounded-lg border border-l-4 border-l-primary/40 p-4 bg-card space-y-3">
       {canDelete && (
         <Button
           type="button"
@@ -137,7 +141,7 @@ export function VariantCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Stock *</Label>
           <Input
@@ -157,10 +161,26 @@ export function VariantCard({
         </div>
 
         <div className="space-y-2">
-          <Label>Stock mínimo</Label>
+          <Label>Precio de costo *</Label>
+          <Controller
+            name={`variants.${index}.costPrice`}
+            control={control}
+            render={({ field }) => <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />}
+          />
+          {errors.variants?.[index]?.costPrice && (
+            <p className="text-xs text-destructive">{errors.variants[index]?.costPrice?.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 items-end">
+        <div className="space-y-2">
+          <Label>Margen de ganancia (%)</Label>
           <Input
             type="number"
-            {...register(`variants.${index}.minStock`, {
+            min={0}
+            step={0.1}
+            {...register(`variants.${index}.profitMargin`, {
               setValueAs: (value) => {
                 const num = parseFloat(value);
                 return isNaN(num) ? 0 : num;
@@ -169,18 +189,18 @@ export function VariantCard({
             placeholder="0"
             defaultValue={0}
           />
+          {errors.variants?.[index]?.profitMargin && (
+            <p className="text-xs text-destructive">{errors.variants[index]?.profitMargin?.message}</p>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <Label>Precio *</Label>
-          <Controller
-            name={`variants.${index}.price`}
-            control={control}
-            render={({ field }) => <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />}
-          />
-          {errors.variants?.[index]?.price && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.price?.message}</p>
-          )}
+        <div className="col-span-2 space-y-2">
+          <Label className="text-muted-foreground">Precio sugerido de venta</Label>
+          <div className="flex h-9 items-center rounded-md border bg-muted/50 px-3 text-sm font-medium tabular-nums">
+            {suggestedPrice !== null
+              ? `$ ${suggestedPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : '—'}
+          </div>
         </div>
       </div>
     </div>

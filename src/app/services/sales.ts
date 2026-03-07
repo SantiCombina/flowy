@@ -87,7 +87,7 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
       productName: product?.name ?? 'Producto desconocido',
       presentationLabel: presentation?.label ?? undefined,
       code: variant.code ?? undefined,
-      price: variant.price,
+      price: variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100),
       warehouseStock: variant.stock,
       personalStock: personalStockMap.get(variant.id) ?? 0,
     };

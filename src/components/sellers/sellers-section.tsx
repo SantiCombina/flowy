@@ -59,12 +59,8 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
         description="Gestión del equipo de ventas"
         actions={
           canInviteSeller ? (
-            <Button
-              onClick={() => setIsInviteModalOpen(true)}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3 gap-1"
-            >
-              <Plus className="mr-1 h-4 w-4" />
+            <Button onClick={() => setIsInviteModalOpen(true)} size="sm">
+              <Plus className="h-4 w-4" />
               Agregar vendedor
             </Button>
           ) : undefined

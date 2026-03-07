@@ -347,8 +347,8 @@ export const createVariantAction = actionClient.schema(createVariantActionSchema
     product: parsedInput.product,
     presentation: parsedInput.presentation,
     stock: parsedInput.stock,
-    minStock: parsedInput.minStock,
-    price: parsedInput.price,
+    costPrice: parsedInput.costPrice,
+    profitMargin: parsedInput.profitMargin,
   };
   const variant = await createVariant(variantData, user.id);
 
@@ -372,8 +372,8 @@ export const updateVariantAction = actionClient.schema(updateVariantActionSchema
     code: data.code,
     presentation: data.presentation,
     stock: data.stock,
-    minStock: data.minStock,
-    price: data.price,
+    costPrice: data.costPrice,
+    profitMargin: data.profitMargin,
   };
   const variant = await updateVariant(id, variantData);
 

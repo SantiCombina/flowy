@@ -21,8 +21,8 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
-    minStock: number;
-    price: number;
+    costPrice: number;
+    profitMargin: number;
   }>;
 }
 
@@ -45,7 +45,7 @@ export function ProductAttributesSection({
 }: ProductAttributesSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg">Atributos</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-2 border-b">Atributos</h3>
 
       <div className="space-y-4">
         <Controller

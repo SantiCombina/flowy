@@ -20,8 +20,8 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
-    minStock: number;
-    price: number;
+    costPrice: number;
+    profitMargin: number;
   }>;
 }
 
@@ -34,7 +34,9 @@ interface ProductInfoSectionProps {
 export function ProductInfoSection({ register, control, errors }: ProductInfoSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg">Información general</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-2 border-b">
+        Información general
+      </h3>
 
       <div className="space-y-2">
         <Label htmlFor="name">Nombre *</Label>

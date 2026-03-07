@@ -4,7 +4,11 @@
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills add https://github.com/vercel-labs/next-skills --skill next-best-practices --agent \"Claude Code\" --yes 2>&1)",
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills add https://github.com/vercel-labs/next-skills --skill next-best-practices --agent claude-code --yes 2>&1)",
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills list 2>&1)",
-      "Bash(npx skills:*)"
+      "Bash(npx skills:*)",
+      "Bash(cat \"/c/Users/santi/Documents/Workspace/stocker/src/app/\\(frontend\\)/\\(main\\)/clients/page.tsx\")",
+      "Bash(pnpm payload migrate)",
+      "Bash(pnpm generate:types)",
+      "Bash(pnpm tsc --noEmit)"
     ]
   }
 }

@@ -25,8 +25,8 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           {user?.role === 'seller' && <NewSaleButton />}
-          <Button variant="ghost" size="icon" className="relative rounded-full">
-            <Bell className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Notificaciones">
+            <Bell className="h-5 w-5" aria-hidden="true" />
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
               3
             </span>

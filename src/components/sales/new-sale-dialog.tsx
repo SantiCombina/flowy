@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
+import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,7 +15,10 @@ import { Input } from '@/components/ui/input';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
+
+import { getClientsForSaleAction } from '../clients/actions';
 
 import { createSaleAction, getSaleOptionsAction } from './actions';
 
@@ -189,11 +193,14 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     result: optionsResult,
   } = useAction(getSaleOptionsAction);
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
+  const { executeAsync: fetchClients } = useAction(getClientsForSaleAction);
   const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
 
   const variants: SaleVariantOption[] = optionsResult?.data?.variants ?? [];
-  const clients: SaleClientOption[] = optionsResult?.data?.clients ?? [];
+  const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.data?.clients ?? [];
 
   const form = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
@@ -213,6 +220,24 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     if (!isOpen) return;
     void fetchOptions();
   }, [isOpen]);
+
+  const handleClose = () => {
+    setClientsOverride(null);
+    setShowSuccess(false);
+    setServerError(null);
+    onClose();
+  };
+
+  const handleNewClientSuccess = async (newClient: Client) => {
+    const result = await fetchClients();
+    if (result?.data?.clients) {
+      setClientsOverride(result.data.clients);
+    } else {
+      setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
+    }
+    form.setValue('clientId', newClient.id);
+    setIsClientModalOpen(false);
+  };
 
   const onSubmit = async (data: SaleValues) => {
     setServerError(null);
@@ -234,158 +259,175 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Registrar venta</DialogTitle>
-          <DialogDescription>Completá los datos de la venta para registrarla.</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Registrar venta</DialogTitle>
+            <DialogDescription>Completá los datos de la venta para registrarla.</DialogDescription>
+          </DialogHeader>
 
-        {showSuccess ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+          {showSuccess ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-center space-y-1">
+                <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
+                <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
+              </div>
             </div>
-            <div className="text-center space-y-1">
-              <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
-              <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
+          ) : isLoadingOptions ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-muted-foreground">Cargando productos…</p>
             </div>
-          </div>
-        ) : isLoadingOptions ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">Cargando productos...</p>
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 gap-4">
-              <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
-                <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
-                  <p className="text-xs font-medium text-muted-foreground">Producto</p>
-                  <p className="text-xs font-medium text-muted-foreground">Cant.</p>
-                  <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>
-                  <p className="text-xs font-medium text-muted-foreground">Origen</p>
-                  <div />
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 gap-4">
+                <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
+                  <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">Producto</p>
+                    <p className="text-xs font-medium text-muted-foreground">Cant.</p>
+                    <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>
+                    <p className="text-xs font-medium text-muted-foreground">Origen</p>
+                    <div />
+                  </div>
+
+                  {fields.map((field, index) => (
+                    <ItemRow
+                      key={field.id}
+                      index={index}
+                      variants={variants}
+                      onRemove={() => remove(index)}
+                      form={form}
+                    />
+                  ))}
+
+                  {form.formState.errors.items?.root && (
+                    <p className="text-sm text-destructive">{form.formState.errors.items.root.message}</p>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
+                    disabled={variants.length === 0}
+                  >
+                    + Agregar producto
+                  </Button>
+
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    <FormField
+                      control={form.control}
+                      name="clientId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Cliente</FormLabel>
+                            <button
+                              type="button"
+                              onClick={() => setIsClientModalOpen(true)}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              + Nuevo cliente
+                            </button>
+                          </div>
+                          <Select
+                            value={field.value ? String(field.value) : ''}
+                            onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sin cliente" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {localClients.map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="paymentMethod"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Método de pago</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Notas (opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Observaciones..." rows={2} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                {fields.map((field, index) => (
-                  <ItemRow
-                    key={field.id}
-                    index={index}
-                    variants={variants}
-                    onRemove={() => remove(index)}
-                    form={form}
-                  />
-                ))}
-
-                {form.formState.errors.items?.root && (
-                  <p className="text-sm text-destructive">{form.formState.errors.items.root.message}</p>
+                {serverError && (
+                  <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+                    <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                    <p className="text-sm text-destructive">{serverError}</p>
+                  </div>
                 )}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
-                  disabled={variants.length === 0}
-                >
-                  + Agregar producto
-                </Button>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cliente (opcional)</FormLabel>
-                        <Select
-                          value={field.value ? String(field.value) : ''}
-                          onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sin cliente" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {clients.map((c) => (
-                              <SelectItem key={c.id} value={String(c.id)}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Método de pago</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <p className="text-base font-semibold">
+                    Total: <span className="text-primary">$ {formatTotal(total)}</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
+                      {isSubmitting ? 'Registrando…' : 'Registrar venta'}
+                    </Button>
+                  </div>
                 </div>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
 
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notas (opcional)</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} placeholder="Observaciones..." rows={2} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {serverError && (
-                <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
-                  <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-sm text-destructive">{serverError}</p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <p className="text-base font-semibold">
-                  Total: <span className="text-primary">$ {formatTotal(total)}</span>
-                </p>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
-                    {isSubmitting ? 'Registrando...' : 'Registrar venta'}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          </Form>
-        )}
-      </DialogContent>
-    </Dialog>
+      <ClientModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        onSuccess={handleNewClientSuccess}
+      />
+    </>
   );
 }

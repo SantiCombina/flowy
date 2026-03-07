@@ -40,10 +40,10 @@ export function DeleteConfirmationDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel} disabled={isExecuting}>
-            No
+            Cancelar
           </AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isExecuting} variant="destructive">
-            {isExecuting ? 'Eliminando...' : 'Sí'}
+            {isExecuting ? 'Eliminando…' : 'Eliminar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

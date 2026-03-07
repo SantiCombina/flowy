@@ -323,13 +323,13 @@ export interface ProductVariant {
    */
   stock: number;
   /**
-   * Alerta cuando el stock esté por debajo de este valor
+   * Costo de adquisición de esta presentación
    */
-  minStock: number;
+  costPrice: number;
   /**
-   * Precio de venta de esta presentación
+   * Porcentaje de ganancia sobre el costo (ej: 20 = 20%)
    */
-  price: number;
+  profitMargin?: number | null;
   owner?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
@@ -388,6 +388,14 @@ export interface Client {
    * Dirección del cliente
    */
   address?: string | null;
+  /**
+   * Provincia
+   */
+  provincia?: string | null;
+  /**
+   * Localidad
+   */
+  localidad?: string | null;
   /**
    * Vendedor que creó este cliente
    */
@@ -809,8 +817,8 @@ export interface ProductVariantsSelect<T extends boolean = true> {
   product?: T;
   presentation?: T;
   stock?: T;
-  minStock?: T;
-  price?: T;
+  costPrice?: T;
+  profitMargin?: T;
   owner?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -838,6 +846,8 @@ export interface ClientsSelect<T extends boolean = true> {
   phone?: T;
   email?: T;
   address?: T;
+  provincia?: T;
+  localidad?: T;
   createdBy?: T;
   owner?: T;
   updatedAt?: T;

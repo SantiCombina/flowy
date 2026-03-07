@@ -43,7 +43,7 @@ export async function getMobileSellerInventory(sellerId: number): Promise<Mobile
       presentationName: presentation?.label ?? undefined,
       code: variant?.code ?? undefined,
       quantity: item.quantity,
-      price: variant?.price ?? 0,
+      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
     };
   });
 }
@@ -240,7 +240,7 @@ export async function getMobileSellerInventoryForOwner(
       presentationName: presentation?.label ?? undefined,
       code: variant?.code ?? undefined,
       quantity: item.quantity,
-      price: variant?.price ?? 0,
+      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
     };
   });
 }

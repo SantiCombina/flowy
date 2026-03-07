@@ -201,8 +201,8 @@ export interface UpdateVariantData {
   code?: string;
   presentation?: number;
   stock?: number;
-  minStock?: number;
-  price?: number;
+  costPrice?: number;
+  profitMargin?: number;
 }
 
 /**
@@ -292,7 +292,6 @@ export async function getAllVariants(
   options?: {
     limit?: number;
     page?: number;
-    lowStock?: boolean; // Solo variantes con stock bajo
   },
 ): Promise<{
   docs: ProductVariant[];
@@ -316,10 +315,7 @@ export async function getAllVariants(
     overrideAccess: true,
   });
 
-  let variants = result.docs;
-  if (options?.lowStock) {
-    variants = variants.filter((v) => v.stock <= v.minStock);
-  }
+  const variants = result.docs;
 
   return {
     docs: variants,

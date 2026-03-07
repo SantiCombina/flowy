@@ -97,14 +97,9 @@ export function ProductsSection() {
         description="Gestión del catálogo de productos"
         actions={
           canCreateProduct ? (
-            <Button
-              onClick={handleOpenCreateModal}
-              disabled={isLoadingData}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3 gap-1"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              {isLoadingData ? 'Cargando...' : 'Nuevo producto'}
+            <Button onClick={handleOpenCreateModal} disabled={isLoadingData} size="sm">
+              <Plus className="h-4 w-4" />
+              {isLoadingData ? 'Cargando…' : 'Nuevo producto'}
             </Button>
           ) : undefined
         }

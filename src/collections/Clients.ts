@@ -99,6 +99,22 @@ export const Clients: CollectionConfig = {
       },
     },
     {
+      name: 'provincia',
+      type: 'text',
+      required: false,
+      admin: {
+        description: 'Provincia',
+      },
+    },
+    {
+      name: 'localidad',
+      type: 'text',
+      required: false,
+      admin: {
+        description: 'Localidad',
+      },
+    },
+    {
       name: 'createdBy',
       type: 'relationship',
       relationTo: 'users',

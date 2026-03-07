@@ -71,7 +71,7 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-md border bg-white">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -202,7 +202,7 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-8 w-17.5 bg-white">
+                <SelectTrigger className="h-8 w-17.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -225,7 +225,7 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 w-8 p-0 bg-white"
+                  className="h-8 w-8 p-0"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page <= 1}
                 >
@@ -234,7 +234,7 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 w-8 p-0 bg-white"
+                  className="h-8 w-8 p-0"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page >= totalPages}
                 >

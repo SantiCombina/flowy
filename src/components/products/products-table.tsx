@@ -278,25 +278,16 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(({
     stock: {
       key: 'stock',
       header: COLUMN_LABELS.stock,
-      cell: (variant) => {
-        const stock = variant.stock;
-        const minStock = variant.minStock || 0;
-        const ratio = minStock > 0 ? stock / minStock : Infinity;
-
-        if (ratio <= 1) {
-          return <Badge variant="destructive">{stock}</Badge>;
-        } else if (ratio < 2) {
-          return <Badge className="bg-orange-400 hover:bg-orange-500 text-white border-orange-400">{stock}</Badge>;
-        } else {
-          return <Badge className="bg-white text-foreground border border-gray-200 shadow-none">{stock}</Badge>;
-        }
-      },
+      cell: (variant) => (
+        <Badge className="bg-white text-foreground border border-gray-200 shadow-none">{variant.stock}</Badge>
+      ),
     },
     price: {
       key: 'price',
       header: COLUMN_LABELS.price,
       cell: (variant) => {
-        const formattedPrice = variant.price.toLocaleString('es-AR', {
+        const suggestedPrice = variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100);
+        const formattedPrice = suggestedPrice.toLocaleString('es-AR', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         });

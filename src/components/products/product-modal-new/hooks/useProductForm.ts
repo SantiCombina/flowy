@@ -50,8 +50,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           presentationId: '',
           code: '',
           stock: 0,
-          minStock: 0,
-          price: 0,
+
+          costPrice: 0,
+          profitMargin: 0,
         },
       ],
     },
@@ -90,8 +91,8 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
                   typeof v.presentation === 'object' && v.presentation ? v.presentation.id.toString() : '',
                 code: v.code || '',
                 stock: v.stock || 0,
-                minStock: v.minStock || 0,
-                price: v.price || 0,
+                costPrice: v.costPrice || 0,
+                profitMargin: v.profitMargin ?? 0,
               })),
             });
           }
@@ -111,8 +112,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             presentationId: '',
             code: '',
             stock: 0,
-            minStock: 0,
-            price: 0,
+
+            costPrice: 0,
+            profitMargin: 0,
           },
         ],
       });
@@ -139,8 +141,8 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
       presentationId: '',
       code: '',
       stock: 0,
-      minStock: 0,
-      price: 0,
+      costPrice: 0,
+      profitMargin: 0,
     });
   };
 
@@ -183,8 +185,8 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
               code: variant.code || '',
               ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
               stock: variant.stock,
-              minStock: variant.minStock,
-              price: variant.price,
+              costPrice: variant.costPrice,
+              profitMargin: variant.profitMargin,
             });
             if (updateResult?.serverError) {
               toast.error(`Error al actualizar variante: ${updateResult.serverError}`);
@@ -196,8 +198,8 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
               product: productId,
               ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
               stock: variant.stock,
-              minStock: variant.minStock,
-              price: variant.price,
+              costPrice: variant.costPrice,
+              profitMargin: variant.profitMargin,
             });
             if (createResult?.serverError) {
               toast.error(`Error al crear variante: ${createResult.serverError}`);
@@ -235,8 +237,8 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             product: newProductId,
             ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
             stock: variant.stock,
-            minStock: variant.minStock,
-            price: variant.price,
+            costPrice: variant.costPrice,
+            profitMargin: variant.profitMargin,
           });
           if (createResult?.serverError) {
             toast.error(`Error al crear variante: ${createResult.serverError}`);

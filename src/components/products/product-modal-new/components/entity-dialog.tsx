@@ -66,7 +66,7 @@ export function EntityDialog({
             Cancelar
           </AlertDialogCancel>
           <AlertDialogAction onClick={onSave} disabled={!entityName.trim() || isExecuting}>
-            {isExecuting ? 'Guardando...' : entityDialog.mode === 'create' ? 'Crear' : 'Guardar'}
+            {isExecuting ? 'Guardando…' : entityDialog.mode === 'create' ? 'Crear' : 'Guardar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

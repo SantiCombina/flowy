@@ -217,22 +217,22 @@ export const createVariantActionSchema = z.object({
       message: 'El stock no puede ser negativo.',
     })
     .default(0),
-  minStock: z
+  costPrice: z
     .number({
-      invalid_type_error: 'El stock mínimo debe ser un número.',
+      required_error: 'El precio de costo es requerido.',
+      invalid_type_error: 'El precio de costo debe ser un número.',
     })
     .min(0, {
-      message: 'El stock mínimo no puede ser negativo.',
+      message: 'El precio de costo no puede ser negativo.',
+    }),
+  profitMargin: z
+    .number({
+      invalid_type_error: 'El margen debe ser un número.',
+    })
+    .min(0, {
+      message: 'El margen no puede ser negativo.',
     })
     .default(0),
-  price: z
-    .number({
-      required_error: 'El precio es requerido.',
-      invalid_type_error: 'El precio debe ser un número.',
-    })
-    .min(0, {
-      message: 'El precio debe ser positivo.',
-    }),
 });
 
 export type CreateVariantActionValues = z.infer<typeof createVariantActionSchema>;
@@ -260,20 +260,20 @@ export const updateVariantActionSchema = z.object({
       message: 'El stock no puede ser negativo.',
     })
     .optional(),
-  minStock: z
+  costPrice: z
     .number({
-      invalid_type_error: 'El stock mínimo debe ser un número.',
+      invalid_type_error: 'El precio de costo debe ser un número.',
     })
     .min(0, {
-      message: 'El stock mínimo no puede ser negativo.',
+      message: 'El precio de costo no puede ser negativo.',
     })
     .optional(),
-  price: z
+  profitMargin: z
     .number({
-      invalid_type_error: 'El precio debe ser un número.',
+      invalid_type_error: 'El margen debe ser un número.',
     })
     .min(0, {
-      message: 'El precio debe ser positivo.',
+      message: 'El margen no puede ser negativo.',
     })
     .optional(),
 });

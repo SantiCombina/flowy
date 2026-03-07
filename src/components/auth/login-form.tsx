@@ -52,10 +52,10 @@ export function LoginForm() {
   const isExecuting = status === 'executing';
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
-        <CardDescription className="mb-2">Ingresá tus credenciales para acceder</CardDescription>
+    <Card className="w-full max-w-sm shadow-sm">
+      <CardHeader className="text-center pb-2">
+        <CardTitle className="text-2xl font-bold">Iniciar sesión</CardTitle>
+        <CardDescription>Ingresá tus credenciales para acceder</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -100,7 +100,7 @@ export function LoginForm() {
             />
 
             <Button type="submit" className="w-full" disabled={isExecuting || redirecting}>
-              {isExecuting || redirecting ? 'Ingresando...' : 'Ingresar'}
+              {isExecuting || redirecting ? 'Ingresando…' : 'Ingresar'}
             </Button>
           </form>
         </Form>

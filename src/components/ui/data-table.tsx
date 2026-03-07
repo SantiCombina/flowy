@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className="space-y-3">
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -96,7 +97,7 @@ export function DataTable<T>({
             <>
               <span>Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => onItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-8 w-17.5 bg-white">
+                <SelectTrigger className="h-8 w-17.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -121,20 +122,22 @@ export function DataTable<T>({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 bg-white"
+              className="h-8 w-8 p-0"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1 || isLoading}
+              aria-label="Página anterior"
             >
-              ‹
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 bg-white"
+              className="h-8 w-8 p-0"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages || isLoading}
+              aria-label="Página siguiente"
             >
-              ›
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
