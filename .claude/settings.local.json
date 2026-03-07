@@ -9,7 +9,9 @@
       "Bash(pnpm payload migrate)",
       "Bash(pnpm generate:types)",
       "Bash(pnpm tsc --noEmit)",
-      "Bash(tsc --noEmit)"
+      "Bash(tsc --noEmit)",
+      "Bash(ls -la \"/c/Users/santi/Documents/Workspace/stocker/src/app/\\(frontend\\)/\\(main\\)/\")",
+      "Bash(pnpm add recharts)"
     ]
   }
 }

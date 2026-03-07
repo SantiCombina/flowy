@@ -178,12 +178,18 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
   return sale as Sale;
 }
 
-export async function getSales(filters: { sellerId?: number; ownerId?: number }): Promise<SaleRow[]> {
+export async function getSales(filters: {
+  sellerId?: number;
+  ownerId?: number;
+  dateFrom?: string;
+}): Promise<SaleRow[]> {
   const payload = await getPayloadClient();
 
-  const whereClause: Where = filters.sellerId
-    ? { seller: { equals: filters.sellerId } }
-    : { owner: { equals: filters.ownerId } };
+  const conditions: Where[] = [
+    filters.sellerId ? { seller: { equals: filters.sellerId } } : { owner: { equals: filters.ownerId } },
+  ];
+  if (filters.dateFrom) conditions.push({ date: { greater_than_equal: filters.dateFrom } });
+  const whereClause: Where = conditions.length === 1 ? conditions[0]! : { and: conditions };
 
   const result = await payload.find({
     collection: 'sales',
