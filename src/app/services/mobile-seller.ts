@@ -211,6 +211,66 @@ export async function returnStockFromMobileSeller(
   }
 }
 
+export interface SellerInventorySummary {
+  sellerId: number;
+  sellerName: string;
+  sellerEmail: string;
+  items: MobileInventoryItem[];
+  totalQuantity: number;
+}
+
+export async function getAllSellersInventoryForOwner(ownerId: number): Promise<SellerInventorySummary[]> {
+  const payload = await getPayloadClient();
+
+  const result = await payload.find({
+    collection: 'mobile-seller-inventory',
+    where: {
+      and: [{ owner: { equals: ownerId } }, { quantity: { greater_than: 0 } }],
+    },
+    depth: 2,
+    limit: 1000,
+    overrideAccess: true,
+  });
+
+  const sellerMap = new Map<number, SellerInventorySummary>();
+
+  for (const item of result.docs) {
+    const seller = typeof item.seller === 'object' ? item.seller : null;
+    if (!seller) continue;
+
+    const variant = typeof item.variant === 'object' ? item.variant : null;
+    const product = variant && typeof variant.product === 'object' ? variant.product : null;
+    const presentation =
+      variant && variant.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+    const mappedItem: MobileInventoryItem = {
+      id: item.id,
+      variantId: typeof item.variant === 'number' ? item.variant : item.variant.id,
+      productName: product?.name ?? 'Producto desconocido',
+      presentationName: presentation?.label ?? undefined,
+      code: variant?.code ?? undefined,
+      quantity: item.quantity,
+      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
+    };
+
+    const existing = sellerMap.get(seller.id);
+    if (existing) {
+      existing.items.push(mappedItem);
+      existing.totalQuantity += item.quantity;
+    } else {
+      sellerMap.set(seller.id, {
+        sellerId: seller.id,
+        sellerName: seller.name,
+        sellerEmail: seller.email,
+        items: [mappedItem],
+        totalQuantity: item.quantity,
+      });
+    }
+  }
+
+  return Array.from(sellerMap.values()).sort((a, b) => a.sellerName.localeCompare(b.sellerName, 'es'));
+}
+
 export async function getMobileSellerInventoryForOwner(
   sellerId: number,
   ownerId: number,
