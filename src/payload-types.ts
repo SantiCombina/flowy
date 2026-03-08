@@ -323,6 +323,10 @@ export interface ProductVariant {
    */
   stock: number;
   /**
+   * Se generará una alerta cuando el stock llegue a esta cantidad (0 = sin alerta)
+   */
+  minimumStock?: number | null;
+  /**
    * Costo de adquisición de esta presentación
    */
   costPrice: number;
@@ -817,6 +821,7 @@ export interface ProductVariantsSelect<T extends boolean = true> {
   product?: T;
   presentation?: T;
   stock?: T;
+  minimumStock?: T;
   costPrice?: T;
   profitMargin?: T;
   owner?: T;

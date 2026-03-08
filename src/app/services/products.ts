@@ -201,6 +201,7 @@ export interface UpdateVariantData {
   code?: string;
   presentation?: number;
   stock?: number;
+  minimumStock?: number;
   costPrice?: number;
   profitMargin?: number;
 }

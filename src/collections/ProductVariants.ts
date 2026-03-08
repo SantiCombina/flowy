@@ -57,6 +57,16 @@ export const ProductVariants: CollectionConfig = {
       },
     },
     {
+      name: 'minimumStock',
+      type: 'number',
+      required: false,
+      defaultValue: 0,
+      label: 'Stock mínimo',
+      admin: {
+        description: 'Se generará una alerta cuando el stock llegue a esta cantidad (0 = sin alerta)',
+      },
+    },
+    {
       name: 'costPrice',
       type: 'number',
       required: true,

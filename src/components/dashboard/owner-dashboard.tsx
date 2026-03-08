@@ -212,12 +212,15 @@ export function OwnerDashboard({ stats, userName, period }: OwnerDashboardProps)
                         {alert.code && <span className="font-mono text-xs text-muted-foreground">#{alert.code}</span>}
                       </div>
                     </div>
-                    <Badge
-                      variant={alert.stock === 0 ? 'destructive' : 'secondary'}
-                      className={alert.stock > 0 ? 'ml-2 bg-amber-100 text-amber-700 hover:bg-amber-100' : 'ml-2'}
-                    >
-                      {alert.stock === 0 ? 'Sin stock' : `${alert.stock} uds.`}
-                    </Badge>
+                    <div className="ml-2 flex shrink-0 flex-col items-end gap-0.5">
+                      <Badge
+                        variant={alert.stock === 0 ? 'destructive' : 'secondary'}
+                        className={alert.stock > 0 ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' : ''}
+                      >
+                        {alert.stock === 0 ? 'Sin stock' : `${alert.stock} uds.`}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">mín. {alert.minimumStock}</span>
+                    </div>
                   </div>
                 ))
               )}

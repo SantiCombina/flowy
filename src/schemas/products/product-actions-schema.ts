@@ -217,6 +217,14 @@ export const createVariantActionSchema = z.object({
       message: 'El stock no puede ser negativo.',
     })
     .default(0),
+  minimumStock: z
+    .number({
+      invalid_type_error: 'El stock mínimo debe ser un número.',
+    })
+    .min(0, {
+      message: 'El stock mínimo no puede ser negativo.',
+    })
+    .default(0),
   costPrice: z
     .number({
       required_error: 'El precio de costo es requerido.',
@@ -258,6 +266,14 @@ export const updateVariantActionSchema = z.object({
     })
     .min(0, {
       message: 'El stock no puede ser negativo.',
+    })
+    .optional(),
+  minimumStock: z
+    .number({
+      invalid_type_error: 'El stock mínimo debe ser un número.',
+    })
+    .min(0, {
+      message: 'El stock mínimo no puede ser negativo.',
     })
     .optional(),
   costPrice: z

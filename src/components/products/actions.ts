@@ -347,6 +347,7 @@ export const createVariantAction = actionClient.schema(createVariantActionSchema
     product: parsedInput.product,
     presentation: parsedInput.presentation,
     stock: parsedInput.stock,
+    minimumStock: parsedInput.minimumStock,
     costPrice: parsedInput.costPrice,
     profitMargin: parsedInput.profitMargin,
   };
@@ -372,6 +373,7 @@ export const updateVariantAction = actionClient.schema(updateVariantActionSchema
     code: data.code,
     presentation: data.presentation,
     stock: data.stock,
+    minimumStock: data.minimumStock,
     costPrice: data.costPrice,
     profitMargin: data.profitMargin,
   };

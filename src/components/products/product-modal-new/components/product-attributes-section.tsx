@@ -21,6 +21,7 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
+    minimumStock: number;
     costPrice: number;
     profitMargin: number;
   }>;

@@ -33,6 +33,7 @@ export interface LowStockAlert {
   presentation?: string;
   code?: string;
   stock: number;
+  minimumStock: number;
 }
 
 export interface OwnerDashboardStats {
@@ -215,7 +216,7 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
   const activeProducts = variantsResult.docs.length;
 
   const lowStockAlerts: LowStockAlert[] = variantsResult.docs
-    .filter((v) => v.stock < 5)
+    .filter((v) => (v.minimumStock ?? 0) > 0 && v.stock <= (v.minimumStock ?? 0))
     .map((v) => {
       const product = typeof v.product === 'object' ? v.product : null;
       const presentation = v.presentation && typeof v.presentation === 'object' ? v.presentation : null;
@@ -224,6 +225,7 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
         presentation: presentation?.label ?? undefined,
         code: v.code ?? undefined,
         stock: v.stock,
+        minimumStock: v.minimumStock ?? 0,
       };
     })
     .sort((a, b) => a.stock - b.stock)

@@ -24,6 +24,7 @@ interface ProductFormData {
     presentationId?: string;
     code?: string;
     stock: number;
+    minimumStock: number;
     costPrice: number;
     profitMargin: number;
   }>;
@@ -141,7 +142,7 @@ export function VariantCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label>Stock *</Label>
           <Input
@@ -157,6 +158,25 @@ export function VariantCard({
           />
           {errors.variants?.[index]?.stock && (
             <p className="text-xs text-destructive">{errors.variants[index]?.stock?.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Stock mínimo</Label>
+          <Input
+            type="number"
+            min={0}
+            {...register(`variants.${index}.minimumStock`, {
+              setValueAs: (value) => {
+                const num = parseFloat(value);
+                return isNaN(num) ? 0 : num;
+              },
+            })}
+            placeholder="0"
+            defaultValue={0}
+          />
+          {errors.variants?.[index]?.minimumStock && (
+            <p className="text-xs text-destructive">{errors.variants[index]?.minimumStock?.message}</p>
           )}
         </div>
 

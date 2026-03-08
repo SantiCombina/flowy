@@ -3,6 +3,7 @@ import * as migration_20260303_202852 from './20260303_202852';
 import * as migration_20260306_000000_add_cost_price_profit_margin from './20260306_000000_add_cost_price_profit_margin';
 import * as migration_20260306_100000_remove_min_stock from './20260306_100000_remove_min_stock';
 import * as migration_20260306_200000_add_province_locality_to_clients from './20260306_200000_add_province_locality_to_clients';
+import * as migration_20260308_000000_add_minimum_stock_to_variants from './20260308_000000_add_minimum_stock_to_variants';
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260306_200000_add_province_locality_to_clients.up,
     down: migration_20260306_200000_add_province_locality_to_clients.down,
     name: '20260306_200000_add_province_locality_to_clients',
+  },
+  {
+    up: migration_20260308_000000_add_minimum_stock_to_variants.up,
+    down: migration_20260308_000000_add_minimum_stock_to_variants.down,
+    name: '20260308_000000_add_minimum_stock_to_variants',
   },
 ];

@@ -11,7 +11,18 @@
       "Bash(pnpm tsc --noEmit)",
       "Bash(tsc --noEmit)",
       "Bash(ls -la \"/c/Users/santi/Documents/Workspace/stocker/src/app/\\(frontend\\)/\\(main\\)/\")",
-      "Bash(pnpm add recharts)"
+      "Bash(pnpm add recharts)",
+      "Bash(pnpm payload migrate:create --name=add_minimum_stock_to_variants)",
+      "Bash(node -e \":*)",
+      "Bash(pnpm tsx --env-file=.env src/scripts/add-minimum-stock.ts)",
+      "Bash(NODE_PATH=\"node_modules/.pnpm/pg@8.16.3/node_modules\" pnpm tsx --env-file=.env src/scripts/add-minimum-stock.ts)",
+      "Bash(grep \"^pg$\")",
+      "Bash(del \"c:\\\\Users\\\\santi\\\\Documents\\\\Workspace\\\\stocker\\\\src\\\\scripts\\\\add-minimum-stock.ts\")",
+      "Bash(pnpm build)",
+      "Read(//c/Users/santi/.claude/projects/c--Users-santi-Documents-Workspace-stocker/memory/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory"
     ]
   }
 }

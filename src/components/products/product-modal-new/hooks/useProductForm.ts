@@ -50,7 +50,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           presentationId: '',
           code: '',
           stock: 0,
-
+          minimumStock: 0,
           costPrice: 0,
           profitMargin: 0,
         },
@@ -91,6 +91,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
                   typeof v.presentation === 'object' && v.presentation ? v.presentation.id.toString() : '',
                 code: v.code || '',
                 stock: v.stock || 0,
+                minimumStock: v.minimumStock ?? 0,
                 costPrice: v.costPrice || 0,
                 profitMargin: v.profitMargin ?? 0,
               })),
@@ -112,7 +113,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             presentationId: '',
             code: '',
             stock: 0,
-
+            minimumStock: 0,
             costPrice: 0,
             profitMargin: 0,
           },
@@ -141,6 +142,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
       presentationId: '',
       code: '',
       stock: 0,
+      minimumStock: 0,
       costPrice: 0,
       profitMargin: 0,
     });
@@ -185,6 +187,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
               code: variant.code || '',
               ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
               stock: variant.stock,
+              minimumStock: variant.minimumStock,
               costPrice: variant.costPrice,
               profitMargin: variant.profitMargin,
             });
@@ -198,6 +201,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
               product: productId,
               ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
               stock: variant.stock,
+              minimumStock: variant.minimumStock,
               costPrice: variant.costPrice,
               profitMargin: variant.profitMargin,
             });
@@ -237,6 +241,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             product: newProductId,
             ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
             stock: variant.stock,
+            minimumStock: variant.minimumStock,
             costPrice: variant.costPrice,
             profitMargin: variant.profitMargin,
           });
