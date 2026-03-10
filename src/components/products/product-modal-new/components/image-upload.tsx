@@ -100,7 +100,7 @@ export function ImageUpload({ pendingFile, previewUrl, onFileSelect }: ImageUplo
             width={80}
             height={80}
             className="rounded-md object-cover"
-            unoptimized={!!localPreviewUrl}
+            unoptimized
           />
           <Button
             type="button"

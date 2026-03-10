@@ -185,7 +185,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           return (
             <div className="flex items-center justify-center">
               {image ? (
-                <Image src={image} alt={product.name} width={40} height={40} className="rounded object-cover" />
+                <Image src={image} alt={product.name} width={40} height={40} className="rounded object-cover" unoptimized />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
                   <ImageOff className="h-5 w-5 text-muted-foreground" />

@@ -86,6 +86,7 @@ export default buildConfig({
       collections: {
         media: {
           prefix: 'service-images',
+          disablePayloadAccessControl: true,
         },
       },
       options: {

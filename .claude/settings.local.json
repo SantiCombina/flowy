@@ -21,7 +21,15 @@
       "Bash(pnpm build)",
       "Read(//c/Users/santi/.claude/projects/c--Users-santi-Documents-Workspace-stocker/memory/**)",
       "Bash(find /c/Users/santi/Documents/Workspace/stocker/src/app/'\\(frontend\\)'/'\\(main\\)'/products -type f -name \"*.ts*\")",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(grep -r \"NEXT_PUBLIC_SERVER_URL\\\\|serverURL\" c:/Users/santi/Documents/Workspace/flowy/src/payload.config.ts c:/Users/santi/Documents/Workspace/flowy/.env*)",
+      "Bash(ls c:/Users/santi/Documents/Workspace/flowy/.env*)",
+      "WebFetch(domain:payloadcms.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:www.answeroverflow.com)",
+      "Bash(grep -r serverURL /c/Users/santi/Documents/Workspace/flowy/src --include=*.ts --include=*.tsx)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory"
