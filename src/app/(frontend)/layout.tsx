@@ -2,10 +2,10 @@ import './globals.css';
 
 export const metadata = {
   appleWebApp: {
-    title: 'Stocker',
+    title: 'Flowy',
   },
   description: 'Sistema de gestión de negocio',
-  title: 'Stocker',
+  title: 'Flowy',
 };
 
 export default function RootLayout(props: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="es">
       <head>
-        <meta name="apple-mobile-web-app-title" content="Stocker" />
+        <meta name="apple-mobile-web-app-title" content="Flowy" />
       </head>
       <body suppressHydrationWarning>{children}</body>
     </html>

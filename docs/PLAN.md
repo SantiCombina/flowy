@@ -1,4 +1,4 @@
-# Stocker - Plan de Desarrollo
+# Flowy - Plan de Desarrollo
 
 > Sistema de gestión de inventario y ventas para distribuidoras
 

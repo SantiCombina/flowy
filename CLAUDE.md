@@ -1,6 +1,6 @@
-# Stocker — Claude Code Instructions
+# Flowy — Claude Code Instructions
 
-Stocker es un sistema de gestión de inventario y ventas para distribuidoras. SaaS multi-tenant donde owners gestionan productos, vendedores y stock.
+Flowy es un sistema de gestión de inventario y ventas para distribuidoras. SaaS multi-tenant donde owners gestionan productos, vendedores y stock.
 
 ## Stack
 

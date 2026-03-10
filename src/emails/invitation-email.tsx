@@ -11,10 +11,10 @@ export function InvitationEmail({ registerUrl, roleName, inviterName }: Invitati
   return (
     <Html lang="es">
       <Head />
-      <Preview>Fuiste invitado a unirte a Stocker como {roleName}</Preview>
+      <Preview>Fuiste invitado a unirte a Flowy como {roleName}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>¡Fuiste invitado a Stocker!</Heading>
+          <Heading style={heading}>¡Fuiste invitado a Flowy!</Heading>
           <Section>
             <Text style={paragraph}>
               {inviterName ? `${inviterName} te invitó` : 'Fuiste invitado'} a unirte como <strong>{roleName}</strong>.

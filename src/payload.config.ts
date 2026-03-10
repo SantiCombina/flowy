@@ -68,8 +68,8 @@ export default buildConfig({
     },
   }),
   email: nodemailerAdapter({
-    defaultFromAddress: process.env.EMAIL_FROM || 'noreply@stocker.com',
-    defaultFromName: 'Stocker',
+    defaultFromAddress: process.env.EMAIL_FROM || 'noreply@Flowy.com',
+    defaultFromName: 'Flowy',
     transportOptions: {
       host: 'smtp.resend.com',
       port: 465,

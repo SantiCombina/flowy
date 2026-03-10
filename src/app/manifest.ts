@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Gestión de Negocio',
-    short_name: 'Stocker',
+    short_name: 'Flowy',
     icons: [
       {
         src: '/web-app-manifest-192x192.png',

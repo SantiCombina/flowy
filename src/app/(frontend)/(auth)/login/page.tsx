@@ -22,7 +22,7 @@ export default async function LoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20">
             <Box className="h-7 w-7" />
           </div>
-          <span className="text-3xl font-bold tracking-tight">Stocker</span>
+          <span className="text-3xl font-bold tracking-tight">Flowy</span>
         </div>
 
         <div className="space-y-8">
@@ -45,7 +45,7 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-primary-foreground/40">© 2026 Stocker</p>
+        <p className="text-xs text-primary-foreground/40">© 2026 Flowy</p>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 p-6 bg-muted/20">
@@ -53,7 +53,7 @@ export default async function LoginPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <Box className="h-7 w-7 text-primary-foreground" />
           </div>
-          <span className="text-3xl font-bold">Stocker</span>
+          <span className="text-3xl font-bold">Flowy</span>
         </div>
 
         <Suspense fallback={<div className="h-96 w-full max-w-sm animate-pulse rounded-lg bg-muted" />}>

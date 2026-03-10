@@ -1,4 +1,4 @@
-# Stocker - Registro de Progreso
+# Flowy - Registro de Progreso
 
 > Documentación de features implementadas y estado actual del proyecto
 

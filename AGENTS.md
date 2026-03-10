@@ -1,8 +1,8 @@
-# Stocker - Agent Instructions
+# Flowy - Agent Instructions
 
 ## Project Overview
 
-Stocker es un sistema de gestión de inventario y ventas para distribuidoras, diseñado para reemplazar hojas de Excel desordenadas por una plataforma moderna donde los owners puedan gestionar su inventario, vendedores y ventas en tiempo real.
+Flowy es un sistema de gestión de inventario y ventas para distribuidoras, diseñado para reemplazar hojas de Excel desordenadas por una plataforma moderna donde los owners puedan gestionar su inventario, vendedores y ventas en tiempo real.
 
 **Visión futura**: SaaS multi-tenant donde cada owner gestiona su propio negocio.
 

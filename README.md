@@ -1,4 +1,4 @@
-# Stocker
+# Flowy
 
 Sistema de gestión de inventario y ventas para distribuidoras, diseñado para reemplazar hojas de Excel por una plataforma moderna donde los owners puedan gestionar su inventario, vendedores y ventas en tiempo real.
 

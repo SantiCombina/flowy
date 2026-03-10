@@ -102,7 +102,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
             <Box className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">Stocker</span>
+            <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">Flowy</span>
             <span className="text-xs text-sidebar-foreground/60 whitespace-nowrap">Gestión de negocio</span>
           </div>
         </Link>

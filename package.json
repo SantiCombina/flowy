@@ -1,7 +1,7 @@
 {
-  "name": "stocker",
+  "name": "flowy",
   "version": "1.0.0",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Business management system for distributors. A multi-tenant SaaS platform for managers to manage inventory, sellers, assignments, and sales in real-time.",
   "license": "MIT",
   "type": "module",
   "scripts": {
