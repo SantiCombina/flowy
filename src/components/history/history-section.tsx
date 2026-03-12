@@ -220,7 +220,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
         <div className="space-y-3">
           <div
             className={cn(
-              'rounded-md border transition-opacity duration-150',
+              'rounded-md border bg-card shadow-sm transition-opacity duration-150',
               isPending && 'opacity-50 pointer-events-none',
             )}
           >

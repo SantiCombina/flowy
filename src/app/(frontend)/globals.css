@@ -47,6 +47,7 @@
 
 :root {
   --radius: 0.625rem;
+  --dot-bg: oklch(0.83 0.009 256 / 0.35);
   --background: oklch(0.974 0.006 256);
   --foreground: oklch(0.195 0.028 256);
   --card: oklch(1 0 0);
@@ -81,6 +82,7 @@
 }
 
 .dark {
+  --dot-bg: oklch(0.83 0.009 256 / 0.05);
   --background: oklch(0.16 0.02 256);
   --foreground: oklch(0.95 0.006 256);
   --card: oklch(0.2 0.025 256);
@@ -120,5 +122,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  [data-slot="sidebar-inset"] {
+    background-image: radial-gradient(circle, var(--dot-bg) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 }

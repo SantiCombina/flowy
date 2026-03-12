@@ -140,7 +140,7 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-md border">
+          <div className="rounded-md border bg-card shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>

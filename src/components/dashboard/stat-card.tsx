@@ -20,9 +20,10 @@ export function StatCard({ title, value, subtitle, change, icon: Icon, gradient,
       style={{ animationDelay: `${delay}ms` }}
     >
       <Card
-        className={`h-full bg-linear-to-br ${gradient} border-0 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl`}
+        className={`relative h-full overflow-hidden bg-linear-to-br ${gradient} border-0 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl`}
       >
-        <CardContent className="p-5">
+        <Icon className="absolute -right-4 -bottom-3 h-28 w-28 -rotate-12 text-white/10 select-none pointer-events-none" />
+        <CardContent className="relative p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1 min-w-0">
               <p className="text-sm font-medium text-white/80">{title}</p>

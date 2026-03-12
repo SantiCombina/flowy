@@ -21,25 +21,22 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 
   return (
     <>
-      <header className="flex h-14 items-center justify-between border-b bg-card px-4">
+      <header className="flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           {user?.role === 'seller' && <NewSaleButton />}
-          <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Notificaciones">
+          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Notificaciones">
             <Bell className="h-5 w-5" aria-hidden="true" />
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-              3
-            </span>
           </Button>
           <UserDropdown user={user} />
         </div>
       </header>
 
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-row items-end justify-between gap-3">
+      <div className="px-4 sm:px-6 py-5">
+        <div className="flex flex-row items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold sm:text-2xl">{title}</h1>
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground/80">{description}</p>
           </div>
           {actions && <div className="shrink-0">{actions}</div>}
         </div>

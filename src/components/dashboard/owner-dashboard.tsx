@@ -53,7 +53,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
   const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
   const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
-  const maxSellerTotal = stats.salesBySeller[0]?.total ?? 1;
+  const totalSellerRevenue = stats.salesBySeller.reduce((sum, s) => sum + s.total, 0) || 1;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -108,7 +108,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Ventas — {PERIOD_CHART_LABEL[period]}</CardTitle>
+              <CardTitle className="text-base">Ventas · {PERIOD_CHART_LABEL[period]}</CardTitle>
             </CardHeader>
             <CardContent>
               <SalesChart data={stats.salesByDay} period={period} color="#10b981" gradientId="ownerSalesGradient" />
@@ -117,7 +117,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Métodos de pago — este período</CardTitle>
+              <CardTitle className="text-base">Métodos de pago</CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
               <PaymentMethodsChart {...stats.paymentMethods} />
@@ -128,32 +128,38 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Ranking de vendedores — este período</CardTitle>
+              <CardTitle className="text-base">Ranking de vendedores</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-2">
               {stats.salesBySeller.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">Sin ventas registradas este período</p>
               ) : (
-                stats.salesBySeller.map((seller, i) => (
-                  <div key={seller.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="w-5 shrink-0 text-xs font-bold text-muted-foreground">#{i + 1}</span>
-                        <span className="truncate font-medium">{seller.name}</span>
-                      </div>
-                      <div className="ml-2 flex shrink-0 items-center gap-3">
-                        <span className="text-xs text-muted-foreground">{seller.count} vtas</span>
-                        <span className="font-semibold">{formatCurrency(seller.total)}</span>
+                stats.salesBySeller.map((seller, i) => {
+                  const pct = Math.round((seller.total / totalSellerRevenue) * 100);
+                  return (
+                    <div key={seller.name} className="flex items-center gap-3">
+                      <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="truncate font-medium">{seller.name}</span>
+                          <div className="ml-2 flex shrink-0 items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{seller.count} vtas</span>
+                            <span className="font-semibold">{formatCurrency(seller.total)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-500 transition-all duration-700"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-7 shrink-0 text-right text-xs text-muted-foreground">{pct}%</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-500 transition-all duration-700"
-                        style={{ width: `${Math.round((seller.total / maxSellerTotal) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>

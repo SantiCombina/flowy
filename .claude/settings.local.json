@@ -47,7 +47,8 @@
       "Bash(grep -r \"date-fns\\\\|react-day-picker\\\\|DatePicker\\\\|date-range\" c:UserssantiDocumentsWorkspaceflowy --include=*.json --include=*.tsx --include=*.ts)",
       "Bash(npx shadcn@latest add calendar --yes)",
       "Bash(npx shadcn@latest add calendar)",
-      "Bash(npx shadcn@latest add popover)"
+      "Bash(npx shadcn@latest add popover)",
+      "Bash(xargs grep:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",

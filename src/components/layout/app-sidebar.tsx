@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
-  Settings,
   ShoppingCart,
   Users,
 } from 'lucide-react';
@@ -20,10 +19,8 @@ import { useUserOptional } from '@/components/providers/user-provider';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -33,8 +30,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import type { FeatureFlags } from '@/lib/features';
-
-import { LogoutButton } from './logout-button';
 
 type FeatureKey = keyof FeatureFlags | null;
 
@@ -57,8 +52,6 @@ const mainNavItems: NavItem[] = [
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
   { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
 ];
-
-const footerNavItems: NavItem[] = [{ title: 'Configuración', href: '/settings', icon: Settings, feature: 'settings' }];
 
 interface AppSidebarProps {
   features: FeatureFlags;
@@ -83,17 +76,12 @@ export function AppSidebar({ features }: AppSidebarProps) {
     [features, user],
   );
 
-  const filteredFooterNav = useMemo(
-    () => footerNavItems.filter((item) => item.feature === null || features[item.feature]),
-    [features],
-  );
-
   const getIsActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-16 p-2 transition-all duration-200 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="h-14 p-2 transition-all duration-200 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
         <Link
           href="/"
           className="flex h-full w-full items-center gap-2 rounded-md p-2 transition-all duration-200 hover:bg-sidebar-accent group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:hover:bg-transparent"
@@ -112,15 +100,20 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {filteredMainNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={getIsActive(item.href)} tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={getIsActive(item.href)}
+                    tooltip={item.title}
+                    size="lg"
+                    className="data-[active=true]:shadow-[inset_3px_0_0_var(--primary)] group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:justify-center"
+                  >
                     <Link href={item.href} onClick={handleNavClick}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4.5 w-4.5" />
+                      <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -130,25 +123,6 @@ export function AppSidebar({ features }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarSeparator className="mx-0" />
-
-      <SidebarFooter className="gap-0 pb-2">
-        <SidebarMenu>
-          {filteredFooterNav.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton asChild isActive={getIsActive(item.href)} tooltip={item.title}>
-                <Link href={item.href} onClick={handleNavClick}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-          <SidebarMenuItem>
-            <LogoutButton />
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

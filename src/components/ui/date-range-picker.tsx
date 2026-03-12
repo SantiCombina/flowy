@@ -112,8 +112,6 @@ export function DateRangePicker({
     setOpen(false);
   }
 
-  function handleSelect() {}
-
   function handleClear(e: React.MouseEvent) {
     e.stopPropagation();
     onChange(undefined);
@@ -173,7 +171,7 @@ export function DateRangePicker({
             <Calendar
               mode="range"
               selected={calendarSelected}
-              onSelect={handleSelect}
+              onSelect={() => undefined}
               onDayClick={handleDayClick}
               numberOfMonths={2}
               locale={es}

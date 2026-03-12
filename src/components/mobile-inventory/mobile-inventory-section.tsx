@@ -28,25 +28,26 @@ export function MobileInventorySection({ inventory }: MobileInventorySectionProp
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">{inventory.length} productos</Badge>
+              <Badge className="bg-primary/10 text-primary hover:bg-primary/10">{inventory.length} productos</Badge>
               <Badge variant="outline">{totalItems} unidades totales</Badge>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {inventory.map((item) => (
-                <Card key={item.variantId}>
+                <Card key={item.variantId} className="overflow-hidden shadow-sm">
+                  <div className="h-1 bg-linear-to-r from-primary/60 to-primary" />
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{item.productName}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{item.productName}</p>
                         {item.presentationName && (
-                          <p className="text-sm text-muted-foreground truncate">{item.presentationName}</p>
+                          <p className="truncate text-sm text-muted-foreground">{item.presentationName}</p>
                         )}
-                        {item.code && <p className="text-xs text-muted-foreground font-mono">{item.code}</p>}
+                        {item.code && <p className="font-mono text-xs text-muted-foreground">#{item.code}</p>}
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-2xl font-bold tabular-nums">{item.quantity}</p>
-                        <p className="text-xs text-muted-foreground">unidades</p>
+                      <div className="shrink-0 text-right">
+                        <p className="text-2xl font-bold tabular-nums text-primary">{item.quantity}</p>
+                        <p className="text-xs text-muted-foreground">uds.</p>
                       </div>
                     </div>
                   </CardContent>

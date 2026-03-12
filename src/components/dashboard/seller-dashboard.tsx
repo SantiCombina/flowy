@@ -43,7 +43,7 @@ interface SellerDashboardProps {
 
 export function SellerDashboard({ stats, userName, period, onPeriodChange, isPending }: SellerDashboardProps) {
   const maxInventoryQty = stats.inventory.length > 0 ? Math.max(...stats.inventory.map((i) => i.quantity)) : 1;
-  const maxTopProductQty = stats.topProducts.length > 0 ? Math.max(...stats.topProducts.map((p) => p.quantity)) : 1;
+  const totalProductQuantity = stats.topProducts.reduce((sum, p) => sum + p.quantity, 0) || 1;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -94,7 +94,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Mis ventas — {PERIOD_CHART_LABEL[period]}</CardTitle>
+              <CardTitle className="text-base">Mis ventas · {PERIOD_CHART_LABEL[period]}</CardTitle>
             </CardHeader>
             <CardContent>
               <SalesChart data={stats.salesByDay} period={period} color="#3b82f6" gradientId="sellerSalesGradient" />
@@ -103,7 +103,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Métodos de pago — este período</CardTitle>
+              <CardTitle className="text-base">Métodos de pago</CardTitle>
             </CardHeader>
             <CardContent className="pt-2">
               <PaymentMethodsChart {...stats.paymentMethods} />
@@ -123,26 +123,32 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
               {stats.topProducts.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">Sin ventas registradas este período</p>
               ) : (
-                stats.topProducts.map((product, i) => (
-                  <div key={product.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="w-5 shrink-0 text-xs font-bold text-muted-foreground">#{i + 1}</span>
-                        <span className="truncate font-medium">{product.name}</span>
-                      </div>
-                      <div className="ml-2 flex shrink-0 items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{product.quantity} uds.</span>
-                        <span className="text-xs font-semibold">{formatCurrency(product.revenue)}</span>
+                stats.topProducts.map((product, i) => {
+                  const pct = Math.round((product.quantity / totalProductQuantity) * 100);
+                  return (
+                    <div key={product.name} className="flex items-center gap-3">
+                      <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="truncate font-medium">{product.name}</span>
+                          <div className="ml-2 flex shrink-0 items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{product.quantity} uds.</span>
+                            <span className="text-xs font-semibold">{formatCurrency(product.revenue)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-500 transition-all duration-700"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-7 shrink-0 text-right text-xs text-muted-foreground">{pct}%</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-linear-to-r from-blue-500 to-indigo-500 transition-all duration-700"
-                        style={{ width: `${Math.round((product.quantity / maxTopProductQty) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>

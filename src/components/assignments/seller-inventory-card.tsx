@@ -11,6 +11,15 @@ const AVATAR_COLORS = [
   'bg-teal-100 text-teal-700',
 ] as const;
 
+const ACCENT_GRADIENTS = [
+  'bg-linear-to-r from-blue-400 to-blue-600',
+  'bg-linear-to-r from-green-400 to-green-600',
+  'bg-linear-to-r from-purple-400 to-purple-600',
+  'bg-linear-to-r from-orange-400 to-orange-600',
+  'bg-linear-to-r from-pink-400 to-pink-600',
+  'bg-linear-to-r from-teal-400 to-teal-600',
+] as const;
+
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -26,6 +35,7 @@ interface SellerInventoryCardProps {
 
 export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCardProps) {
   const avatarColor = AVATAR_COLORS[seller.sellerId % AVATAR_COLORS.length];
+  const accentGradient = ACCENT_GRADIENTS[seller.sellerId % ACCENT_GRADIENTS.length];
   const initials = getInitials(seller.sellerName);
 
   const filteredItems =
@@ -34,7 +44,8 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
       : seller.items;
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col overflow-hidden">
+      <div className={`h-1 ${accentGradient}`} />
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <div
