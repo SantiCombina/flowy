@@ -40,7 +40,14 @@
       "Bash(grep -r \"forgot-password\\\\|reset-password\\\\|/api/users\" /c/Users/santi/Documents/Workspace/flowy/src --include=*.ts --include=*.tsx)",
       "Bash(cat /c/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(auth\\\\\\)/login/page.tsx)",
       "Bash(del \"c:\\\\Users\\\\santi\\\\Documents\\\\Workspace\\\\flowy\\\\src\\\\components\\\\auth\\\\forgot-password-form.tsx\")",
-      "Read(//c/Users/santi/.claude/plans/**)"
+      "Read(//c/Users/santi/.claude/plans/**)",
+      "Bash(find \"c:/Users/santi/Documents/Workspace/flowy/src/app/\\(frontend\\)\\(main\\)\" -type f -name \"page.tsx\")",
+      "Bash(ls -la \"c:\\\\Users\\\\santi\\\\Documents\\\\Workspace\\\\flowy\\\\src\\\\app\\\\\\(frontend\\)\")",
+      "Bash(find \"c:\\\\Users\\\\santi\\\\Documents\\\\Workspace\\\\flowy\\\\src\\\\app\\\\\\(frontend\\)\\\\\\(main\\)\" -type f -name \"page.tsx\")",
+      "Bash(grep -r \"date-fns\\\\|react-day-picker\\\\|DatePicker\\\\|date-range\" c:UserssantiDocumentsWorkspaceflowy --include=*.json --include=*.tsx --include=*.ts)",
+      "Bash(npx shadcn@latest add calendar --yes)",
+      "Bash(npx shadcn@latest add calendar)",
+      "Bash(npx shadcn@latest add popover)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",
