@@ -3,7 +3,7 @@
 import { endOfDay, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarDays, X } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
@@ -64,32 +64,59 @@ export function DateRangePicker({
   className,
 }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<DateRange | undefined>(value ? { from: value.from, to: value.to } : undefined);
+  const [selectingFrom, setSelectingFrom] = useState<Date | undefined>();
+  const [hoveredDay, setHoveredDay] = useState<Date | undefined>();
+  const lastHoveredIso = useRef<string | null>(null);
+
+  const calendarSelected: DateRange | undefined = (() => {
+    if (!selectingFrom) return undefined;
+    if (hoveredDay) {
+      const start = selectingFrom <= hoveredDay ? selectingFrom : hoveredDay;
+      const end = selectingFrom <= hoveredDay ? hoveredDay : selectingFrom;
+      return { from: start, to: end };
+    }
+    return { from: selectingFrom, to: undefined };
+  })();
 
   function handleOpenChange(next: boolean) {
-    if (next) setDraft(value ? { from: value.from, to: value.to } : undefined);
+    if (!next) {
+      setSelectingFrom(undefined);
+      setHoveredDay(undefined);
+      lastHoveredIso.current = null;
+    }
     setOpen(next);
   }
 
-  function handleSelect(range: DateRange | undefined) {
-    setDraft(range);
-    if (range?.from && range?.to) {
-      onChange({ from: range.from, to: range.to });
+  function handleDayClick(day: Date) {
+    if (!selectingFrom) {
+      setSelectingFrom(day);
+      setHoveredDay(undefined);
+      lastHoveredIso.current = null;
+    } else {
+      const start = selectingFrom <= day ? selectingFrom : day;
+      const end = selectingFrom <= day ? day : selectingFrom;
+      setSelectingFrom(undefined);
+      setHoveredDay(undefined);
+      lastHoveredIso.current = null;
+      onChange({ from: start, to: end });
       setOpen(false);
     }
   }
 
   function handlePreset(getRange: () => DateRangeValue) {
     const range = getRange();
-    setDraft({ from: range.from, to: range.to });
+    setSelectingFrom(undefined);
+    setHoveredDay(undefined);
+    lastHoveredIso.current = null;
     onChange(range);
     setOpen(false);
   }
 
+  function handleSelect() {}
+
   function handleClear(e: React.MouseEvent) {
     e.stopPropagation();
     onChange(undefined);
-    setDraft(undefined);
   }
 
   return (
@@ -129,22 +156,39 @@ export function DateRangePicker({
             ))}
           </div>
 
-          <Calendar
-            mode="range"
-            selected={draft}
-            onSelect={handleSelect}
-            numberOfMonths={2}
-            locale={es}
-            fixedWeeks
-            disabled={{ after: new Date() }}
-            defaultMonth={value?.from ?? subDays(new Date(), 29)}
-            formatters={{
-              formatCaption: (date, options) => {
-                const str = format(date, 'LLLL yyyy', { locale: options?.locale });
-                return str.charAt(0).toUpperCase() + str.slice(1);
-              },
+          <div
+            onMouseMove={(e) => {
+              if (!selectingFrom) return;
+              const target = (e.target as HTMLElement).closest('[data-date]');
+              const iso = target?.getAttribute('data-date') ?? null;
+              if (iso === lastHoveredIso.current) return;
+              lastHoveredIso.current = iso;
+              setHoveredDay(iso ? new Date(iso) : undefined);
             }}
-          />
+            onMouseLeave={() => {
+              lastHoveredIso.current = null;
+              setHoveredDay(undefined);
+            }}
+          >
+            <Calendar
+              mode="range"
+              selected={calendarSelected}
+              onSelect={handleSelect}
+              onDayClick={handleDayClick}
+              numberOfMonths={2}
+              locale={es}
+              fixedWeeks
+              showOutsideDays={false}
+              disabled={{ after: new Date() }}
+              defaultMonth={value?.from ?? subDays(new Date(), 29)}
+              formatters={{
+                formatCaption: (date, options) => {
+                  const str = format(date, 'LLLL yyyy', { locale: options?.locale });
+                  return str.charAt(0).toUpperCase() + str.slice(1);
+                },
+              }}
+            />
+          </div>
         </div>
       </PopoverContent>
     </Popover>
