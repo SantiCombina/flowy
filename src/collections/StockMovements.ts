@@ -50,6 +50,10 @@ export const StockMovements: CollectionConfig = {
           value: 'adjustment',
         },
         {
+          label: 'Venta',
+          value: 'sale',
+        },
+        {
           label: 'Despacho a vendedor móvil',
           value: 'dispatch_to_mobile',
         },

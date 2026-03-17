@@ -1,7 +1,7 @@
 'use client';
 
 import { subDays } from 'date-fns';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Filter, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, Check, ChevronDown, Filter, TrendingDown, TrendingUp, X } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
 
 import { getHistoryMovements } from '@/app/services/stock-movements';
@@ -29,12 +29,13 @@ const DEFAULT_DATE_RANGE = {
   to: new Date(),
 };
 
-const ALL_TYPES: MovementType[] = ['entry', 'exit', 'adjustment', 'dispatch_to_mobile', 'return_from_mobile'];
+const ALL_TYPES: MovementType[] = ['entry', 'exit', 'adjustment', 'sale', 'dispatch_to_mobile', 'return_from_mobile'];
 
 const TYPE_LABELS: Record<MovementType, string> = {
   entry: 'Ingreso',
   exit: 'Egreso',
   adjustment: 'Ajuste',
+  sale: 'Venta',
   dispatch_to_mobile: 'Asignación',
   return_from_mobile: 'Devolución',
 };
@@ -49,6 +50,30 @@ function formatDate(iso: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+type StockImpact = 'positive' | 'negative' | 'neutral';
+
+function getStockImpact(movement: HistoryMovement): StockImpact {
+  switch (movement.type) {
+    case 'entry':
+      return 'positive';
+    case 'exit':
+    case 'sale':
+      return 'negative';
+    case 'dispatch_to_mobile':
+    case 'return_from_mobile':
+      return 'neutral';
+    case 'adjustment':
+      return movement.quantity > 0 ? 'positive' : movement.quantity < 0 ? 'negative' : 'neutral';
+  }
+}
+
+function getQuantityDisplay(movement: HistoryMovement, impact: StockImpact): string {
+  const q = Math.abs(movement.quantity);
+  if (impact === 'neutral') return String(q);
+  if (impact === 'positive') return `+${q}`;
+  return `-${q}`;
 }
 
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey | null; sortDir: 'asc' | 'desc' }) {
@@ -247,7 +272,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                 ) : (
                   paginatedDocs.map((movement: HistoryMovement) => {
                     const isExpanded = expandedId === movement.id;
-                    const isPositive = movement.quantity >= 0;
+                    const impact = getStockImpact(movement);
                     return (
                       <Fragment key={movement.id}>
                         <TableRow
@@ -277,16 +302,15 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                               <span
                                 className={cn(
                                   'inline-flex items-center gap-1 font-medium',
-                                  isPositive ? 'text-emerald-600' : 'text-red-600',
+                                  impact === 'positive' && 'text-emerald-600',
+                                  impact === 'negative' && 'text-red-600',
+                                  impact === 'neutral' && 'text-muted-foreground',
                                 )}
                               >
-                                {isPositive ? (
-                                  <TrendingUp className="h-3.5 w-3.5" />
-                                ) : (
-                                  <TrendingDown className="h-3.5 w-3.5" />
-                                )}
-                                {isPositive ? '+' : ''}
-                                {movement.quantity}
+                                {impact === 'positive' && <TrendingUp className="h-3.5 w-3.5" />}
+                                {impact === 'negative' && <TrendingDown className="h-3.5 w-3.5" />}
+                                {impact === 'neutral' && <ArrowRight className="h-3.5 w-3.5" />}
+                                {getQuantityDisplay(movement, impact)}
                               </span>
                             </TableCell>
                           )}

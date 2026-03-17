@@ -121,10 +121,26 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         );
       }
 
+      const newStock = variant.stock - item.quantity;
+
       await payload.update({
         collection: 'product-variants',
         id: item.variantId,
-        data: { stock: variant.stock - item.quantity },
+        data: { stock: newStock },
+        overrideAccess: true,
+      });
+
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'sale',
+          quantity: item.quantity,
+          previousStock: variant.stock,
+          newStock,
+          owner: ownerId,
+          createdBy: sellerId,
+        },
         overrideAccess: true,
       });
     } else {
@@ -146,10 +162,27 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         );
       }
 
+      const newMobileStock = inventoryRecord.quantity - item.quantity;
+
       await payload.update({
         collection: 'mobile-seller-inventory',
         id: inventoryRecord.id,
-        data: { quantity: inventoryRecord.quantity - item.quantity },
+        data: { quantity: newMobileStock },
+        overrideAccess: true,
+      });
+
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'sale',
+          quantity: item.quantity,
+          previousStock: inventoryRecord.quantity,
+          newStock: newMobileStock,
+          mobileSeller: sellerId,
+          owner: ownerId,
+          createdBy: sellerId,
+        },
         overrideAccess: true,
       });
     }

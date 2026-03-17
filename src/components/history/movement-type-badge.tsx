@@ -14,6 +14,10 @@ const TYPE_CONFIG: Record<MovementType, { label: string; className: string }> = 
     label: 'Ajuste',
     className: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
   },
+  sale: {
+    label: 'Venta',
+    className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+  },
   dispatch_to_mobile: {
     label: 'Asignación',
     className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',

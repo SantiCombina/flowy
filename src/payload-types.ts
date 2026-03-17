@@ -516,7 +516,7 @@ export interface Setting {
 export interface StockMovement {
   id: number;
   variant: number | ProductVariant;
-  type: 'entry' | 'exit' | 'adjustment' | 'dispatch_to_mobile' | 'return_from_mobile';
+  type: 'entry' | 'exit' | 'adjustment' | 'sale' | 'dispatch_to_mobile' | 'return_from_mobile';
   /**
    * Cantidad del movimiento (positivo para entrada, negativo para salida)
    */
