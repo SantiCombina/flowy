@@ -1,7 +1,7 @@
 export const TABLE_COLUMNS = {
   products: ['name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price'],
   clients: ['name', 'cuit', 'phone', 'email', 'address', 'localidad', 'provincia'],
-  sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod'],
+  sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status', 'items', 'notes'],
   history: ['date', 'product', 'type', 'quantity', 'reason', 'reference'],
   sellers: ['name', 'email', 'phone', 'createdAt'],
@@ -14,7 +14,7 @@ export type TableColumns = typeof TABLE_COLUMNS;
 export const DEFAULT_COLUMNS: Record<TableName, string[]> = {
   products: ['name', 'brand', 'presentation', 'stock', 'price'],
   clients: ['name', 'phone', 'email', 'localidad'],
-  sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod'],
+  sales: ['date', 'seller', 'client', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],
   sellers: ['name', 'email'],
@@ -53,6 +53,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   client: 'Cliente',
   total: 'Total',
   paymentMethod: 'Método de pago',
+  paymentStatus: 'Estado cobro',
   status: 'Estado',
   items: 'Items',
   seller: 'Vendedor',

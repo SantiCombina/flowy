@@ -1,7 +1,18 @@
 'use client';
 
 import { subDays } from 'date-fns';
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, Check, ChevronDown, Filter, TrendingDown, TrendingUp, X } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  Filter,
+  TrendingDown,
+  TrendingUp,
+  X,
+} from 'lucide-react';
 import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
 
 import { getHistoryMovements } from '@/app/services/stock-movements';

@@ -430,7 +430,11 @@ export interface Sale {
     id?: string | null;
   }[];
   total: number;
+  amountPaid: number;
   notes?: string | null;
+  paymentStatus: 'pending' | 'partially_collected' | 'collected';
+  collectedAt?: string | null;
+  checkDueDate?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -878,7 +882,11 @@ export interface SalesSelect<T extends boolean = true> {
         id?: T;
       };
   total?: T;
+  amountPaid?: T;
   notes?: T;
+  paymentStatus?: T;
+  collectedAt?: T;
+  checkDueDate?: T;
   updatedAt?: T;
   createdAt?: T;
 }

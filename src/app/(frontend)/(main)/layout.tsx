@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { AppLayout } from '@/components/layout/app-layout';
 import { UserProvider } from '@/components/providers/user-provider';
+import { Toaster } from '@/components/ui/sonner';
 import { SettingsProvider } from '@/contexts/settings-context';
 import { getFeatureFlags } from '@/lib/features';
 import { getCurrentUser } from '@/lib/payload';
@@ -26,6 +27,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     >
       <SettingsProvider>
         <AppLayout features={features}>{children}</AppLayout>
+        <Toaster />
       </SettingsProvider>
     </UserProvider>
   );

@@ -213,6 +213,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' });
 
   const watchedItems = useWatch({ control: form.control, name: 'items' });
+  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const hasUnselectedVariant = (watchedItems ?? []).some((item) => !item.variantId || item.variantId === 0);
 
@@ -362,7 +363,13 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Método de pago</FormLabel>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={(v) => {
+                              field.onChange(v);
+                              if (v !== 'check') form.setValue('checkDueDate', undefined);
+                            }}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -381,6 +388,29 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       )}
                     />
                   </div>
+
+                  {paymentMethod === 'check' && (
+                    <FormField
+                      control={form.control}
+                      name="checkDueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha de cobro del cheque</FormLabel>
+                          <FormControl>
+                            <input
+                              type="date"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

@@ -169,6 +169,19 @@ export async function deleteProduct(id: number): Promise<void> {
   });
 
   for (const variant of variants.docs) {
+    const { totalDocs } = await payload.find({
+      collection: 'sales',
+      where: { 'items.variant': { equals: variant.id } },
+      limit: 1,
+      overrideAccess: true,
+    });
+
+    if (totalDocs > 0) {
+      throw new Error('No se puede eliminar el producto porque tiene ventas asociadas.');
+    }
+  }
+
+  for (const variant of variants.docs) {
     await payload.delete({
       collection: 'stock-movements',
       where: { variant: { equals: variant.id } },
@@ -277,6 +290,17 @@ export async function updateVariant(id: number, data: UpdateVariantData): Promis
  */
 export async function deleteVariant(id: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const { totalDocs } = await payload.find({
+    collection: 'sales',
+    where: { 'items.variant': { equals: id } },
+    limit: 1,
+    overrideAccess: true,
+  });
+
+  if (totalDocs > 0) {
+    throw new Error('No se puede eliminar la variante porque tiene ventas asociadas.');
+  }
 
   await payload.delete({
     collection: 'product-variants',

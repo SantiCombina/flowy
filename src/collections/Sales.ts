@@ -110,8 +110,47 @@ export const Sales: CollectionConfig = {
       min: 0,
     },
     {
+      name: 'amountPaid',
+      type: 'number',
+      required: true,
+      defaultValue: 0,
+      min: 0,
+      label: 'Monto cobrado',
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
       name: 'notes',
       type: 'text',
+    },
+    {
+      name: 'paymentStatus',
+      type: 'select',
+      required: true,
+      label: 'Estado de cobro',
+      defaultValue: 'pending',
+      options: [
+        { label: 'Pendiente', value: 'pending' },
+        { label: 'Parcialmente cobrado', value: 'partially_collected' },
+        { label: 'Cobrado', value: 'collected' },
+      ],
+    },
+    {
+      name: 'collectedAt',
+      type: 'date',
+      label: 'Cobrado el',
+      admin: {
+        condition: (data) => data?.paymentStatus === 'collected' || data?.paymentStatus === 'partially_collected',
+      },
+    },
+    {
+      name: 'checkDueDate',
+      type: 'date',
+      label: 'Fecha de cobro del cheque',
+      admin: {
+        condition: (data) => data?.paymentMethod === 'check',
+      },
     },
   ],
 };

@@ -41,6 +41,10 @@ export interface SaleRow {
   itemCount: number;
   total: number;
   paymentMethod: 'cash' | 'transfer' | 'check';
+  paymentStatus: 'pending' | 'partially_collected' | 'collected';
+  amountPaid: number;
+  collectedAt?: string;
+  checkDueDate?: string;
   items: SaleItemDetail[];
 }
 
@@ -190,6 +194,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
 
   const sale = await payload.create({
     collection: 'sales',
+    draft: false,
     data: {
       seller: sellerId,
       owner: ownerId,
@@ -203,7 +208,10 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         stockSource: item.stockSource,
       })),
       total: data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+      amountPaid: 0,
+      paymentStatus: 'pending' as const,
       ...(data.notes ? { notes: data.notes } : {}),
+      ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
     },
     overrideAccess: true,
   });
@@ -233,7 +241,7 @@ export async function getSales(filters: {
     overrideAccess: true,
   });
 
-  return result.docs.map((sale) => {
+  return (result.docs as Sale[]).map((sale: Sale) => {
     const seller = typeof sale.seller === 'object' ? sale.seller : null;
     const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
 
@@ -262,7 +270,48 @@ export async function getSales(filters: {
       itemCount: sale.items.length,
       total: sale.total,
       paymentMethod: sale.paymentMethod,
+      paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      amountPaid: sale.amountPaid ?? 0,
+      collectedAt: sale.collectedAt ?? undefined,
+      checkDueDate: sale.checkDueDate ?? undefined,
       items,
     };
+  });
+}
+
+export async function registerPayment(saleId: number, ownerId: number, amount: number): Promise<void> {
+  const payload = await getPayloadClient();
+
+  const sale = await payload.findByID({
+    collection: 'sales',
+    id: saleId,
+    overrideAccess: true,
+  });
+
+  if (!sale) throw new Error('Venta no encontrada');
+
+  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+  if (saleOwnerId !== ownerId) throw new Error('No autorizado');
+
+  if (sale.paymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+
+  const currentAmountPaid = sale.amountPaid ?? 0;
+  const remaining = sale.total - currentAmountPaid;
+
+  if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+  if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
+
+  const newAmountPaid = currentAmountPaid + amount;
+  const newStatus = newAmountPaid >= sale.total ? 'collected' : 'partially_collected';
+
+  await payload.update({
+    collection: 'sales',
+    id: saleId,
+    data: {
+      amountPaid: newAmountPaid,
+      paymentStatus: newStatus,
+      ...(newStatus === 'collected' ? { collectedAt: new Date().toISOString() } : {}),
+    } as Partial<Sale>,
+    overrideAccess: true,
   });
 }

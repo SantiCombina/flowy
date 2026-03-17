@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 
 import type { SaleRow } from '@/app/services/sales';
@@ -13,10 +13,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { cn } from '@/lib/utils';
 
-interface SalesSectionProps {
-  sales: SaleRow[];
-  showSellerColumn: boolean;
-}
+import { CollectSaleModal } from './collect-sale-modal';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -24,9 +21,15 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   check: 'Cheque',
 };
 
-const OPTIONAL_COLUMN_KEYS = ['date', 'seller', 'client', 'items', 'total', 'paymentMethod'] as const;
+type StatusFilter = 'all' | 'pending' | 'collected';
 
-type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod';
+const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
+  all: 'Todos',
+  pending: 'Pendiente',
+  collected: 'Cobrado',
+};
+
+type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod' | 'paymentStatus';
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleString('es-AR', {
@@ -38,8 +41,35 @@ function formatDate(dateString: string): string {
   });
 }
 
+function formatShortDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function isCheckOverdue(checkDueDate: string): boolean {
+  return new Date(checkDueDate) < new Date();
+}
+
+function PaymentStatusBadge({ status }: { status: 'pending' | 'partially_collected' | 'collected' }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+        status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+        status === 'partially_collected' && 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+        status === 'collected' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+      )}
+    >
+      {status === 'pending' ? 'Pendiente' : status === 'partially_collected' ? 'Parcial' : 'Cobrado'}
+    </span>
+  );
 }
 
 function getSortValue(sale: SaleRow, key: SortKey): string | number {
@@ -56,6 +86,8 @@ function getSortValue(sale: SaleRow, key: SortKey): string | number {
       return sale.total;
     case 'paymentMethod':
       return PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod;
+    case 'paymentStatus':
+      return sale.paymentStatus;
   }
 }
 
@@ -64,14 +96,49 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
-export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
+interface SalesSectionProps {
+  sales: SaleRow[];
+  showSellerColumn: boolean;
+  isOwner: boolean;
+  initialStatusFilter?: StatusFilter;
+}
+
+export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFilter }: SalesSectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
+
+  const [localSales, setLocalSales] = useState<SaleRow[]>(sales);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter ?? 'all');
+  const [collectingModal, setCollectingModal] = useState<{
+    saleId: number;
+    total: number;
+    amountPaid: number;
+  } | null>(null);
+
+  const handleCollectSuccess = (
+    saleId: number,
+    newAmountPaid: number,
+    newStatus: 'partially_collected' | 'collected',
+  ) => {
+    setLocalSales((prev) =>
+      prev.map((s) =>
+        s.id === saleId
+          ? {
+              ...s,
+              amountPaid: newAmountPaid,
+              paymentStatus: newStatus,
+              collectedAt: newStatus === 'collected' ? new Date().toISOString() : s.collectedAt,
+            }
+          : s,
+      ),
+    );
+    setCollectingModal(null);
+  };
 
   const toggleExpand = (id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -88,8 +155,8 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
   };
 
   const sortedSales = useMemo(() => {
-    if (!sortKey) return sales;
-    return [...sales].sort((a, b) => {
+    if (!sortKey) return localSales;
+    return [...localSales].sort((a, b) => {
       const va = getSortValue(a, sortKey);
       const vb = getSortValue(b, sortKey);
       if (typeof va === 'number' && typeof vb === 'number') {
@@ -101,18 +168,31 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
       if (sa > sb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [sales, sortKey, sortDir]);
+  }, [localSales, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(sortedSales.length / itemsPerPage));
+  const filteredSales = useMemo(() => {
+    if (statusFilter === 'all') return sortedSales;
+    if (statusFilter === 'pending')
+      return sortedSales.filter((s) => s.paymentStatus === 'pending' || s.paymentStatus === 'partially_collected');
+    return sortedSales.filter((s) => s.paymentStatus === statusFilter);
+  }, [sortedSales, statusFilter]);
+
+  const pendingCount = localSales.filter(
+    (s) => s.paymentStatus === 'pending' || s.paymentStatus === 'partially_collected',
+  ).length;
+
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
   const safePage = Math.min(page, totalPages);
-  const paginatedSales = sortedSales.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
+  const paginatedSales = filteredSales.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
   const showSeller = showSellerColumn && visibleColumns.includes('seller');
-  const visibleOptionalCount = OPTIONAL_COLUMN_KEYS.filter((k) => {
-    if (k === 'seller') return showSeller;
-    return visibleColumns.includes(k);
-  }).length;
-  const totalCols = visibleOptionalCount + 1;
+
+  const visibleOptionalCount =
+    (['date', 'client', 'items', 'total', 'paymentMethod', 'paymentStatus'] as const).filter((k) =>
+      visibleColumns.includes(k),
+    ).length + (showSeller ? 1 : 0);
+
+  const totalCols = visibleOptionalCount + 1 + (isOwner ? 1 : 0);
 
   const sortableHead = (key: SortKey, label: string, className?: string) => (
     <TableHead className={className}>
@@ -135,8 +215,36 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
       <PageHeader title="Ventas" description="Registro y seguimiento de ventas" />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="flex items-center justify-end gap-2">
-          <ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5">
+            {(['all', 'pending', 'collected'] as StatusFilter[]).map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(filter);
+                  setPage(1);
+                }}
+                className={cn(
+                  'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+                  statusFilter === filter
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {STATUS_FILTER_LABELS[filter]}
+                {filter === 'pending' && pendingCount > 0 && (
+                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="ml-auto">
+            <ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -149,7 +257,9 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                   {visibleColumns.includes('client') && sortableHead('client', 'Cliente')}
                   {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-20 text-center')}
                   {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-36 text-right')}
-                  {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-32')}
+                  {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-36')}
+                  {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-32')}
+                  {isOwner && <TableHead className="w-28" />}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -157,12 +267,19 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                 {paginatedSales.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={totalCols} className="py-10 text-center text-muted-foreground">
-                      No hay ventas registradas todavía.
+                      No hay ventas registradas.
                     </TableCell>
                   </TableRow>
                 ) : (
                   paginatedSales.map((sale) => {
                     const isExpanded = expandedId === sale.id;
+                    const isOverdue =
+                      sale.paymentMethod === 'check' &&
+                      sale.paymentStatus !== 'collected' &&
+                      !!sale.checkDueDate &&
+                      isCheckOverdue(sale.checkDueDate);
+                    const isPending = sale.paymentStatus === 'pending' || sale.paymentStatus === 'partially_collected';
+
                     return (
                       <Fragment key={sale.id}>
                         <TableRow
@@ -188,7 +305,42 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                           )}
                           {visibleColumns.includes('paymentMethod') && (
                             <TableCell className="text-muted-foreground">
-                              {PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod}
+                              <span>{PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod}</span>
+                              {sale.checkDueDate && (
+                                <span
+                                  className={cn('ml-1.5 text-xs', isOverdue ? 'text-red-500' : 'text-muted-foreground')}
+                                >
+                                  · {formatShortDate(sale.checkDueDate)}
+                                  {isOverdue && ' (vencido)'}
+                                </span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.includes('paymentStatus') && (
+                            <TableCell>
+                              <PaymentStatusBadge status={sale.paymentStatus} />
+                            </TableCell>
+                          )}
+                          {isOwner && (
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              {isPending ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() =>
+                                    setCollectingModal({
+                                      saleId: sale.id,
+                                      total: sale.total,
+                                      amountPaid: sale.amountPaid,
+                                    })
+                                  }
+                                >
+                                  Cobrar
+                                </Button>
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500 ml-auto" />
+                              )}
                             </TableCell>
                           )}
                           <TableCell className="text-right pr-2">
@@ -249,6 +401,39 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
                                   </tbody>
                                 </table>
                               </div>
+                              {(sale.checkDueDate || sale.collectedAt || sale.amountPaid > 0) && (
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-2 py-3 text-sm sm:grid-cols-4">
+                                  {sale.checkDueDate && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Fecha cobro cheque</p>
+                                      <p className={cn('font-medium', isOverdue && 'text-red-600')}>
+                                        {formatShortDate(sale.checkDueDate)}
+                                        {isOverdue && ' · Vencido'}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {sale.amountPaid > 0 && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Cobrado</p>
+                                      <p className="font-medium">$ {formatPrice(sale.amountPaid)}</p>
+                                    </div>
+                                  )}
+                                  {sale.paymentStatus === 'partially_collected' && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Restante</p>
+                                      <p className="font-medium text-orange-600">
+                                        $ {formatPrice(sale.total - sale.amountPaid)}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {sale.collectedAt && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Cobrado el</p>
+                                      <p className="font-medium">{formatShortDate(sale.collectedAt)}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         )}
@@ -285,9 +470,9 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
 
             <div className="flex items-center gap-3">
               <span>
-                {sortedSales.length === 0
+                {filteredSales.length === 0
                   ? '0 resultados'
-                  : `${(safePage - 1) * itemsPerPage + 1}–${Math.min(safePage * itemsPerPage, sortedSales.length)} de ${sortedSales.length}`}
+                  : `${(safePage - 1) * itemsPerPage + 1}–${Math.min(safePage * itemsPerPage, filteredSales.length)} de ${filteredSales.length}`}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -313,6 +498,15 @@ export function SalesSection({ sales, showSellerColumn }: SalesSectionProps) {
           </div>
         </div>
       </main>
+
+      {collectingModal && (
+        <CollectSaleModal
+          isOpen
+          onClose={() => setCollectingModal(null)}
+          onSuccess={handleCollectSuccess}
+          {...collectingModal}
+        />
+      )}
     </div>
   );
 }

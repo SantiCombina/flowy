@@ -48,7 +48,8 @@
       "Bash(npx shadcn@latest add calendar --yes)",
       "Bash(npx shadcn@latest add calendar)",
       "Bash(npx shadcn@latest add popover)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(pnpm lint:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",

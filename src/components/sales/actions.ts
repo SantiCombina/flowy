@@ -1,8 +1,9 @@
 'use server';
 
-import { createSale, getSaleOptions, getSales } from '@/app/services/sales';
+import { createSale, getSaleOptions, getSales, registerPayment } from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
+import { collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
@@ -37,6 +38,18 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
   }
 
   await createSale(user.id, ownerId, parsedInput);
+
+  return { success: true };
+});
+
+export const markSaleAsCollectedAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || user.role !== 'owner') {
+    throw new Error('No autorizado');
+  }
+
+  await registerPayment(parsedInput.saleId, user.id, parsedInput.amount);
 
   return { success: true };
 });

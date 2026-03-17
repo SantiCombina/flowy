@@ -8,11 +8,12 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
+  Receipt,
   ShoppingCart,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { useUserOptional } from '@/components/providers/user-provider';
@@ -38,8 +39,8 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   feature: FeatureKey;
-  /** If set, only show to users with this role */
   roleOnly?: 'admin' | 'owner' | 'seller';
+  excludeWhenParams?: Record<string, string>;
 }
 
 const mainNavItems: NavItem[] = [
@@ -48,7 +49,20 @@ const mainNavItems: NavItem[] = [
   { title: 'Vendedores', href: '/sellers', icon: Users, feature: 'sellers', roleOnly: 'owner' },
   { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments', roleOnly: 'owner' },
   { title: 'Historial', href: '/history', icon: History, feature: 'history', roleOnly: 'owner' },
-  { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
+  {
+    title: 'Ventas',
+    href: '/sales',
+    icon: ShoppingCart,
+    feature: 'sales',
+    excludeWhenParams: { status: 'pending' },
+  },
+  {
+    title: 'Cuentas por cobrar',
+    href: '/sales?status=pending',
+    icon: Receipt,
+    feature: 'sales',
+    roleOnly: 'owner',
+  },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
   { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
 ];
@@ -59,6 +73,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ features }: AppSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar();
   const user = useUserOptional();
 
@@ -76,8 +91,25 @@ export function AppSidebar({ features }: AppSidebarProps) {
     [features, user],
   );
 
-  const getIsActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+  const getIsActive = (item: NavItem): boolean => {
+    const [path] = item.href.split('?');
+    const pathMatches = path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/');
+    if (!pathMatches) return false;
+
+    const hrefParams = item.href.includes('?')
+      ? Object.fromEntries(new URLSearchParams(item.href.split('?')[1]))
+      : null;
+
+    if (hrefParams) {
+      return Object.entries(hrefParams).every(([k, v]) => searchParams.get(k) === v);
+    }
+
+    if (item.excludeWhenParams) {
+      return !Object.entries(item.excludeWhenParams).some(([k, v]) => searchParams.get(k) === v);
+    }
+
+    return true;
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -106,7 +138,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    isActive={getIsActive(item.href)}
+                    isActive={getIsActive(item)}
                     tooltip={item.title}
                     size="lg"
                     className="data-[active=true]:shadow-[inset_3px_0_0_var(--primary)] group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:justify-center"
