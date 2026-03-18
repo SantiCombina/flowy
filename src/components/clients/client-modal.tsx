@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,7 +18,6 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import type { Client } from '@/payload-types';
@@ -244,20 +244,16 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Provincia</FormLabel>
-                    <Select value={field.value ?? ''} onValueChange={(v) => handleProvinciaChange(v, field.onChange)}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ARGENTINA_PROVINCES.map((p) => (
-                          <SelectItem key={p.id} value={p.nombre}>
-                            {p.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Combobox
+                        options={ARGENTINA_PROVINCES.map((p) => ({ value: p.nombre, label: p.nombre }))}
+                        value={field.value ?? ''}
+                        onValueChange={(v) => handleProvinciaChange(v, field.onChange)}
+                        placeholder="Seleccionar..."
+                        searchPlaceholder="Buscar provincia..."
+                        emptyMessage="No se encontró la provincia."
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -272,26 +268,17 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                     {loadingLocalities ? (
                       <Skeleton className="h-9 w-full rounded-md" />
                     ) : (
-                      <Select
-                        value={field.value ?? ''}
-                        onValueChange={field.onChange}
-                        disabled={localities.length === 0}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={form.watch('provincia') ? 'Seleccionar...' : 'Elegí una provincia'}
-                            />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {localities.map((l) => (
-                            <SelectItem key={l.id} value={l.nombre}>
-                              {l.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Combobox
+                          options={localities.map((l) => ({ value: l.nombre, label: l.nombre }))}
+                          value={field.value ?? ''}
+                          onValueChange={field.onChange}
+                          placeholder={form.watch('provincia') ? 'Seleccionar...' : 'Elegí una provincia'}
+                          searchPlaceholder="Buscar localidad..."
+                          emptyMessage="No se encontró la localidad."
+                          disabled={localities.length === 0}
+                        />
+                      </FormControl>
                     )}
                     <FormMessage />
                   </FormItem>

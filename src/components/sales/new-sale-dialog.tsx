@@ -9,6 +9,7 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PriceInput } from '@/components/ui/price-input';
@@ -341,23 +342,16 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                             + Nuevo cliente
                           </button>
                         </div>
-                        <Select
-                          value={field.value ? String(field.value) : ''}
-                          onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sin cliente" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {localClients.map((c) => (
-                              <SelectItem key={c.id} value={String(c.id)}>
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Combobox
+                            options={localClients.map((c) => ({ value: String(c.id), label: c.name }))}
+                            value={field.value ? String(field.value) : ''}
+                            onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                            placeholder="Sin cliente"
+                            searchPlaceholder="Buscar cliente..."
+                            emptyMessage="No se encontró el cliente."
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

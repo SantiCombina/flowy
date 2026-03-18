@@ -1,6 +1,6 @@
 'use client';
 
-import { ImageOff, MoreVertical, PackagePlus, Pencil, Trash2 } from 'lucide-react';
+import { ImageOff, MoreVertical, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
@@ -62,6 +62,8 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
     const itemsPerPageSyncedRef = useRef(false);
+
+    const inventoryValue = useMemo(() => allVariants.reduce((sum, v) => sum + v.stock * v.costPrice, 0), [allVariants]);
 
     const filteredVariants = useMemo(() => {
       if (!searchQuery.trim()) return allVariants;
@@ -380,6 +382,16 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           defaultItemsPerPage={getItemsPerPage()}
           onItemsPerPageChange={(n) => void updateItemsPerPage(n as Parameters<typeof updateItemsPerPage>[0])}
         />
+
+        {!isLoading && allVariants.length > 0 && (
+          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Warehouse className="h-4 w-4" />
+              <span>Valor del inventario</span>
+            </div>
+            <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
+          </div>
+        )}
 
         <AlertDialog open={productToDelete !== null} onOpenChange={() => setProductToDelete(null)}>
           <AlertDialogContent>
