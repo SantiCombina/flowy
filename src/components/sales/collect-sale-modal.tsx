@@ -83,7 +83,7 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-muted-foreground">Comisión vendedor (4%)</span>
-                <span className="text-blue-600 dark:text-blue-400">$ {commission.toLocaleString('es-AR')}</span>
+                <span className="text-blue-600 dark:text-blue-400">$ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
               </div>
               {amountPaid > 0 && (
                 <div className="flex justify-between mt-1">
