@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build": "payload migrate && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
