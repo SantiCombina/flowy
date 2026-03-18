@@ -6,16 +6,16 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { changePasswordSchema, type ChangePasswordValues } from '@/schemas/profile/change-password-schema';
 
 import { changePasswordAction } from './actions';
@@ -61,84 +61,87 @@ export function ChangePasswordDialog() {
   const isExecuting = status === 'executing';
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Cambiar contraseña</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Cambiar contraseña</DialogTitle>
-          <DialogDescription>Ingresá tu contraseña actual y luego la nueva.</DialogDescription>
-        </DialogHeader>
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        Cambiar contraseña
+      </Button>
+
+      <ResponsiveModal open={open} onOpenChange={handleOpenChange} className="sm:max-w-md">
+        <ResponsiveModalHeader>
+          <ResponsiveModalTitle>Cambiar contraseña</ResponsiveModalTitle>
+          <ResponsiveModalDescription>Ingresá tu contraseña actual y luego la nueva.</ResponsiveModalDescription>
+        </ResponsiveModalHeader>
 
         {success ? (
-          <div className="space-y-4">
+          <ResponsiveModalBody className="space-y-4">
             <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
               Contraseña actualizada correctamente.
             </div>
             <Button variant="outline" className="w-full" onClick={() => handleOpenChange(false)}>
               Cerrar
             </Button>
-          </div>
+          </ResponsiveModalBody>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              <ResponsiveModalBody className="space-y-4">
+                {error && <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
 
-              <FormField
-                control={form.control}
-                name="currentPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña actual</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="currentPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contraseña actual</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="newPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nueva contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="newPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nueva contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="confirmNewPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar nueva contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="confirmNewPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar nueva contraseña</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </ResponsiveModalBody>
 
-              <div className="flex gap-2 justify-end">
+              <ResponsiveModalFooter>
                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isExecuting}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isExecuting}>
                   {isExecuting ? 'Guardando…' : 'Guardar'}
                 </Button>
-              </div>
+              </ResponsiveModalFooter>
             </form>
           </Form>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModal>
+    </>
   );
 }

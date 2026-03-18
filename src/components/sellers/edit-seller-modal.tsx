@@ -8,9 +8,16 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import type { User } from '@/payload-types';
 import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
 
@@ -86,15 +93,15 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-140">
-        <DialogHeader>
-          <DialogTitle>Editar vendedor</DialogTitle>
-          <DialogDescription>Modifica los datos del vendedor</DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-xl">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle>Editar vendedor</ResponsiveModalTitle>
+        <ResponsiveModalDescription>Modificá los datos del vendedor.</ResponsiveModalDescription>
+      </ResponsiveModalHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <ResponsiveModalBody className="space-y-6">
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Información básica</h3>
               <FormField
@@ -207,18 +214,18 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                 </FormItem>
               )}
             />
+          </ResponsiveModalBody>
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isExecuting}>
-                {isExecuting ? 'Guardando...' : 'Guardar cambios'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          <ResponsiveModalFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
+          </ResponsiveModalFooter>
+        </form>
+      </Form>
+    </ResponsiveModal>
   );
 }

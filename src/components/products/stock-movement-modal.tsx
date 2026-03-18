@@ -7,9 +7,16 @@ import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -102,20 +109,20 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
   if (!variant) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-125">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <PackagePlus className="h-5 w-5" />
-            Registrar movimiento de stock
-          </DialogTitle>
-          <DialogDescription>
-            Completa los datos para registrar un movimiento de stock en este producto. Todos los campos marcados con *
-            son obligatorios.
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-lg">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle className="flex items-center gap-2">
+          <PackagePlus className="h-5 w-5" />
+          Registrar movimiento de stock
+        </ResponsiveModalTitle>
+        <ResponsiveModalDescription>
+          Completá los datos para registrar un movimiento de stock en este producto. Los campos marcados con * son
+          obligatorios.
+        </ResponsiveModalDescription>
+      </ResponsiveModalHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <ResponsiveModalBody className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
             <p className="text-sm font-medium">
               {variant.product.name} - {variant.presentation.label}
@@ -181,17 +188,17 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
               rows={3}
             />
           </div>
+        </ResponsiveModalBody>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isExecuting}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={!isValid || isExecuting}>
-              {isExecuting ? 'Registrando...' : 'Registrar movimiento'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <ResponsiveModalFooter>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isExecuting}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={!isValid || isExecuting}>
+            {isExecuting ? 'Registrando...' : 'Registrar movimiento'}
+          </Button>
+        </ResponsiveModalFooter>
+      </form>
+    </ResponsiveModal>
   );
 }

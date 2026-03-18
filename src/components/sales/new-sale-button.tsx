@@ -1,15 +1,15 @@
 'use client';
 
 import { ShoppingCart } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 
 import { NewSaleDialog } from './new-sale-dialog';
 
 export function NewSaleButton() {
-  const router = useRouter();
+  const { triggerRefresh } = useSalesRefresh();
   const [isOpen, setIsOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
 
@@ -25,12 +25,7 @@ export function NewSaleButton() {
         Nueva venta
       </Button>
 
-      <NewSaleDialog
-        key={dialogKey}
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
-        onSuccess={() => router.refresh()}
-      />
+      <NewSaleDialog key={dialogKey} isOpen={isOpen} onClose={() => setIsOpen(false)} onSuccess={triggerRefresh} />
     </>
   );
 }

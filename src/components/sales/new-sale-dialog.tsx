@@ -9,10 +9,17 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PriceInput } from '@/components/ui/price-input';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Client } from '@/payload-types';
@@ -261,171 +268,169 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Registrar venta</DialogTitle>
-            <DialogDescription>Completá los datos de la venta para registrarla.</DialogDescription>
-          </DialogHeader>
+      <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-3xl">
+        <ResponsiveModalHeader>
+          <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
+          <ResponsiveModalDescription>Completá los datos de la venta para registrarla.</ResponsiveModalDescription>
+        </ResponsiveModalHeader>
 
-          {showSuccess ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="text-center space-y-1">
-                <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
-                <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
-              </div>
+        {showSuccess ? (
+          <ResponsiveModalBody className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
             </div>
-          ) : isLoadingOptions ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-muted-foreground">Cargando productos…</p>
+            <div className="text-center space-y-1">
+              <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
+              <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
             </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 gap-4">
-                <div className="flex flex-col gap-3 overflow-y-auto flex-1 pr-1">
-                  <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
-                    <p className="text-xs font-medium text-muted-foreground">Producto</p>
-                    <p className="text-xs font-medium text-muted-foreground">Cant.</p>
-                    <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>
-                    <p className="text-xs font-medium text-muted-foreground">Origen</p>
-                    <div />
-                  </div>
+          </ResponsiveModalBody>
+        ) : isLoadingOptions ? (
+          <ResponsiveModalBody className="flex items-center justify-center py-12">
+            <p className="text-sm text-muted-foreground">Cargando productos…</p>
+          </ResponsiveModalBody>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              <ResponsiveModalBody className="flex flex-col gap-3">
+                <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">Producto</p>
+                  <p className="text-xs font-medium text-muted-foreground">Cant.</p>
+                  <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>
+                  <p className="text-xs font-medium text-muted-foreground">Origen</p>
+                  <div />
+                </div>
 
-                  {fields.map((field, index) => (
-                    <ItemRow
-                      key={field.id}
-                      index={index}
-                      variants={variants}
-                      onRemove={() => remove(index)}
-                      form={form}
-                    />
-                  ))}
+                {fields.map((field, index) => (
+                  <ItemRow
+                    key={field.id}
+                    index={index}
+                    variants={variants}
+                    onRemove={() => remove(index)}
+                    form={form}
+                  />
+                ))}
 
-                  {form.formState.errors.items?.root && (
-                    <p className="text-sm text-destructive">{form.formState.errors.items.root.message}</p>
-                  )}
+                {form.formState.errors.items?.root && (
+                  <p className="text-sm text-destructive">{form.formState.errors.items.root.message}</p>
+                )}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="self-start"
-                    onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
-                    disabled={variants.length === 0 || hasUnselectedVariant}
-                  >
-                    + Agregar producto
-                  </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
+                  disabled={variants.length === 0 || hasUnselectedVariant}
+                >
+                  + Agregar producto
+                </Button>
 
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                    <FormField
-                      control={form.control}
-                      name="clientId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <FormLabel>Cliente</FormLabel>
-                            <button
-                              type="button"
-                              onClick={() => setIsClientModalOpen(true)}
-                              className="text-xs text-primary hover:underline flex items-center gap-1"
-                            >
-                              + Nuevo cliente
-                            </button>
-                          </div>
-                          <Select
-                            value={field.value ? String(field.value) : ''}
-                            onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                  <FormField
+                    control={form.control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Cliente</FormLabel>
+                          <button
+                            type="button"
+                            onClick={() => setIsClientModalOpen(true)}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
                           >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sin cliente" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {localClients.map((c) => (
-                                <SelectItem key={c.id} value={String(c.id)}>
-                                  {c.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="paymentMethod"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Método de pago</FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={(v) => {
-                              field.onChange(v);
-                              if (v !== 'check') form.setValue('checkDueDate', undefined);
-                            }}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {paymentMethod === 'check' && (
-                    <FormField
-                      control={form.control}
-                      name="checkDueDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Fecha de cobro del cheque</FormLabel>
+                            + Nuevo cliente
+                          </button>
+                        </div>
+                        <Select
+                          value={field.value ? String(field.value) : ''}
+                          onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                        >
                           <FormControl>
-                            <input
-                              type="date"
-                              value={field.value ?? ''}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              min={new Date().toISOString().split('T')[0]}
-                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sin cliente" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+                          <SelectContent>
+                            {localClients.map((c) => (
+                              <SelectItem key={c.id} value={String(c.id)}>
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}
-                    name="notes"
+                    name="paymentMethod"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Notas (opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Observaciones..." rows={2} />
-                        </FormControl>
+                        <FormLabel>Método de pago</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            if (v !== 'check') form.setValue('checkDueDate', undefined);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                {paymentMethod === 'check' && (
+                  <FormField
+                    control={form.control}
+                    name="checkDueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de cobro del cheque</FormLabel>
+                        <FormControl>
+                          <input
+                            type="date"
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas (opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Observaciones..." rows={2} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {serverError && (
                   <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
@@ -433,25 +438,25 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     <p className="text-sm text-destructive">{serverError}</p>
                   </div>
                 )}
+              </ResponsiveModalBody>
 
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <p className="text-base font-semibold">
-                    Total: <span className="text-primary">$ {formatTotal(total)}</span>
-                  </p>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
-                      {isSubmitting ? 'Registrando…' : 'Registrar venta'}
-                    </Button>
-                  </div>
+              <ResponsiveModalFooter className="justify-between">
+                <p className="text-base font-semibold">
+                  Total: <span className="text-primary">$ {formatTotal(total)}</span>
+                </p>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
+                    {isSubmitting ? 'Registrando…' : 'Registrar venta'}
+                  </Button>
                 </div>
-              </form>
-            </Form>
-          )}
-        </DialogContent>
-      </Dialog>
+              </ResponsiveModalFooter>
+            </form>
+          </Form>
+        )}
+      </ResponsiveModal>
 
       <ClientModal
         isOpen={isClientModalOpen}

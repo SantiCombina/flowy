@@ -7,9 +7,16 @@ import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Separator } from '@/components/ui/separator';
 import { collectSaleSchema, type CollectSaleValues } from '@/schemas/sales/collect-sale-schema';
 
@@ -59,41 +66,41 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Registrar cobro</DialogTitle>
-          <DialogDescription>Ingresá el monto recibido.</DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-sm">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle>Registrar cobro</ResponsiveModalTitle>
+        <ResponsiveModalDescription>Ingresá el monto recibido.</ResponsiveModalDescription>
+      </ResponsiveModalHeader>
 
-        <div className="rounded-lg border bg-muted/50 p-4 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total de la venta</span>
-            <span>$ {total.toLocaleString('es-AR')}</span>
-          </div>
-          {amountPaid > 0 && (
-            <div className="flex justify-between mt-1">
-              <span className="text-muted-foreground">Ya cobrado</span>
-              <span>$ {amountPaid.toLocaleString('es-AR')}</span>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <ResponsiveModalBody className="space-y-4">
+            <div className="rounded-lg border bg-muted/50 p-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total de la venta</span>
+                <span>$ {total.toLocaleString('es-AR')}</span>
+              </div>
+              {amountPaid > 0 && (
+                <div className="flex justify-between mt-1">
+                  <span className="text-muted-foreground">Ya cobrado</span>
+                  <span>$ {amountPaid.toLocaleString('es-AR')}</span>
+                </div>
+              )}
+              <Separator className="my-2" />
+              <div className="flex justify-between font-semibold">
+                <span>Restante</span>
+                <span>$ {remaining.toLocaleString('es-AR')}</span>
+              </div>
+              {afterPayment !== null && (
+                <div
+                  className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}
+                >
+                  <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
+                  <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
+                </div>
+              )}
             </div>
-          )}
-          <Separator className="my-2" />
-          <div className="flex justify-between font-semibold">
-            <span>Restante</span>
-            <span>$ {remaining.toLocaleString('es-AR')}</span>
-          </div>
-          {afterPayment !== null && (
-            <div
-              className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}
-            >
-              <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
-              <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
-            </div>
-          )}
-        </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="amount"
@@ -113,18 +120,18 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
                 </FormItem>
               )}
             />
+          </ResponsiveModalBody>
 
-            <div className="flex justify-end gap-3 pt-1">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isExecuting}>
-                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          <ResponsiveModalFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+            </Button>
+          </ResponsiveModalFooter>
+        </form>
+      </Form>
+    </ResponsiveModal>
   );
 }

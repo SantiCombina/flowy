@@ -7,9 +7,16 @@ import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import type { User } from '@/payload-types';
 
 import { dispatchStockAction } from './actions';
@@ -71,71 +78,69 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
   if (!seller) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent onInteractOutside={handleClose} className="sm:max-w-lg max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ArrowDownToLine className="h-5 w-5" />
-            Despachar stock a {seller.name}
-          </DialogTitle>
-          <DialogDescription>
-            Ingresá las cantidades a enviar con el vendedor móvil. Solo se mostrarán productos con stock disponible en
-            el depósito.
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-lg">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle className="flex items-center gap-2">
+          <ArrowDownToLine className="h-5 w-5" />
+          Despachar stock a {seller.name}
+        </ResponsiveModalTitle>
+        <ResponsiveModalDescription>
+          Ingresá las cantidades a enviar con el vendedor móvil. Solo se mostrarán productos con stock disponible en el
+          depósito.
+        </ResponsiveModalDescription>
+      </ResponsiveModalHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="overflow-y-auto flex-1 space-y-3 pr-1">
-            {variantsWithStock.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No hay productos con stock disponible en el depósito.
-              </p>
-            ) : (
-              variantsWithStock.map((variant) => {
-                const productName = variant.product.name;
-                const presentationName =
-                  variant.presentation && typeof variant.presentation === 'object'
-                    ? (variant.presentation.label ?? '')
-                    : '';
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        <ResponsiveModalBody className="space-y-3">
+          {variantsWithStock.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No hay productos con stock disponible en el depósito.
+            </p>
+          ) : (
+            variantsWithStock.map((variant) => {
+              const productName = variant.product.name;
+              const presentationName =
+                variant.presentation && typeof variant.presentation === 'object'
+                  ? (variant.presentation.label ?? '')
+                  : '';
 
-                return (
-                  <div key={variant.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {productName}
-                        {presentationName && <span className="text-muted-foreground"> · {presentationName}</span>}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Stock depósito: {variant.stock}</p>
-                    </div>
-                    <div className="w-24 shrink-0">
-                      <Label className="sr-only">Cantidad</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max={variant.stock}
-                        step="1"
-                        placeholder="0"
-                        value={quantities[variant.id] ?? ''}
-                        onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
-                        className="text-center"
-                      />
-                    </div>
+              return (
+                <div key={variant.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {productName}
+                      {presentationName && <span className="text-muted-foreground"> · {presentationName}</span>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Stock depósito: {variant.stock}</p>
                   </div>
-                );
-              })
-            )}
-          </div>
+                  <div className="w-24 shrink-0">
+                    <Label className="sr-only">Cantidad</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max={variant.stock}
+                      step="1"
+                      placeholder="0"
+                      value={quantities[variant.id] ?? ''}
+                      onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </ResponsiveModalBody>
 
-          <div className="flex justify-end gap-2 pt-4 mt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isExecuting || variantsWithStock.length === 0}>
-              {isExecuting ? 'Despachando...' : 'Confirmar despacho'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <ResponsiveModalFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isExecuting || variantsWithStock.length === 0}>
+            {isExecuting ? 'Despachando...' : 'Confirmar despacho'}
+          </Button>
+        </ResponsiveModalFooter>
+      </form>
+    </ResponsiveModal>
   );
 }

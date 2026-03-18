@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown } from 'lucide-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 
 import type { SaleRow } from '@/app/services/sales';
 import { PageHeader } from '@/components/layout/page-header';
@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { cn } from '@/lib/utils';
 
+import { getSalesAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
@@ -109,6 +111,17 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
 
   const [localSales, setLocalSales] = useState<SaleRow[]>(sales);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const { refreshCount } = useSalesRefresh();
+
+  useEffect(() => {
+    if (refreshCount === 0) return;
+    void getSalesAction().then((result) => {
+      if (result?.data?.success) {
+        setLocalSales(result.data.sales);
+      }
+    });
+  }, [refreshCount]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);

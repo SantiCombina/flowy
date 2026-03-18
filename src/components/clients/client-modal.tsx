@@ -7,9 +7,16 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  ResponsiveModal,
+  ResponsiveModalBody,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
@@ -145,17 +152,17 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Editar cliente' : 'Agregar cliente'}</DialogTitle>
-          <DialogDescription>
-            {isEditMode ? 'Modificá los datos del cliente.' : 'Completá los datos para registrar un nuevo cliente.'}
-          </DialogDescription>
-        </DialogHeader>
+    <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-lg">
+      <ResponsiveModalHeader>
+        <ResponsiveModalTitle>{isEditMode ? 'Editar cliente' : 'Agregar cliente'}</ResponsiveModalTitle>
+        <ResponsiveModalDescription>
+          {isEditMode ? 'Modificá los datos del cliente.' : 'Completá los datos para registrar un nuevo cliente.'}
+        </ResponsiveModalDescription>
+      </ResponsiveModalHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <ResponsiveModalBody className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -291,24 +298,24 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                 )}
               />
             </div>
+          </ResponsiveModalBody>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isExecuting}>
-                {isExecuting
-                  ? isEditMode
-                    ? 'Guardando…'
-                    : 'Creando…'
-                  : isEditMode
-                    ? 'Guardar cambios'
-                    : 'Crear cliente'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+          <ResponsiveModalFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting
+                ? isEditMode
+                  ? 'Guardando…'
+                  : 'Creando…'
+                : isEditMode
+                  ? 'Guardar cambios'
+                  : 'Crear cliente'}
+            </Button>
+          </ResponsiveModalFooter>
+        </form>
+      </Form>
+    </ResponsiveModal>
   );
 }
