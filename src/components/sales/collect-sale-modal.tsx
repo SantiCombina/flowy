@@ -40,7 +40,7 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
     defaultValues: { saleId, amount: remaining },
   });
 
-  const commission = total * 0.04;
+  const commission = total * 0.03;
   const enteredAmount = useWatch({ control: form.control, name: 'amount' });
   const afterPayment = Number.isFinite(enteredAmount) && enteredAmount > 0 ? remaining - enteredAmount : null;
 
@@ -82,7 +82,7 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
                 <span>$ {total.toLocaleString('es-AR')}</span>
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-muted-foreground">Comisión vendedor (4%)</span>
+                <span className="text-muted-foreground">Comisión vendedor (3%)</span>
                 <span className="text-blue-600 dark:text-blue-400">$ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
               </div>
               {amountPaid > 0 && (
