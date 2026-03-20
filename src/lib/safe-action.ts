@@ -15,25 +15,30 @@ export const actionClient = createSafeActionClient({
   const startTime = performance.now();
   const actionId = Math.random().toString(36).substring(2, 9);
 
-  console.warn(`[${actionId}] Action started`);
-  console.warn(`[${actionId}] Input:`, clientInput);
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[${actionId}] Action started`);
+    console.warn(`[${actionId}] Input:`, clientInput);
+  }
 
   try {
     const result = await next();
     const endTime = performance.now();
     const duration = Math.round(endTime - startTime);
 
-    console.warn(`[${actionId}] Completed in ${duration}ms`);
-    console.warn(`[${actionId}] Output:`, result);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[${actionId}] Completed in ${duration}ms`);
+      console.warn(`[${actionId}] Output:`, result);
+    }
 
     if (duration < MIN_ACTION_DURATION) {
-      console.warn(`[${actionId}] Waiting additional ${MIN_ACTION_DURATION - duration}ms to meet minimum duration`);
       await wait(MIN_ACTION_DURATION - duration);
     }
 
     return result;
   } catch (error) {
-    console.error(`[${actionId}] Action failed:`, error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[${actionId}] Action failed:`, error);
+    }
     throw error;
   }
 });

@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { getSales } from '@/app/services/sales';
 import { SalesSection } from '@/components/sales/sales-section';
 import { getCurrentUser } from '@/lib/payload';
+
+export const metadata: Metadata = {
+  title: 'Ventas',
+};
 
 export default async function SalesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await getCurrentUser();

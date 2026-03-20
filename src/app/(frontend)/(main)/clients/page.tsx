@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { getClients } from '@/app/services/clients';
 import { ClientsSection } from '@/components/clients/clients-section';
 import { getCurrentUser } from '@/lib/payload';
+
+export const metadata: Metadata = {
+  title: 'Clientes',
+};
 
 export default async function ClientsPage() {
   const user = await getCurrentUser();

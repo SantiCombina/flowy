@@ -1,21 +1,43 @@
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+
 import './globals.css';
 
-export const metadata = {
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_URL ?? 'https://flowy.app'),
+  title: {
+    default: 'Flowy',
+    template: '%s | Flowy',
+  },
+  description: 'Sistema de gestión de inventario y ventas para distribuidoras.',
   appleWebApp: {
     title: 'Flowy',
   },
-  description: 'Sistema de gestión de negocio',
-  title: 'Flowy',
+  openGraph: {
+    title: 'Flowy',
+    description: 'Sistema de gestión de inventario y ventas para distribuidoras.',
+    type: 'website',
+    locale: 'es_AR',
+    siteName: 'Flowy',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Flowy',
+    description: 'Sistema de gestión de inventario y ventas para distribuidoras.',
+  },
 };
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props;
 
   return (
-    <html lang="es">
-      <head>
-        <meta name="apple-mobile-web-app-title" content="Flowy" />
-      </head>
+    <html lang="es" className={inter.variable}>
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

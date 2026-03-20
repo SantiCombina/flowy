@@ -1,9 +1,15 @@
 import { Box, Package, ShoppingCart, Users } from 'lucide-react';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { LoginForm } from '@/components/auth/login-form';
 import { getCurrentUser } from '@/lib/payload';
+
+export const metadata: Metadata = {
+  title: 'Iniciar sesión',
+  description: 'Ingresá a tu cuenta de Flowy para gestionar tu inventario y ventas.',
+};
 
 const features = [
   { icon: Package, label: 'Control de stock en tiempo real' },

@@ -1,7 +1,5 @@
 'use client';
 
-import { Suspense } from 'react';
-
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { FeatureFlags } from '@/lib/features';
 
@@ -15,9 +13,7 @@ interface AppLayoutProps {
 export function AppLayout({ children, features }: AppLayoutProps) {
   return (
     <SidebarProvider>
-      <Suspense>
-        <AppSidebar features={features} />
-      </Suspense>
+      <AppSidebar features={features} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );

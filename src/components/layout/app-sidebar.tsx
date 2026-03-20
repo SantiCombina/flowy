@@ -12,7 +12,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { useUserOptional } from '@/components/providers/user-provider';
@@ -58,7 +58,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ features }: AppSidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar();
   const user = useUserOptional();
 
@@ -77,19 +76,8 @@ export function AppSidebar({ features }: AppSidebarProps) {
   );
 
   const getIsActive = (item: NavItem): boolean => {
-    const [path] = item.href.split('?');
-    const pathMatches = path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/');
-    if (!pathMatches) return false;
-
-    const hrefParams = item.href.includes('?')
-      ? Object.fromEntries(new URLSearchParams(item.href.split('?')[1]))
-      : null;
-
-    if (hrefParams) {
-      return Object.entries(hrefParams).every(([k, v]) => searchParams.get(k) === v);
-    }
-
-    return true;
+    const path = item.href;
+    return path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
@@ -114,24 +102,26 @@ export function AppSidebar({ features }: AppSidebarProps) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {filteredMainNav.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={getIsActive(item)}
-                    tooltip={item.title}
-                    size="lg"
-                    className="data-[active=true]:shadow-[inset_3px_0_0_var(--primary)] group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:justify-center"
-                  >
-                    <Link href={item.href} onClick={handleNavClick}>
-                      <item.icon className="h-4.5 w-4.5" />
-                      <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <nav aria-label="Navegación principal">
+              <SidebarMenu className="gap-0.5">
+                {filteredMainNav.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={getIsActive(item)}
+                      tooltip={item.title}
+                      size="lg"
+                      className="data-[active=true]:shadow-[inset_3px_0_0_var(--primary)] group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:justify-center"
+                    >
+                      <Link href={item.href} onClick={handleNavClick}>
+                        <item.icon className="h-4.5 w-4.5" />
+                        <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </nav>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

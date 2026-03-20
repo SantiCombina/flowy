@@ -1,4 +1,10 @@
+import type { Metadata } from 'next';
 import { getPayload } from 'payload';
+
+export const metadata: Metadata = {
+  title: 'Crear cuenta',
+  description: 'Creá tu cuenta en Flowy y empezá a gestionar tu negocio.',
+};
 
 import { RegisterForm } from '@/components/auth/register-form';
 

@@ -1,4 +1,9 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+};
 
 import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/dashboard';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';

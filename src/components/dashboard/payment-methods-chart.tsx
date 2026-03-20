@@ -5,6 +5,12 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
 
+const formatCurrencyCompact = (value: number) => {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${Math.round(value / 1_000)}K`;
+  return `$${Math.round(value)}`;
+};
+
 const METHODS = [
   { key: 'cash', label: 'Efectivo', color: '#10b981' },
   { key: 'transfer', label: 'Transferencia', color: '#3b82f6' },
@@ -69,14 +75,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
         </ResponsiveContainer>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-base font-bold leading-tight">
-            {new Intl.NumberFormat('es-AR', {
-              style: 'currency',
-              currency: 'ARS',
-              notation: 'compact',
-              maximumFractionDigits: 1,
-            }).format(total)}
-          </span>
+          <span className="text-base font-bold leading-tight">{formatCurrencyCompact(total)}</span>
           <span className="text-xs text-muted-foreground">total</span>
         </div>
       </div>

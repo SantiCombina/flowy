@@ -56,7 +56,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
   const totalSellerRevenue = stats.salesBySeller.reduce((sum, s) => sum + s.total, 0) || 1;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
       <PageHeader
         title={`Buen día, ${userName.split(' ')[0]}!`}
         description={`Resumen de tu negocio · ${capitalizedMonth}`}
@@ -64,9 +64,9 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
       />
 
       <main
-        className={`flex-1 space-y-6 px-4 pb-8 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+        className={`flex-1 space-y-6 px-4 pt-6 pb-8 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title={PERIOD_REVENUE_LABEL[period]}
             value={formatCurrency(stats.revenue.current)}
@@ -140,9 +140,9 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                     <div key={seller.name} className="flex items-center gap-3">
                       <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">#{i + 1}</span>
                       <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-sm">
                           <span className="truncate font-medium">{seller.name}</span>
-                          <div className="ml-2 flex shrink-0 items-center gap-3">
+                          <div className="flex shrink-0 items-center gap-3">
                             <span className="text-xs text-muted-foreground">{seller.count} vtas</span>
                             <span className="font-semibold">{formatCurrency(seller.total)}</span>
                           </div>
@@ -223,7 +223,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                 {stats.recentSales.map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex items-center justify-between rounded-md border px-3 py-2.5 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2.5 text-sm"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{sale.sellerName}</p>
@@ -231,7 +231,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                         {sale.clientName ?? 'Sin cliente'} · {new Date(sale.date).toLocaleDateString('es-AR')}
                       </p>
                     </div>
-                    <div className="ml-3 flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : '—'}
                       </Badge>

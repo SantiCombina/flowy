@@ -94,14 +94,23 @@ export function ImageUpload({ pendingFile, previewUrl, onFileSelect }: ImageUplo
     >
       {displayUrl ? (
         <div className="relative flex items-center justify-center p-3">
-          <Image
-            src={displayUrl}
-            alt="Imagen del producto"
-            width={80}
-            height={80}
-            className="rounded-md object-cover"
-            unoptimized
-          />
+          {displayUrl.startsWith('blob:') ? (
+            <img
+              src={displayUrl}
+              alt="Imagen del producto"
+              width={80}
+              height={80}
+              className="rounded-md object-cover"
+            />
+          ) : (
+            <Image
+              src={displayUrl}
+              alt="Imagen del producto"
+              width={80}
+              height={80}
+              className="rounded-md object-cover"
+            />
+          )}
           <Button
             type="button"
             variant="destructive"
