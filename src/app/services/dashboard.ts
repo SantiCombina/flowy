@@ -180,7 +180,7 @@ export const getOwnerDashboardStats = unstable_cache(
       if (saleDate >= currentStart) {
         revCurrent += sale.total;
         salesCurrent++;
-        paymentMethods[sale.paymentMethod] += sale.total;
+        if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
 
         const existingSeller = sellerMap.get(sale.sellerName);
         if (existingSeller) {
@@ -289,7 +289,7 @@ export const getSellerDashboardStats = unstable_cache(
       if (saleDate >= currentStart) {
         revCurrent += sale.total;
         salesCurrent++;
-        paymentMethods[sale.paymentMethod] += sale.total;
+        if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
 
         for (const item of sale.items) {
           const existing = productMap.get(item.variantName);

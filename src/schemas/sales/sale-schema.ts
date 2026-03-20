@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const saleSchema = z
   .object({
     clientId: z.number({ invalid_type_error: 'El cliente debe ser un número.' }).optional(),
-    paymentMethod: z.enum(['cash', 'transfer', 'check'], {
+    paymentMethod: z.enum(['cash', 'transfer', 'check', 'credit'], {
       required_error: 'El método de pago es requerido.',
       invalid_type_error: 'Método de pago inválido.',
     }),

@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { PriceInput } from '@/components/ui/price-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -17,41 +17,78 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { collectSaleSchema, type CollectSaleValues } from '@/schemas/sales/collect-sale-schema';
+import {
+  collectSaleBySellerSchema,
+  collectSaleSchema,
+  type CollectSaleBySellerValues,
+  type CollectSaleValues,
+} from '@/schemas/sales/collect-sale-schema';
 
-import { markSaleAsCollectedAction } from './actions';
+import { markSaleAsCollectedAction, markSaleAsCollectedBySellerAction } from './actions';
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  check: 'Cheque',
+};
 
 interface CollectSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (saleId: number, newAmountPaid: number, newStatus: 'partially_collected' | 'collected') => void;
+  onSuccess: (
+    saleId: number,
+    newAmountPaid: number,
+    newStatus: 'partially_collected' | 'collected',
+    paymentMethod: 'cash' | 'transfer' | 'check' | null,
+  ) => void;
   saleId: number;
   total: number;
   amountPaid: number;
+  isSeller: boolean;
 }
 
-export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, amountPaid }: CollectSaleModalProps) {
-  const { executeAsync, isExecuting } = useAction(markSaleAsCollectedAction);
+export function CollectSaleModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  saleId,
+  total,
+  amountPaid,
+  isSeller,
+}: CollectSaleModalProps) {
+  const { executeAsync: executeOwner, isExecuting: isExecutingOwner } = useAction(markSaleAsCollectedAction);
+  const { executeAsync: executeSeller, isExecuting: isExecutingSeller } = useAction(markSaleAsCollectedBySellerAction);
+  const isExecuting = isExecutingOwner || isExecutingSeller;
   const remaining = total - amountPaid;
 
-  const form = useForm<CollectSaleValues>({
+  const sellerForm = useForm<CollectSaleBySellerValues>({
+    resolver: zodResolver(collectSaleBySellerSchema),
+    defaultValues: { saleId, amount: remaining },
+  });
+
+  const ownerForm = useForm<CollectSaleValues>({
     resolver: zodResolver(collectSaleSchema),
     defaultValues: { saleId, amount: remaining },
   });
 
   const commission = total * 0.03;
-  const enteredAmount = useWatch({ control: form.control, name: 'amount' });
-  const afterPayment = Number.isFinite(enteredAmount) && enteredAmount > 0 ? remaining - enteredAmount : null;
+  const watchedAmountSeller = useWatch({ control: sellerForm.control, name: 'amount' });
+  const watchedAmountOwner = useWatch({ control: ownerForm.control, name: 'amount' });
+  const watchedAmount = isSeller ? watchedAmountSeller : watchedAmountOwner;
+  const watchedPaymentMethod = useWatch({ control: sellerForm.control, name: 'paymentMethod' });
+  const afterPayment = Number.isFinite(watchedAmount) && watchedAmount > 0 ? remaining - watchedAmount : null;
 
   useEffect(() => {
     if (isOpen) {
-      form.reset({ saleId, amount: remaining });
+      sellerForm.reset({ saleId, amount: remaining });
+      ownerForm.reset({ saleId, amount: remaining });
     }
   }, [isOpen, saleId, remaining]);
 
-  const onSubmit = async (data: CollectSaleValues) => {
-    const result = await executeAsync(data);
+  const onSubmitOwner = async (data: CollectSaleValues) => {
+    const result = await executeOwner(data);
 
     if (result?.serverError) {
       toast.error(result.serverError);
@@ -62,9 +99,59 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
       const newAmountPaid = amountPaid + data.amount;
       const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
       toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess(saleId, newAmountPaid, newStatus);
+      onSuccess(saleId, newAmountPaid, newStatus, null);
     }
   };
+
+  const onSubmitSeller = async (data: CollectSaleBySellerValues) => {
+    const result = await executeSeller(data);
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      const newAmountPaid = amountPaid + data.amount;
+      const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
+      toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
+      onSuccess(saleId, newAmountPaid, newStatus, data.paymentMethod);
+    }
+  };
+
+  const summaryBlock = (
+    <div className="rounded-lg border bg-muted/50 p-4 text-sm">
+      <div className="flex justify-between">
+        <span className="text-muted-foreground">Total de la venta</span>
+        <span>$ {total.toLocaleString('es-AR')}</span>
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-muted-foreground">Comisión vendedor (3%)</span>
+        <span className="text-blue-600 dark:text-blue-400">
+          $ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        </span>
+      </div>
+      {amountPaid > 0 && (
+        <div className="flex justify-between mt-1">
+          <span className="text-muted-foreground">Ya cobrado</span>
+          <span>$ {amountPaid.toLocaleString('es-AR')}</span>
+        </div>
+      )}
+      <Separator className="my-2" />
+      <div className="flex justify-between font-semibold">
+        <span>Total</span>
+        <span>$ {remaining.toLocaleString('es-AR')}</span>
+      </div>
+      {afterPayment !== null && (
+        <div
+          className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}
+        >
+          <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
+          <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-sm">
@@ -73,70 +160,117 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
         <ResponsiveModalDescription>Ingresá el monto recibido.</ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <ResponsiveModalBody className="space-y-4">
-            <div className="rounded-lg border bg-muted/50 p-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total de la venta</span>
-                <span>$ {total.toLocaleString('es-AR')}</span>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-muted-foreground">Comisión vendedor (3%)</span>
-                <span className="text-blue-600 dark:text-blue-400">$ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
-              </div>
-              {amountPaid > 0 && (
-                <div className="flex justify-between mt-1">
-                  <span className="text-muted-foreground">Ya cobrado</span>
-                  <span>$ {amountPaid.toLocaleString('es-AR')}</span>
-                </div>
-              )}
-              <Separator className="my-2" />
-              <div className="flex justify-between font-semibold">
-                <span>Restante</span>
-                <span>$ {remaining.toLocaleString('es-AR')}</span>
-              </div>
-              {afterPayment !== null && (
-                <div
-                  className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}
-                >
-                  <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
-                  <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
-                </div>
-              )}
-            </div>
+      {isSeller ? (
+        <Form {...sellerForm}>
+          <form onSubmit={sellerForm.handleSubmit(onSubmitSeller)} className="flex flex-col flex-1 min-h-0">
+            <ResponsiveModalBody className="space-y-4">
+              {summaryBlock}
 
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Monto a cobrar</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      step="0.01"
-                      autoFocus
-                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </ResponsiveModalBody>
+              <FormField
+                control={sellerForm.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de pago</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccioná..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <ResponsiveModalFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isExecuting}>
-              {isExecuting ? 'Registrando…' : 'Registrar cobro'}
-            </Button>
-          </ResponsiveModalFooter>
-        </form>
-      </Form>
+              {watchedPaymentMethod === 'check' && (
+                <FormField
+                  control={sellerForm.control}
+                  name="checkDueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de cobro del cheque</FormLabel>
+                      <FormControl>
+                        <input
+                          type="date"
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <FormField
+                control={sellerForm.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto a cobrar</FormLabel>
+                    <FormControl>
+                      <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </ResponsiveModalBody>
+
+            <ResponsiveModalFooter>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isExecuting}>
+                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+              </Button>
+            </ResponsiveModalFooter>
+          </form>
+        </Form>
+      ) : (
+        <Form {...ownerForm}>
+          <form onSubmit={ownerForm.handleSubmit(onSubmitOwner)} className="flex flex-col flex-1 min-h-0">
+            <ResponsiveModalBody className="space-y-4">
+              {summaryBlock}
+
+              <FormField
+                control={ownerForm.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto a cobrar</FormLabel>
+                    <FormControl>
+                      <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </ResponsiveModalBody>
+
+            <ResponsiveModalFooter>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isExecuting}>
+                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+              </Button>
+            </ResponsiveModalFooter>
+          </form>
+        </Form>
+      )}
     </ResponsiveModal>
   );
 }

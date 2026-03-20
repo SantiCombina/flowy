@@ -123,6 +123,7 @@ export function ProductsSection() {
           searchQuery={searchQuery}
           onEdit={canCreateProduct ? handleOpenEditModal : undefined}
           showActions={canCreateProduct}
+          showInventoryValue={canCreateProduct}
         />
       </main>
 

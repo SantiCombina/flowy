@@ -17,7 +17,16 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
 
   if (user.role === 'seller') {
     const sales = await getSales({ sellerId: user.id });
-    return <SalesSection key="seller" sales={sales} showSellerColumn={false} isOwner={false} />;
+    return (
+      <SalesSection
+        key={initialStatusFilter ?? 'all'}
+        sales={sales}
+        showSellerColumn={false}
+        canCollect={true}
+        isSeller={true}
+        initialStatusFilter={initialStatusFilter}
+      />
+    );
   }
 
   if (user.role === 'owner') {
@@ -27,7 +36,8 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
         key={initialStatusFilter ?? 'all'}
         sales={sales}
         showSellerColumn={true}
-        isOwner={true}
+        canCollect={true}
+        isSeller={false}
         initialStatusFilter={initialStatusFilter}
       />
     );

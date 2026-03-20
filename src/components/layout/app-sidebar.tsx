@@ -8,7 +8,6 @@ import {
   LayoutDashboard,
   Package,
   PackageSearch,
-  Receipt,
   ShoppingCart,
   Users,
 } from 'lucide-react';
@@ -40,7 +39,6 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   feature: FeatureKey;
   roleOnly?: 'admin' | 'owner' | 'seller';
-  excludeWhenParams?: Record<string, string>;
 }
 
 const mainNavItems: NavItem[] = [
@@ -49,20 +47,7 @@ const mainNavItems: NavItem[] = [
   { title: 'Vendedores', href: '/sellers', icon: Users, feature: 'sellers', roleOnly: 'owner' },
   { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments', roleOnly: 'owner' },
   { title: 'Historial', href: '/history', icon: History, feature: 'history', roleOnly: 'owner' },
-  {
-    title: 'Ventas',
-    href: '/sales',
-    icon: ShoppingCart,
-    feature: 'sales',
-    excludeWhenParams: { status: 'pending' },
-  },
-  {
-    title: 'Cuentas por cobrar',
-    href: '/sales?status=pending',
-    icon: Receipt,
-    feature: 'sales',
-    roleOnly: 'owner',
-  },
+  { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
   { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
 ];
@@ -102,10 +87,6 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
     if (hrefParams) {
       return Object.entries(hrefParams).every(([k, v]) => searchParams.get(k) === v);
-    }
-
-    if (item.excludeWhenParams) {
-      return !Object.entries(item.excludeWhenParams).some(([k, v]) => searchParams.get(k) === v);
     }
 
     return true;

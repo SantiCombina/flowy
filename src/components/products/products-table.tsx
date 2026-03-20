@@ -44,6 +44,7 @@ interface ProductsTableProps {
   searchQuery?: string;
   onEdit?: (productId: number) => void;
   showActions?: boolean;
+  showInventoryValue?: boolean;
 }
 
 export interface ProductsTableRef {
@@ -52,7 +53,7 @@ export interface ProductsTableRef {
 }
 
 export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
-  ({ searchQuery = '', onEdit, showActions = true }, ref) => {
+  ({ searchQuery = '', onEdit, showActions = true, showInventoryValue = true }, ref) => {
     const router = useRouter();
     const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
 
@@ -373,6 +374,16 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
 
     return (
       <>
+        {!isLoading && allVariants.length > 0 && showInventoryValue && (
+          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Warehouse className="h-4 w-4" />
+              <span>Valor del inventario</span>
+            </div>
+            <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
+          </div>
+        )}
+
         <DataTable
           columns={columns}
           data={filteredVariants}
@@ -382,16 +393,6 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           defaultItemsPerPage={getItemsPerPage()}
           onItemsPerPageChange={(n) => void updateItemsPerPage(n as Parameters<typeof updateItemsPerPage>[0])}
         />
-
-        {!isLoading && allVariants.length > 0 && (
-          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Warehouse className="h-4 w-4" />
-              <span>Valor del inventario</span>
-            </div>
-            <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
-          </div>
-        )}
 
         <AlertDialog open={productToDelete !== null} onOpenChange={() => setProductToDelete(null)}>
           <AlertDialogContent>

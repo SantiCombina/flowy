@@ -40,11 +40,14 @@ export interface SaleRow {
   clientName?: string;
   itemCount: number;
   total: number;
-  paymentMethod: 'cash' | 'transfer' | 'check';
+  paymentMethod: 'cash' | 'transfer' | 'check' | null;
   paymentStatus: 'pending' | 'partially_collected' | 'collected';
   amountPaid: number;
   collectedAt?: string;
   checkDueDate?: string;
+  ownerPaymentStatus: 'pending' | 'partially_collected' | 'collected';
+  ownerAmountPaid: number;
+  ownerCollectedAt?: string;
   items: SaleItemDetail[];
 }
 
@@ -192,6 +195,10 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     }
   }
 
+  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const isImmediate = data.paymentMethod !== 'credit';
+  const now = new Date().toISOString();
+
   const sale = await payload.create({
     collection: 'sales',
     draft: false,
@@ -199,19 +206,22 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
       seller: sellerId,
       owner: ownerId,
       ...(data.clientId ? { client: data.clientId } : {}),
-      date: new Date().toISOString(),
-      paymentMethod: data.paymentMethod,
+      date: now,
       items: data.items.map((item) => ({
         variant: item.variantId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         stockSource: item.stockSource,
       })),
-      total: data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
-      amountPaid: 0,
-      paymentStatus: 'pending' as const,
-      ...(data.notes ? { notes: data.notes } : {}),
+      total,
+      amountPaid: isImmediate ? total : 0,
+      paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+      ownerPaymentStatus: 'pending' as const,
+      ownerAmountPaid: 0,
+      ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
+      ...(isImmediate ? { collectedAt: now } : {}),
       ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
+      ...(data.notes ? { notes: data.notes } : {}),
     },
     overrideAccess: true,
   });
@@ -269,17 +279,26 @@ export async function getSales(filters: {
       clientName: client?.name ?? undefined,
       itemCount: sale.items.length,
       total: sale.total,
-      paymentMethod: sale.paymentMethod,
+      paymentMethod: sale.paymentMethod ?? null,
       paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
       amountPaid: sale.amountPaid ?? 0,
       collectedAt: sale.collectedAt ?? undefined,
       checkDueDate: sale.checkDueDate ?? undefined,
+      ownerPaymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      ownerAmountPaid: sale.ownerAmountPaid ?? 0,
+      ownerCollectedAt: sale.ownerCollectedAt ?? undefined,
       items,
     };
   });
 }
 
-export async function registerPayment(saleId: number, ownerId: number, amount: number): Promise<void> {
+export async function registerPayment(
+  saleId: number,
+  amount: number,
+  context:
+    | { ownerId: number }
+    | { sellerId: number; paymentMethod: 'cash' | 'transfer' | 'check'; checkDueDate: string | null },
+): Promise<void> {
   const payload = await getPayloadClient();
 
   const sale = await payload.findByID({
@@ -290,28 +309,57 @@ export async function registerPayment(saleId: number, ownerId: number, amount: n
 
   if (!sale) throw new Error('Venta no encontrada');
 
-  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
-  if (saleOwnerId !== ownerId) throw new Error('No autorizado');
+  if ('ownerId' in context) {
+    const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+    if (saleOwnerId !== context.ownerId) throw new Error('No autorizado');
 
-  if (sale.paymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+    if (sale.ownerPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
 
-  const currentAmountPaid = sale.amountPaid ?? 0;
-  const remaining = sale.total - currentAmountPaid;
+    const currentOwnerAmountPaid = sale.ownerAmountPaid ?? 0;
+    const ownerRemaining = sale.total - currentOwnerAmountPaid;
 
-  if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-  if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
+    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+    if (amount > ownerRemaining) throw new Error(`El monto no puede superar el restante ($${ownerRemaining})`);
 
-  const newAmountPaid = currentAmountPaid + amount;
-  const newStatus = newAmountPaid >= sale.total ? 'collected' : 'partially_collected';
+    const newOwnerAmountPaid = currentOwnerAmountPaid + amount;
+    const newOwnerStatus = newOwnerAmountPaid >= sale.total ? 'collected' : 'partially_collected';
 
-  await payload.update({
-    collection: 'sales',
-    id: saleId,
-    data: {
-      amountPaid: newAmountPaid,
-      paymentStatus: newStatus,
-      ...(newStatus === 'collected' ? { collectedAt: new Date().toISOString() } : {}),
-    } as Partial<Sale>,
-    overrideAccess: true,
-  });
+    await payload.update({
+      collection: 'sales',
+      id: saleId,
+      data: {
+        ownerAmountPaid: newOwnerAmountPaid,
+        ownerPaymentStatus: newOwnerStatus,
+        ...(newOwnerStatus === 'collected' ? { ownerCollectedAt: new Date().toISOString() } : {}),
+      } as Partial<Sale>,
+      overrideAccess: true,
+    });
+  } else {
+    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    if (saleSellerId !== context.sellerId) throw new Error('No autorizado');
+
+    if (sale.paymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+
+    const currentAmountPaid = sale.amountPaid ?? 0;
+    const remaining = sale.total - currentAmountPaid;
+
+    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+    if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
+
+    const newAmountPaid = currentAmountPaid + amount;
+    const newStatus = newAmountPaid >= sale.total ? 'collected' : 'partially_collected';
+
+    await payload.update({
+      collection: 'sales',
+      id: saleId,
+      data: {
+        amountPaid: newAmountPaid,
+        paymentStatus: newStatus,
+        ...(newStatus === 'collected' ? { collectedAt: new Date().toISOString() } : {}),
+        paymentMethod: context.paymentMethod,
+        ...(context.checkDueDate ? { checkDueDate: context.checkDueDate } : {}),
+      } as Partial<Sale>,
+      overrideAccess: true,
+    });
+  }
 }

@@ -74,7 +74,7 @@ function PaymentStatusBadge({ status }: { status: 'pending' | 'partially_collect
   );
 }
 
-function getSortValue(sale: SaleRow, key: SortKey): string | number {
+function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | number {
   switch (key) {
     case 'date':
       return sale.date;
@@ -87,9 +87,9 @@ function getSortValue(sale: SaleRow, key: SortKey): string | number {
     case 'total':
       return sale.total;
     case 'paymentMethod':
-      return PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod;
+      return sale.paymentMethod ? (PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod) : '';
     case 'paymentStatus':
-      return sale.paymentStatus;
+      return isSeller ? sale.paymentStatus : sale.ownerPaymentStatus;
   }
 }
 
@@ -101,13 +101,23 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
 interface SalesSectionProps {
   sales: SaleRow[];
   showSellerColumn: boolean;
-  isOwner: boolean;
+  canCollect: boolean;
+  isSeller: boolean;
   initialStatusFilter?: StatusFilter;
 }
 
-export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFilter }: SalesSectionProps) {
+export function SalesSection({
+  sales,
+  showSellerColumn,
+  canCollect,
+  isSeller,
+  initialStatusFilter,
+}: SalesSectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
+
+  const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
+  const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
 
   const [localSales, setLocalSales] = useState<SaleRow[]>(sales);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -137,18 +147,27 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
     saleId: number,
     newAmountPaid: number,
     newStatus: 'partially_collected' | 'collected',
+    paymentMethod: 'cash' | 'transfer' | 'check' | null,
   ) => {
     setLocalSales((prev) =>
-      prev.map((s) =>
-        s.id === saleId
-          ? {
-              ...s,
-              amountPaid: newAmountPaid,
-              paymentStatus: newStatus,
-              collectedAt: newStatus === 'collected' ? new Date().toISOString() : s.collectedAt,
-            }
-          : s,
-      ),
+      prev.map((s) => {
+        if (s.id !== saleId) return s;
+        if (isSeller) {
+          return {
+            ...s,
+            amountPaid: newAmountPaid,
+            paymentStatus: newStatus,
+            collectedAt: newStatus === 'collected' ? new Date().toISOString() : s.collectedAt,
+            ...(paymentMethod ? { paymentMethod } : {}),
+          };
+        }
+        return {
+          ...s,
+          ownerAmountPaid: newAmountPaid,
+          ownerPaymentStatus: newStatus,
+          ownerCollectedAt: newStatus === 'collected' ? new Date().toISOString() : s.ownerCollectedAt,
+        };
+      }),
     );
     setCollectingModal(null);
   };
@@ -170,8 +189,8 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
   const sortedSales = useMemo(() => {
     if (!sortKey) return localSales;
     return [...localSales].sort((a, b) => {
-      const va = getSortValue(a, sortKey);
-      const vb = getSortValue(b, sortKey);
+      const va = getSortValue(a, sortKey, isSeller);
+      const vb = getSortValue(b, sortKey, isSeller);
       if (typeof va === 'number' && typeof vb === 'number') {
         return sortDir === 'asc' ? va - vb : vb - va;
       }
@@ -181,18 +200,22 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
       if (sa > sb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [localSales, sortKey, sortDir]);
+  }, [localSales, sortKey, sortDir, isSeller]);
 
   const filteredSales = useMemo(() => {
     if (statusFilter === 'all') return sortedSales;
     if (statusFilter === 'pending')
-      return sortedSales.filter((s) => s.paymentStatus === 'pending' || s.paymentStatus === 'partially_collected');
-    return sortedSales.filter((s) => s.paymentStatus === statusFilter);
-  }, [sortedSales, statusFilter]);
+      return sortedSales.filter((s) => {
+        const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
+        return st === 'pending' || st === 'partially_collected';
+      });
+    return sortedSales.filter((s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === statusFilter);
+  }, [sortedSales, statusFilter, isSeller]);
 
-  const pendingCount = localSales.filter(
-    (s) => s.paymentStatus === 'pending' || s.paymentStatus === 'partially_collected',
-  ).length;
+  const pendingCount = localSales.filter((s) => {
+    const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
+    return st === 'pending' || st === 'partially_collected';
+  }).length;
 
   const totalPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
   const safePage = Math.min(page, totalPages);
@@ -205,7 +228,7 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
       visibleColumns.includes(k),
     ).length + (showSeller ? 1 : 0);
 
-  const totalCols = visibleOptionalCount + 1 + (isOwner ? 1 : 0);
+  const totalCols = visibleOptionalCount + 1 + (canCollect ? 1 : 0);
 
   const sortableHead = (key: SortKey, label: string, className?: string) => (
     <TableHead className={className}>
@@ -272,7 +295,7 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
                   {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-36 text-right')}
                   {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-36')}
                   {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-32')}
-                  {isOwner && <TableHead className="w-28" />}
+                  {canCollect && <TableHead className="w-28" />}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -286,12 +309,14 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
                 ) : (
                   paginatedSales.map((sale) => {
                     const isExpanded = expandedId === sale.id;
+                    const displayStatus = getStatus(sale);
+                    const displayAmountPaid = getAmountPaid(sale);
                     const isOverdue =
                       sale.paymentMethod === 'check' &&
-                      sale.paymentStatus !== 'collected' &&
+                      displayStatus !== 'collected' &&
                       !!sale.checkDueDate &&
                       isCheckOverdue(sale.checkDueDate);
-                    const isPending = sale.paymentStatus === 'pending' || sale.paymentStatus === 'partially_collected';
+                    const isPending = displayStatus === 'pending' || displayStatus === 'partially_collected';
 
                     return (
                       <Fragment key={sale.id}>
@@ -318,23 +343,27 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
                           )}
                           {visibleColumns.includes('paymentMethod') && (
                             <TableCell className="text-muted-foreground">
-                              <span>{PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod}</span>
+                              <span>
+                                {sale.paymentMethod
+                                  ? (PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod)
+                                  : '—'}
+                              </span>
                               {sale.checkDueDate && (
                                 <span
                                   className={cn('ml-1.5 text-xs', isOverdue ? 'text-red-500' : 'text-muted-foreground')}
                                 >
                                   · {formatShortDate(sale.checkDueDate)}
-                                  {isOverdue && ' (vencido)'}
+                                  {isOverdue && ' (listo para cobrar)'}
                                 </span>
                               )}
                             </TableCell>
                           )}
                           {visibleColumns.includes('paymentStatus') && (
                             <TableCell>
-                              <PaymentStatusBadge status={sale.paymentStatus} />
+                              <PaymentStatusBadge status={displayStatus} />
                             </TableCell>
                           )}
-                          {isOwner && (
+                          {canCollect && (
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               {isPending ? (
                                 <Button
@@ -345,7 +374,7 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
                                     setCollectingModal({
                                       saleId: sale.id,
                                       total: sale.total,
-                                      amountPaid: sale.amountPaid,
+                                      amountPaid: displayAmountPaid,
                                     })
                                   }
                                 >
@@ -414,35 +443,37 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
                                   </tbody>
                                 </table>
                               </div>
-                              {(sale.checkDueDate || sale.collectedAt || sale.amountPaid > 0) && (
+                              {(sale.checkDueDate || displayAmountPaid > 0) && (
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 py-3 text-sm sm:grid-cols-4">
                                   {sale.checkDueDate && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Fecha cobro cheque</p>
                                       <p className={cn('font-medium', isOverdue && 'text-red-600')}>
                                         {formatShortDate(sale.checkDueDate)}
-                                        {isOverdue && ' · Vencido'}
+                                        {isOverdue && ' · Listo para cobrar'}
                                       </p>
                                     </div>
                                   )}
-                                  {sale.amountPaid > 0 && (
+                                  {displayAmountPaid > 0 && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Cobrado</p>
-                                      <p className="font-medium">$ {formatPrice(sale.amountPaid)}</p>
+                                      <p className="font-medium">$ {formatPrice(displayAmountPaid)}</p>
                                     </div>
                                   )}
-                                  {sale.paymentStatus === 'partially_collected' && (
+                                  {displayStatus === 'partially_collected' && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Restante</p>
                                       <p className="font-medium text-orange-600">
-                                        $ {formatPrice(sale.total - sale.amountPaid)}
+                                        $ {formatPrice(sale.total - displayAmountPaid)}
                                       </p>
                                     </div>
                                   )}
-                                  {sale.collectedAt && (
+                                  {(isSeller ? sale.collectedAt : sale.ownerCollectedAt) && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Cobrado el</p>
-                                      <p className="font-medium">{formatShortDate(sale.collectedAt)}</p>
+                                      <p className="font-medium">
+                                        {formatShortDate((isSeller ? sale.collectedAt : sale.ownerCollectedAt)!)}
+                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -517,6 +548,7 @@ export function SalesSection({ sales, showSellerColumn, isOwner, initialStatusFi
           isOpen
           onClose={() => setCollectingModal(null)}
           onSuccess={handleCollectSuccess}
+          isSeller={isSeller}
           {...collectingModal}
         />
       )}

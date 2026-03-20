@@ -36,11 +36,12 @@ interface NewSaleDialogProps {
   onSuccess: () => void;
 }
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cash: 'Efectivo',
-  transfer: 'Transferencia',
-  check: 'Cheque',
-};
+const PAYMENT_OPTIONS = [
+  { value: 'cash', label: 'Efectivo' },
+  { value: 'transfer', label: 'Transferencia' },
+  { value: 'check', label: 'Cheque' },
+  { value: 'credit', label: 'A crédito' },
+] as const;
 
 function ItemRow({
   index,
@@ -213,7 +214,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const form = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
-      paymentMethod: 'cash',
+      paymentMethod: 'credit',
       items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
     },
   });
@@ -326,7 +327,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   + Agregar producto
                 </Button>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                <div className="pt-2 border-t space-y-3">
                   <FormField
                     control={form.control}
                     name="clientId"
@@ -362,7 +363,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     name="paymentMethod"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Método de pago</FormLabel>
+                        <FormLabel>Cobro</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={(v) => {
@@ -376,9 +377,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
+                            {PAYMENT_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -387,30 +388,30 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       </FormItem>
                     )}
                   />
-                </div>
 
-                {paymentMethod === 'check' && (
-                  <FormField
-                    control={form.control}
-                    name="checkDueDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha de cobro del cheque</FormLabel>
-                        <FormControl>
-                          <input
-                            type="date"
-                            value={field.value ?? ''}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            min={new Date().toISOString().split('T')[0]}
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                  {paymentMethod === 'check' && (
+                    <FormField
+                      control={form.control}
+                      name="checkDueDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha de cobro del cheque</FormLabel>
+                          <FormControl>
+                            <input
+                              type="date"
+                              value={field.value ?? ''}
+                              onChange={field.onChange}
+                              onBlur={field.onBlur}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
 
                 <FormField
                   control={form.control}

@@ -421,7 +421,7 @@ export interface Sale {
   owner: number | User;
   client?: (number | null) | Client;
   date: string;
-  paymentMethod: 'cash' | 'transfer' | 'check';
+  paymentMethod?: ('cash' | 'transfer' | 'check') | null;
   items: {
     variant: number | ProductVariant;
     quantity: number;
@@ -435,6 +435,9 @@ export interface Sale {
   paymentStatus: 'pending' | 'partially_collected' | 'collected';
   collectedAt?: string | null;
   checkDueDate?: string | null;
+  ownerPaymentStatus: 'pending' | 'partially_collected' | 'collected';
+  ownerAmountPaid: number;
+  ownerCollectedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -887,6 +890,9 @@ export interface SalesSelect<T extends boolean = true> {
   paymentStatus?: T;
   collectedAt?: T;
   checkDueDate?: T;
+  ownerPaymentStatus?: T;
+  ownerAmountPaid?: T;
+  ownerCollectedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

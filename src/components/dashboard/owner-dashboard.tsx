@@ -233,7 +233,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                     </div>
                     <div className="ml-3 flex shrink-0 items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {PAYMENT_LABELS[sale.paymentMethod]}
+                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : '—'}
                       </Badge>
                       <span className="font-semibold">{formatCurrency(sale.total)}</span>
                     </div>

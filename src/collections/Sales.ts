@@ -61,7 +61,6 @@ export const Sales: CollectionConfig = {
     {
       name: 'paymentMethod',
       type: 'select',
-      required: true,
       options: [
         { label: 'Efectivo', value: 'cash' },
         { label: 'Transferencia', value: 'transfer' },
@@ -128,7 +127,7 @@ export const Sales: CollectionConfig = {
       name: 'paymentStatus',
       type: 'select',
       required: true,
-      label: 'Estado de cobro',
+      label: 'Estado de cobro (vendedor)',
       defaultValue: 'pending',
       options: [
         { label: 'Pendiente', value: 'pending' },
@@ -139,7 +138,7 @@ export const Sales: CollectionConfig = {
     {
       name: 'collectedAt',
       type: 'date',
-      label: 'Cobrado el',
+      label: 'Cobrado el (vendedor)',
       admin: {
         condition: (data) => data?.paymentStatus === 'collected' || data?.paymentStatus === 'partially_collected',
       },
@@ -150,6 +149,38 @@ export const Sales: CollectionConfig = {
       label: 'Fecha de cobro del cheque',
       admin: {
         condition: (data) => data?.paymentMethod === 'check',
+      },
+    },
+    {
+      name: 'ownerPaymentStatus',
+      type: 'select',
+      required: true,
+      label: 'Estado de cobro (owner)',
+      defaultValue: 'pending',
+      options: [
+        { label: 'Pendiente', value: 'pending' },
+        { label: 'Parcialmente cobrado', value: 'partially_collected' },
+        { label: 'Cobrado', value: 'collected' },
+      ],
+    },
+    {
+      name: 'ownerAmountPaid',
+      type: 'number',
+      required: true,
+      defaultValue: 0,
+      min: 0,
+      label: 'Monto cobrado (owner)',
+      admin: {
+        readOnly: true,
+      },
+    },
+    {
+      name: 'ownerCollectedAt',
+      type: 'date',
+      label: 'Cobrado el (owner)',
+      admin: {
+        condition: (data) =>
+          data?.ownerPaymentStatus === 'collected' || data?.ownerPaymentStatus === 'partially_collected',
       },
     },
   ],

@@ -5,6 +5,8 @@ import * as migration_20260306_100000_remove_min_stock from './20260306_100000_r
 import * as migration_20260306_200000_add_province_locality_to_clients from './20260306_200000_add_province_locality_to_clients';
 import * as migration_20260308_000000_add_minimum_stock_to_variants from './20260308_000000_add_minimum_stock_to_variants';
 import * as migration_20260317_000000_add_amount_paid_to_sales from './20260317_000000_add_amount_paid_to_sales';
+import * as migration_20260320_000000_make_payment_method_optional from './20260320_000000_make_payment_method_optional';
+import * as migration_20260320_100000_add_owner_payment_fields from './20260320_100000_add_owner_payment_fields';
 
 export const migrations = [
   {
@@ -41,5 +43,15 @@ export const migrations = [
     up: migration_20260317_000000_add_amount_paid_to_sales.up,
     down: migration_20260317_000000_add_amount_paid_to_sales.down,
     name: '20260317_000000_add_amount_paid_to_sales',
+  },
+  {
+    up: migration_20260320_000000_make_payment_method_optional.up,
+    down: migration_20260320_000000_make_payment_method_optional.down,
+    name: '20260320_000000_make_payment_method_optional',
+  },
+  {
+    up: migration_20260320_100000_add_owner_payment_fields.up,
+    down: migration_20260320_100000_add_owner_payment_fields.down,
+    name: '20260320_100000_add_owner_payment_fields',
   },
 ];

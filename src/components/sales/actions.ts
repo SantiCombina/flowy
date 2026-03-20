@@ -3,7 +3,7 @@
 import { createSale, getSaleOptions, getSales, registerPayment } from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
-import { collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
+import { collectSaleBySellerSchema, collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
@@ -49,10 +49,28 @@ export const markSaleAsCollectedAction = actionClient.schema(collectSaleSchema).
     throw new Error('No autorizado');
   }
 
-  await registerPayment(parsedInput.saleId, user.id, parsedInput.amount);
+  await registerPayment(parsedInput.saleId, parsedInput.amount, { ownerId: user.id });
 
   return { success: true };
 });
+
+export const markSaleAsCollectedBySellerAction = actionClient
+  .schema(collectSaleBySellerSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'seller') {
+      throw new Error('No autorizado');
+    }
+
+    await registerPayment(parsedInput.saleId, parsedInput.amount, {
+      sellerId: user.id,
+      paymentMethod: parsedInput.paymentMethod,
+      checkDueDate: parsedInput.checkDueDate ?? null,
+    });
+
+    return { success: true };
+  });
 
 export const getSalesAction = actionClient.action(async () => {
   const user = await getCurrentUser();
