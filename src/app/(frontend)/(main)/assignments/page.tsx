@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { getAllSellersInventoryForOwner } from '@/app/services/mobile-seller';
 import { AssignmentsSection } from '@/components/assignments/assignments-section';
+import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
 
 export default async function AssignmentsPage() {
@@ -13,5 +14,10 @@ export default async function AssignmentsPage() {
 
   const sellers = await getAllSellersInventoryForOwner(user.id);
 
-  return <AssignmentsSection sellers={sellers} />;
+  return (
+    <>
+      <RealtimeRefresher channel={`private-owner-${user.id}`} events={['stock_dispatched', 'stock_returned']} />
+      <AssignmentsSection sellers={sellers} />
+    </>
+  );
 }

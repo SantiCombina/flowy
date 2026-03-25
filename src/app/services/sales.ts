@@ -2,6 +2,7 @@
 
 import type { Where } from 'payload';
 
+import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
@@ -115,6 +116,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     const variant = await payload.findByID({
       collection: 'product-variants',
       id: item.variantId,
+      depth: 1,
       overrideAccess: true,
     });
 
@@ -150,6 +152,18 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         },
         overrideAccess: true,
       });
+
+      if (variant.minimumStock && variant.minimumStock > 0 && newStock > 0 && newStock <= variant.minimumStock) {
+        const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+        await notifyEvent({
+          recipientId: ownerId,
+          ownerId,
+          type: 'stock_low',
+          title: 'Stock bajo',
+          body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
+          metadata: { variantId: item.variantId, newStock, minimumStock: variant.minimumStock },
+        });
+      }
     } else {
       const { docs: inventoryDocs } = await payload.find({
         collection: 'mobile-seller-inventory',
@@ -225,6 +239,25 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     },
     overrideAccess: true,
   });
+
+  const sellerUser = await payload.findByID({
+    collection: 'users',
+    id: sellerId,
+    overrideAccess: true,
+  });
+  const sellerName = sellerUser?.name ?? 'Vendedor';
+
+  process.stdout.write('[sales] BEFORE notifyEvent\n');
+  await notifyEvent({
+    recipientId: ownerId,
+    ownerId,
+    sellerId,
+    type: 'sale_created',
+    title: 'Nueva venta',
+    body: `Nueva venta de ${sellerName} por $${total.toFixed(2)}`,
+    metadata: { saleId: sale.id, total, sellerId },
+  });
+  process.stdout.write('[sales] AFTER notifyEvent\n');
 
   return sale as Sale;
 }
@@ -361,5 +394,25 @@ export async function registerPayment(
       } as Partial<Sale>,
       overrideAccess: true,
     });
+
+    const saleOwnerIdForNotif = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+
+    if (saleOwnerIdForNotif) {
+      const sellerUser = await payload.findByID({
+        collection: 'users',
+        id: context.sellerId,
+        overrideAccess: true,
+      });
+      const sellerName = sellerUser?.name ?? 'Vendedor';
+
+      await notifyEvent({
+        recipientId: saleOwnerIdForNotif,
+        ownerId: saleOwnerIdForNotif,
+        type: 'payment_registered',
+        title: 'Cobro registrado',
+        body: `${sellerName} registró cobro de $${amount.toFixed(2)}`,
+        metadata: { saleId, amount, sellerId: context.sellerId },
+      });
+    }
   }
 }

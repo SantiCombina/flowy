@@ -193,7 +193,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
                   alt={product.name}
                   width={40}
                   height={40}
-                  className="rounded object-cover"
+                  className="h-10 w-10 rounded object-cover"
                   unoptimized
                 />
               ) : (

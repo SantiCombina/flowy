@@ -82,15 +82,15 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-14 p-2 transition-all duration-200 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="h-14 p-2 transition-all duration-300 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
         <Link
           href="/"
-          className="flex h-full w-full items-center gap-2 rounded-md p-2 transition-all duration-200 hover:bg-sidebar-accent group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:hover:bg-transparent"
+          className="flex h-full w-full items-center gap-2 rounded-md p-2 transition-all duration-300 hover:bg-sidebar-accent group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:hover:bg-transparent"
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
             <Box className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-300 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">Flowy</span>
             <span className="text-xs text-sidebar-foreground/60 whitespace-nowrap">Gestión de negocio</span>
           </div>

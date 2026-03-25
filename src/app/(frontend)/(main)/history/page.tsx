@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { getHistoryMovements } from '@/app/services/stock-movements';
 import { HistorySection } from '@/components/history/history-section';
+import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
 
 export default async function HistoryPage() {
@@ -18,5 +19,13 @@ export default async function HistoryPage() {
     limit: 25,
   });
 
-  return <HistorySection initialData={initialData} ownerId={user.id} />;
+  return (
+    <>
+      <RealtimeRefresher
+        channel={`private-owner-${user.id}`}
+        events={['stock_adjusted', 'stock_dispatched', 'stock_returned', 'sale_created']}
+      />
+      <HistorySection initialData={initialData} ownerId={user.id} />
+    </>
+  );
 }

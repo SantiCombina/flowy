@@ -1,11 +1,10 @@
 'use client';
 
-import { Bell } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { useUser } from '@/components/providers/user-provider';
 import { NewSaleButton } from '@/components/sales/new-sale-button';
-import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 import { UserDropdown } from './user-dropdown';
@@ -25,9 +24,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           {user?.role === 'seller' && <NewSaleButton />}
-          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Notificaciones">
-            <Bell className="h-5 w-5" aria-hidden="true" />
-          </Button>
+          <NotificationBell />
           <UserDropdown user={user} />
         </div>
       </header>

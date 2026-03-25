@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { getSales } from '@/app/services/sales';
+import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { SalesSection } from '@/components/sales/sales-section';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -23,28 +24,34 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   if (user.role === 'seller') {
     const sales = await getSales({ sellerId: user.id });
     return (
-      <SalesSection
-        key={initialStatusFilter ?? 'all'}
-        sales={sales}
-        showSellerColumn={false}
-        canCollect={true}
-        isSeller={true}
-        initialStatusFilter={initialStatusFilter}
-      />
+      <>
+        <RealtimeRefresher channel={`private-seller-${user.id}`} events={['sale_created', 'payment_registered']} />
+        <SalesSection
+          key={initialStatusFilter ?? 'all'}
+          sales={sales}
+          showSellerColumn={false}
+          canCollect={true}
+          isSeller={true}
+          initialStatusFilter={initialStatusFilter}
+        />
+      </>
     );
   }
 
   if (user.role === 'owner') {
     const sales = await getSales({ ownerId: user.id });
     return (
-      <SalesSection
-        key={initialStatusFilter ?? 'all'}
-        sales={sales}
-        showSellerColumn={true}
-        canCollect={true}
-        isSeller={false}
-        initialStatusFilter={initialStatusFilter}
-      />
+      <>
+        <RealtimeRefresher channel={`private-owner-${user.id}`} events={['sale_created', 'payment_registered']} />
+        <SalesSection
+          key={initialStatusFilter ?? 'all'}
+          sales={sales}
+          showSellerColumn={true}
+          canCollect={true}
+          isSeller={false}
+          initialStatusFilter={initialStatusFilter}
+        />
+      </>
     );
   }
 

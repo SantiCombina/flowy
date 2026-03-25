@@ -1,13 +1,18 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PriceInput } from '@/components/ui/price-input';
 import {
   ResponsiveModal,
@@ -19,6 +24,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import {
   collectSaleBySellerSchema,
   collectSaleSchema,
@@ -198,16 +204,41 @@ export function CollectSaleModal({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fecha de cobro del cheque</FormLabel>
-                      <FormControl>
-                        <input
-                          type="date"
-                          value={field.value ?? ''}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value
+                                ? format(new Date(`${field.value}T12:00:00`), "d 'de' MMMM 'de' yyyy", { locale: es })
+                                : 'Seleccioná una fecha'}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? new Date(`${field.value}T12:00:00`) : undefined}
+                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            locale={es}
+                            showOutsideDays={false}
+                            formatters={{
+                              formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
+                              formatCaption: (month, options) => {
+                                const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
+                                return str.charAt(0).toUpperCase() + str.slice(1);
+                              },
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}

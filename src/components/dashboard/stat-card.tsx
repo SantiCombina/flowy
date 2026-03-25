@@ -1,19 +1,29 @@
 import type { LucideIcon } from 'lucide-react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
+import type { Period } from '@/app/services/dashboard';
 import { Card, CardContent } from '@/components/ui/card';
+
+const PERIOD_COMPARISON_LABEL: Record<Period, string> = {
+  day: 'vs ayer',
+  week: 'vs semana anterior',
+  month: '{comparisonLabel}',
+  year: 'vs año anterior',
+};
 
 interface StatCardProps {
   title: string;
   value: string;
   subtitle?: string;
   change?: number;
+  period?: Period;
   icon: LucideIcon;
   gradient: string;
   delay?: number;
 }
 
-export function StatCard({ title, value, subtitle, change, icon: Icon, gradient, delay = 0 }: StatCardProps) {
+export function StatCard({ title, value, subtitle, change, period, icon: Icon, gradient, delay = 0 }: StatCardProps) {
+  const comparisonLabel = period ? PERIOD_COMPARISON_LABEL[period] : 'vs período anterior';
   return (
     <div
       className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-[both] h-full"
@@ -39,12 +49,16 @@ export function StatCard({ title, value, subtitle, change, icon: Icon, gradient,
               {change >= 0 ? (
                 <>
                   <TrendingUp className="h-3 w-3" />
-                  <span>+{change}% vs mes anterior</span>
+                  <span>
+                    +{change}% {comparisonLabel}
+                  </span>
                 </>
               ) : (
                 <>
                   <TrendingDown className="h-3 w-3" />
-                  <span>{change}% vs mes anterior</span>
+                  <span>
+                    {change}% {comparisonLabel}
+                  </span>
                 </>
               )}
             </div>

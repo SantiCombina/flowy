@@ -7,6 +7,7 @@ import * as migration_20260308_000000_add_minimum_stock_to_variants from './2026
 import * as migration_20260317_000000_add_amount_paid_to_sales from './20260317_000000_add_amount_paid_to_sales';
 import * as migration_20260320_000000_make_payment_method_optional from './20260320_000000_make_payment_method_optional';
 import * as migration_20260320_100000_add_owner_payment_fields from './20260320_100000_add_owner_payment_fields';
+import * as migration_20260323_000000_add_notifications_push_subscriptions from './20260323_000000_add_notifications_push_subscriptions';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260320_100000_add_owner_payment_fields.up,
     down: migration_20260320_100000_add_owner_payment_fields.down,
     name: '20260320_100000_add_owner_payment_fields',
+  },
+  {
+    up: migration_20260323_000000_add_notifications_push_subscriptions.up,
+    down: migration_20260323_000000_add_notifications_push_subscriptions.down,
+    name: '20260323_000000_add_notifications_push_subscriptions',
   },
 ];

@@ -82,6 +82,8 @@ export interface Config {
     settings: Setting;
     'stock-movements': StockMovement;
     'mobile-seller-inventory': MobileSellerInventory;
+    notifications: Notification;
+    'push-subscriptions': PushSubscription;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -104,6 +106,8 @@ export interface Config {
     settings: SettingsSelect<false> | SettingsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'mobile-seller-inventory': MobileSellerInventorySelect<false> | MobileSellerInventorySelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    'push-subscriptions': PushSubscriptionsSelect<false> | PushSubscriptionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -572,6 +576,44 @@ export interface MobileSellerInventory {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: number;
+  recipient: number | User;
+  owner: number | User;
+  type: 'sale_created' | 'payment_registered' | 'stock_dispatched' | 'stock_returned' | 'stock_low' | 'stock_adjusted';
+  title: string;
+  body: string;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  read?: boolean | null;
+  readAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "push-subscriptions".
+ */
+export interface PushSubscription {
+  id: number;
+  user: number | User;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -653,6 +695,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'mobile-seller-inventory';
         value: number | MobileSellerInventory;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: number | Notification;
+      } | null)
+    | ({
+        relationTo: 'push-subscriptions';
+        value: number | PushSubscription;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -968,6 +1018,34 @@ export interface MobileSellerInventorySelect<T extends boolean = true> {
   variant?: T;
   quantity?: T;
   owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  recipient?: T;
+  owner?: T;
+  type?: T;
+  title?: T;
+  body?: T;
+  metadata?: T;
+  read?: T;
+  readAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "push-subscriptions_select".
+ */
+export interface PushSubscriptionsSelect<T extends boolean = true> {
+  user?: T;
+  endpoint?: T;
+  p256dh?: T;
+  auth?: T;
   updatedAt?: T;
   createdAt?: T;
 }

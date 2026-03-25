@@ -14,10 +14,12 @@ import { Clients } from './collections/Clients';
 import { Invitations } from './collections/Invitations';
 import { Media } from './collections/Media';
 import { MobileSellerInventory } from './collections/MobileSellerInventory';
+import { Notifications } from './collections/Notifications';
 import { Presentations } from './collections/Presentations';
 import { ProductCustomFields } from './collections/ProductCustomFields';
 import { Products } from './collections/Products';
 import { ProductVariants } from './collections/ProductVariants';
+import { PushSubscriptions } from './collections/PushSubscriptions';
 import { Qualities } from './collections/Qualities';
 import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
@@ -50,6 +52,8 @@ export default buildConfig({
     Settings,
     StockMovements,
     MobileSellerInventory,
+    Notifications,
+    PushSubscriptions,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

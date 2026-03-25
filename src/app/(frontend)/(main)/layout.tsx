@@ -1,6 +1,8 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { AppLayout } from '@/components/layout/app-layout';
+import { PushRegistration } from '@/components/notifications/push-registration';
 import { UserProvider } from '@/components/providers/user-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { SalesRefreshProvider } from '@/contexts/sales-refresh-context';
@@ -16,6 +18,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   }
 
   const features = getFeatureFlags();
+  const cookieStore = await cookies();
+  const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false';
 
   return (
     <UserProvider
@@ -28,8 +32,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     >
       <SettingsProvider>
         <SalesRefreshProvider>
-          <AppLayout features={features}>{children}</AppLayout>
+          <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
+            {children}
+          </AppLayout>
         </SalesRefreshProvider>
+        <PushRegistration />
         <Toaster />
       </SettingsProvider>
     </UserProvider>

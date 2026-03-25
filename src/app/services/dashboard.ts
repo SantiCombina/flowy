@@ -36,6 +36,7 @@ export interface LowStockAlert {
   code?: string;
   stock: number;
   minimumStock: number;
+  imageUrl?: string;
 }
 
 export interface OwnerDashboardStats {
@@ -227,12 +228,14 @@ export const getOwnerDashboardStats = unstable_cache(
       .map((v) => {
         const product = typeof v.product === 'object' ? v.product : null;
         const presentation = v.presentation && typeof v.presentation === 'object' ? v.presentation : null;
+        const image = product?.image && typeof product.image === 'object' ? product.image : null;
         return {
           name: product?.name ?? 'Producto desconocido',
           presentation: presentation?.label ?? undefined,
           code: v.code ?? undefined,
           stock: v.stock,
           minimumStock: v.minimumStock ?? 0,
+          imageUrl: image?.url ?? undefined,
         };
       })
       .sort((a, b) => a.stock - b.stock)

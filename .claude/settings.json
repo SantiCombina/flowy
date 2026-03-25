@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(''next:'', p.dependencies.next, ''payload:'', p.dependencies[''payload'']\\)\")",
+      "Bash(python -m json.tool)"
+    ]
+  }
+}

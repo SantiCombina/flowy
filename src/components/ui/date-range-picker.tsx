@@ -179,11 +179,17 @@ export function DateRangePicker({
               showOutsideDays={false}
               disabled={{ after: new Date() }}
               defaultMonth={value?.from ?? subDays(new Date(), 29)}
+              classNames={{
+                months: 'relative flex flex-col gap-0 md:flex-row',
+                month:
+                  'flex w-full flex-col gap-4 px-3 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-border/50',
+              }}
               formatters={{
                 formatCaption: (date, options) => {
                   const str = format(date, 'LLLL yyyy', { locale: options?.locale });
                   return str.charAt(0).toUpperCase() + str.slice(1);
                 },
+                formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
               }}
             />
           </div>

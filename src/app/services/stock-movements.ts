@@ -3,6 +3,7 @@
 import { endOfDay, startOfDay } from 'date-fns';
 import type { Where } from 'payload';
 
+import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Product, ProductVariant, StockMovement, User } from '@/payload-types';
 
@@ -56,6 +57,7 @@ export async function registerStockMovement(
   const variant = await payload.findByID({
     collection: 'product-variants',
     id: variantId,
+    depth: 1,
     overrideAccess: true,
   });
 
@@ -111,6 +113,34 @@ export async function registerStockMovement(
     },
     overrideAccess: true,
   });
+
+  const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${variantId}`;
+
+  const typeLabels: Record<'entry' | 'exit' | 'adjustment', string> = {
+    entry: 'Entrada',
+    exit: 'Salida',
+    adjustment: 'Ajuste',
+  };
+
+  await notifyEvent({
+    recipientId: ownerId,
+    ownerId,
+    type: 'stock_adjusted',
+    title: 'Movimiento de stock',
+    body: `${typeLabels[type]} de ${quantity} unidades de ${productName}`,
+    metadata: { variantId, type, quantity, newStock, ownerId },
+  });
+
+  if (variant.minimumStock && variant.minimumStock > 0 && newStock > 0 && newStock <= variant.minimumStock) {
+    await notifyEvent({
+      recipientId: ownerId,
+      ownerId,
+      type: 'stock_low',
+      title: 'Stock bajo',
+      body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
+      metadata: { variantId, newStock, minimumStock: variant.minimumStock },
+    });
+  }
 
   return {
     success: true,

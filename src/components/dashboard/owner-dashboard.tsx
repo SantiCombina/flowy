@@ -1,4 +1,5 @@
-import { AlertTriangle, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react';
+import { AlertTriangle, ImageOff, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react';
+import Image from 'next/image';
 
 import type { OwnerDashboardStats, Period } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
@@ -71,6 +72,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
             title={PERIOD_REVENUE_LABEL[period]}
             value={formatCurrency(stats.revenue.current)}
             change={stats.revenue.change}
+            period={period}
             icon={Wallet}
             gradient="from-emerald-500 to-teal-600"
             delay={0}
@@ -79,6 +81,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
             title="Ventas realizadas"
             value={String(stats.salesCount.current)}
             change={stats.salesCount.change}
+            period={period}
             icon={ShoppingCart}
             gradient="from-blue-500 to-indigo-600"
             delay={75}
@@ -185,7 +188,23 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                 </div>
               ) : (
                 stats.lowStockAlerts.map((alert, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+                    <div className="shrink-0">
+                      {alert.imageUrl ? (
+                        <Image
+                          src={alert.imageUrl}
+                          alt={alert.name}
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 rounded object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded bg-muted">
+                          <ImageOff className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{alert.name}</p>
                       <div className="flex items-center gap-1.5">

@@ -49,11 +49,23 @@
       "Bash(npx shadcn@latest add calendar)",
       "Bash(npx shadcn@latest add popover)",
       "Bash(xargs grep:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(ls -la /c/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/assignments/)",
+      "Bash(find /c/Users/santi/Documents/Workspace/flowy/src -path \"*/\\(main\\)/*\" -type f -name \"*.tsx\")",
+      "Bash(ls /c/Users/santi/Documents/Workspace/flowy/src/app/\"\\(frontend\\)\"/\"\\(main\\)\")",
+      "Bash(ls /c/Users/santi/Documents/Workspace/flowy/src/app/\"\\(frontend\\)\"/\"\\(main\\)\"/dashboard/)",
+      "Bash(ls /c/Users/santi/Documents/Workspace/flowy/src/app/\"\\(frontend\\)\"/\"\\(main\\)\"/sales/)",
+      "Bash(printf '\\\\n')",
+      "Bash(find /c/Users/santi/Documents/Workspace/flowy -name *pusher* -type f)",
+      "Bash(find c:/Users/santi/Documents/Workspace/flowy/node_modules/pusher-js -name *.d.ts)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
+      "Bash(node -e \"require\\(''web-push''\\); console.log\\(''ok''\\)\")",
+      "Bash(node -e \"require\\(''pusher''\\); console.log\\(''ok''\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",
-      "c:\\Users\\santi\\.claude\\plans"
+      "c:\\Users\\santi\\.claude\\plans",
+      "c:\\Users\\santi\\Documents\\Workspace\\flowy"
     ]
   }
 }

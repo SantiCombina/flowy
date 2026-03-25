@@ -1,5 +1,6 @@
 'use server';
 
+import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 
 export interface MobileInventoryItem {
@@ -55,14 +56,24 @@ export async function dispatchStockToMobileSeller(
 ): Promise<void> {
   const payload = await getPayloadClient();
 
+  const dispatchedProductNames: string[] = [];
+
   for (const item of items) {
     if (item.quantity <= 0) continue;
 
     const variant = await payload.findByID({
       collection: 'product-variants',
       id: item.variantId,
+      depth: 1,
       overrideAccess: true,
     });
+
+    const productName = variant
+      ? typeof variant.product === 'object'
+        ? variant.product.name
+        : `Variante ${item.variantId}`
+      : `Variante ${item.variantId}`;
+    dispatchedProductNames.push(`${item.quantity}x ${productName}`);
 
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
 
@@ -131,6 +142,22 @@ export async function dispatchStockToMobileSeller(
       overrideAccess: true,
     });
   }
+
+  if (dispatchedProductNames.length > 0) {
+    const summary =
+      dispatchedProductNames.length <= 3
+        ? dispatchedProductNames.join(', ')
+        : `${dispatchedProductNames.slice(0, 2).join(', ')} y ${dispatchedProductNames.length - 2} más`;
+
+    await notifyEvent({
+      recipientId: sellerId,
+      ownerId,
+      type: 'stock_dispatched',
+      title: 'Stock recibido',
+      body: `Recibiste ${summary} de tu depósito`,
+      metadata: { sellerId, ownerId, items },
+    });
+  }
 }
 
 export async function returnStockFromMobileSeller(
@@ -139,6 +166,15 @@ export async function returnStockFromMobileSeller(
   items: DispatchItem[],
 ): Promise<void> {
   const payload = await getPayloadClient();
+
+  const returnedProductNames: string[] = [];
+
+  const sellerUser = await payload.findByID({
+    collection: 'users',
+    id: sellerId,
+    overrideAccess: true,
+  });
+  const sellerName = sellerUser?.name ?? 'Vendedor';
 
   for (const item of items) {
     if (item.quantity <= 0) continue;
@@ -168,10 +204,14 @@ export async function returnStockFromMobileSeller(
     const variant = await payload.findByID({
       collection: 'product-variants',
       id: item.variantId,
+      depth: 1,
       overrideAccess: true,
     });
 
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+    const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+    returnedProductNames.push(`${item.quantity}x ${productName}`);
 
     const warehouseStock = variant.stock;
     const newWarehouseStock = warehouseStock + item.quantity;
@@ -207,6 +247,22 @@ export async function returnStockFromMobileSeller(
         reason: `Devolución de vendedor móvil (ID: ${sellerId})`,
       },
       overrideAccess: true,
+    });
+  }
+
+  if (returnedProductNames.length > 0) {
+    const summary =
+      returnedProductNames.length <= 3
+        ? returnedProductNames.join(', ')
+        : `${returnedProductNames.slice(0, 2).join(', ')} y ${returnedProductNames.length - 2} más`;
+
+    await notifyEvent({
+      recipientId: ownerId,
+      ownerId,
+      type: 'stock_returned',
+      title: 'Devolución recibida',
+      body: `${sellerName} devolvió ${summary}`,
+      metadata: { sellerId, ownerId, items },
     });
   }
 }

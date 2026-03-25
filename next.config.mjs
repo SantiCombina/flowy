@@ -4,7 +4,7 @@ import { withPayload } from '@payloadcms/next/withPayload';
 const nextConfig = {
   experimental: {
     staleTimes: {
-      dynamic: 30,
+      dynamic: 0,
     },
   },
   images: {

@@ -125,6 +125,10 @@ export function SalesSection({
   const { refreshCount } = useSalesRefresh();
 
   useEffect(() => {
+    setLocalSales(sales);
+  }, [sales]);
+
+  useEffect(() => {
     if (refreshCount === 0) return;
     void getSalesAction().then((result) => {
       if (result?.data?.success) {
@@ -262,7 +266,7 @@ export function SalesSection({
                   setPage(1);
                 }}
                 className={cn(
-                  'rounded-md px-3 py-1 text-sm font-medium transition-colors',
+                  'inline-flex items-center rounded-md px-3 py-1 text-sm font-medium transition-colors',
                   statusFilter === filter
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',

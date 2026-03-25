@@ -61,6 +61,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
             title={PERIOD_REVENUE_LABEL[period]}
             value={formatCurrency(stats.revenue.current)}
             change={stats.revenue.change}
+            period={period}
             icon={Wallet}
             gradient="from-emerald-500 to-teal-600"
             delay={0}
@@ -69,6 +70,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
             title="Mis ventas"
             value={String(stats.salesCount.current)}
             change={stats.salesCount.change}
+            period={period}
             icon={ShoppingCart}
             gradient="from-blue-500 to-indigo-600"
             delay={75}
