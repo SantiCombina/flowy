@@ -248,7 +248,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
   });
   const sellerName = sellerUser?.name ?? 'Vendedor';
 
-  process.stdout.write('[sales] BEFORE notifyEvent\n');
   await notifyEvent({
     recipientId: ownerId,
     ownerId,
@@ -258,7 +257,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     body: `Nueva venta de ${sellerName} por ${formatCurrency(total)}`,
     metadata: { saleId: sale.id, total, sellerId },
   });
-  process.stdout.write('[sales] AFTER notifyEvent\n');
 
   return sale as Sale;
 }
@@ -368,6 +366,18 @@ export async function registerPayment(
       } as Partial<Sale>,
       overrideAccess: true,
     });
+
+    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    if (saleSellerId) {
+      await notifyEvent({
+        recipientId: saleSellerId,
+        ownerId: context.ownerId,
+        type: 'payment_registered',
+        title: 'Cobro registrado',
+        body: `Tu venta fue cobrada por ${formatCurrency(amount)}`,
+        metadata: { saleId, amount },
+      });
+    }
   } else {
     const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
     if (saleSellerId !== context.sellerId) throw new Error('No autorizado');
@@ -409,6 +419,7 @@ export async function registerPayment(
       await notifyEvent({
         recipientId: saleOwnerIdForNotif,
         ownerId: saleOwnerIdForNotif,
+        sellerId: context.sellerId,
         type: 'payment_registered',
         title: 'Cobro registrado',
         body: `${sellerName} registró cobro de ${formatCurrency(amount)}`,

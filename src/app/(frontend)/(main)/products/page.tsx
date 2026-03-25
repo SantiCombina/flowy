@@ -18,7 +18,7 @@ export default async function ProductsPage() {
 
   return (
     <>
-      <RealtimeRefresher channel={channel} events={['stock_adjusted', 'stock_low']} />
+      <RealtimeRefresher channel={channel} events={['stock_adjusted', 'stock_low', 'sale_created']} />
       <ProductsSection />
     </>
   );

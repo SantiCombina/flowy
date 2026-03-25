@@ -36,11 +36,8 @@ const pusherConfigured =
 export async function notifyEvent(payload: NotifyPayload): Promise<void> {
   const { recipientId, ownerId, sellerId, type, title, body, metadata } = payload;
 
-  console.log('[notify] notifyEvent called:', { type, recipientId, ownerId });
-
   try {
     await persistNotification({ recipientId, ownerId, type, title, body, metadata });
-    console.log('[notify] notification persisted OK');
   } catch (err) {
     console.error('[notify] persistNotification failed:', err);
   }
