@@ -13,7 +13,7 @@ import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
-import { cn } from '@/lib/utils';
+import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 
 import { getSalesAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
@@ -33,24 +33,6 @@ const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
 };
 
 type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod' | 'paymentStatus';
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatShortDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
 
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -289,7 +271,7 @@ export function SalesSection({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-md border bg-card shadow-sm">
+          <div className="rounded-md bg-card shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -330,8 +312,16 @@ export function SalesSection({
                           onClick={() => toggleExpand(sale.id)}
                         >
                           {visibleColumns.includes('date') && (
-                            <TableCell className="text-muted-foreground whitespace-nowrap">
-                              {formatDate(sale.date)}
+                            <TableCell className="whitespace-nowrap">
+                              {(() => {
+                                const { date, time } = formatDateParts(sale.date);
+                                return (
+                                  <div className="flex flex-col leading-snug">
+                                    <span className="text-sm text-foreground">{date}</span>
+                                    <span className="text-xs text-muted-foreground">{time}</span>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                           )}
                           {showSeller && <TableCell className="font-medium">{sale.sellerName}</TableCell>}

@@ -37,7 +37,7 @@ export function StatCard({ title, value, subtitle, change, period, icon: Icon, g
           <div className="flex items-start justify-between">
             <div className="space-y-1 min-w-0">
               <p className="text-sm font-medium text-white/80">{title}</p>
-              <p className="text-2xl font-bold tracking-tight">{value}</p>
+              <p className="font-display text-2xl font-bold tracking-tight">{value}</p>
               {subtitle && <p className="text-xs text-white/70">{subtitle}</p>}
             </div>
             <div className="shrink-0 rounded-full bg-white/20 p-2">

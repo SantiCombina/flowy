@@ -337,9 +337,9 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setProductToDelete(product)}
-                className="text-destructive focus:text-destructive"
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-2 h-4 w-4 text-destructive" />
                 Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>

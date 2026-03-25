@@ -5,7 +5,7 @@ import type { OwnerDashboardStats, Period } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatShortDate } from '@/lib/utils';
 
 import { PaymentMethodsChart } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
@@ -248,12 +248,12 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                 {stats.recentSales.map((sale) => (
                   <div
                     key={sale.id}
-                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2.5 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md bg-muted/40 px-3 py-2.5 text-sm"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{sale.sellerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {sale.clientName ?? 'Sin registrar'} · {new Date(sale.date).toLocaleDateString('es-AR')}
+                        {sale.clientName ?? 'Sin registrar'} · {formatShortDate(sale.date)}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">

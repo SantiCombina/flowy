@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, formatDateParts } from '@/lib/utils';
 
 const DEFAULT_DATE_RANGE = {
   from: subDays(new Date(), 29),
@@ -53,16 +53,6 @@ const TYPE_LABELS: Record<MovementType, string> = {
 };
 
 type SortKey = 'createdAt' | 'type' | 'productName' | 'quantity';
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 type StockImpact = 'positive' | 'negative' | 'neutral';
 
@@ -258,7 +248,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
         <div className="space-y-3">
           <div
             className={cn(
-              'rounded-md border bg-card shadow-sm transition-opacity duration-150',
+              'rounded-md bg-card shadow-sm transition-opacity duration-150',
               isPending && 'opacity-50 pointer-events-none',
             )}
           >
@@ -293,8 +283,16 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                           onClick={() => setExpandedId((prev) => (prev === movement.id ? null : movement.id))}
                         >
                           {visibleColumns.includes('date') && (
-                            <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
-                              {formatDate(movement.createdAt)}
+                            <TableCell className="whitespace-nowrap">
+                              {(() => {
+                                const { date, time } = formatDateParts(movement.createdAt);
+                                return (
+                                  <div className="flex flex-col leading-snug">
+                                    <span className="text-sm text-foreground">{date}</span>
+                                    <span className="text-xs text-muted-foreground">{time}</span>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                           )}
                           {visibleColumns.includes('type') && (

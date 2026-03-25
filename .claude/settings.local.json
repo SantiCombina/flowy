@@ -61,7 +61,14 @@
       "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
       "Bash(node -e \"require\\(''web-push''\\); console.log\\(''ok''\\)\")",
       "Bash(node -e \"require\\(''pusher''\\); console.log\\(''ok''\\)\")",
-      "Bash(grep -l \"metadata\" c:/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/*/page.tsx c:/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/page.tsx)"
+      "Bash(grep -l \"metadata\" c:/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/*/page.tsx c:/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/page.tsx)",
+      "mcp__stitch__list_projects",
+      "mcp__stitch__create_project",
+      "mcp__stitch__generate_screen_from_text",
+      "mcp__stitch__list_screens",
+      "mcp__stitch__get_project",
+      "mcp__stitch__get_screen",
+      "Bash(ls -la /c/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",

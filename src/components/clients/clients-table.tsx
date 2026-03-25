@@ -169,8 +169,11 @@ export function ClientsTable({
             Editar
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setClientToDelete(c)} className="text-destructive focus:text-destructive">
-            <Trash2 className="mr-2 h-4 w-4" />
+          <DropdownMenuItem
+            onClick={() => setClientToDelete(c)}
+            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
             Eliminar
           </DropdownMenuItem>
         </DropdownMenuContent>

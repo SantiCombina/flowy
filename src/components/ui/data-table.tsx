@@ -92,7 +92,7 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border bg-card shadow-sm">
+      <div className="rounded-md bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
