@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const PERIOD_COMPARISON_LABEL: Record<Period, string> = {
   day: 'vs ayer',
   week: 'vs semana anterior',
-  month: '{comparisonLabel}',
+  month: 'vs mes anterior',
   year: 'vs año anterior',
 };
 
