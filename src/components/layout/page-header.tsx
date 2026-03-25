@@ -30,7 +30,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
       </header>
 
       <div className="px-4 sm:px-6 py-5">
-        <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex flex-row items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
             <p className="mt-0.5 text-sm text-muted-foreground/80">{description}</p>

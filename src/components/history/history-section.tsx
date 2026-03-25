@@ -13,7 +13,7 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
+import { Fragment, useState, useTransition } from 'react';
 
 import { getHistoryMovements } from '@/app/services/stock-movements';
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
@@ -33,6 +33,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
+import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_DATE_RANGE = {
@@ -103,12 +104,11 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
 
   const [data, setData] = useState<HistoryResult>(initialData);
   const [isPending, startTransition] = useTransition();
-  const isFirstMount = useRef(true);
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(DEFAULT_DATE_RANGE);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', 25);
 
   const [sortKey, setSortKey] = useState<SortKey | null>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -127,28 +127,25 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
     });
   }
 
-  useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
-    fetchData({ dateRange, types: selectedTypes });
-  }, [dateRange, selectedTypes]);
-
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
-    setDateRange(range ?? DEFAULT_DATE_RANGE);
+    const newRange = range ?? DEFAULT_DATE_RANGE;
+    setDateRange(newRange);
     setPage(1);
+    fetchData({ dateRange: newRange, types: selectedTypes });
   }
 
   function toggleType(type: MovementType) {
-    setSelectedTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+    const newTypes = selectedTypes.includes(type) ? selectedTypes.filter((t) => t !== type) : [...selectedTypes, type];
+    setSelectedTypes(newTypes);
     setPage(1);
+    fetchData({ dateRange, types: newTypes });
   }
 
   function clearFilters() {
     setDateRange(DEFAULT_DATE_RANGE);
     setSelectedTypes([]);
     setPage(1);
+    fetchData({ dateRange: DEFAULT_DATE_RANGE, types: [] });
   }
 
   function handleSort(key: SortKey) {
@@ -242,7 +239,12 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
           </DropdownMenu>
 
           {(hasActiveFilters || !isDefaultRange) && (
-            <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-muted-foreground" onClick={clearFilters}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+              onClick={clearFilters}
+            >
               <X className="h-4 w-4" />
               Limpiar filtros
             </Button>
@@ -326,7 +328,11 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                             </TableCell>
                           )}
                           <TableCell className="text-center tabular-nums text-sm text-muted-foreground">
-                            {movement.previousStock} → {movement.newStock}
+                            <span className="inline-flex items-center gap-1">
+                              {movement.previousStock}
+                              <ArrowRight className="h-3 w-3 text-muted-foreground/60" />
+                              {movement.newStock}
+                            </span>
                           </TableCell>
                           {showReference && (
                             <TableCell className="text-sm text-muted-foreground">

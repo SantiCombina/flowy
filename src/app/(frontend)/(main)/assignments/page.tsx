@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { getAllSellersInventoryForOwner } from '@/app/services/mobile-seller';
 import { AssignmentsSection } from '@/components/assignments/assignments-section';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
+
+export const metadata: Metadata = {
+  title: 'Asignaciones',
+};
 
 export default async function AssignmentsPage() {
   const user = await getCurrentUser();

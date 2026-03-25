@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
 import { getMobileSellerInventory } from '@/app/services/mobile-seller';
 import { MobileInventorySection } from '@/components/mobile-inventory/mobile-inventory-section';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
+
+export const metadata: Metadata = {
+  title: 'Mi inventario',
+};
 
 export default async function MobileInventoryPage() {
   const user = await getCurrentUser();

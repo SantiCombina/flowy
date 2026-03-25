@@ -5,14 +5,12 @@ import type { OwnerDashboardStats, Period } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils';
 
 import { PaymentMethodsChart } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
 import { SalesChart } from './sales-chart';
 import { StatCard } from './stat-card';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -65,7 +63,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
       />
 
       <main
-        className={`flex-1 space-y-6 px-4 pt-6 pb-8 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+        className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -139,9 +137,17 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
               ) : (
                 stats.salesBySeller.map((seller, i) => {
                   const pct = Math.round((seller.total / totalSellerRevenue) * 100);
+                  const podiumColor =
+                    i === 0
+                      ? 'text-amber-400'
+                      : i === 1
+                        ? 'text-slate-400'
+                        : i === 2
+                          ? 'text-amber-700'
+                          : 'text-muted-foreground';
                   return (
                     <div key={seller.name} className="flex items-center gap-3">
-                      <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">#{i + 1}</span>
+                      <span className={`w-5 shrink-0 text-center text-xs font-bold ${podiumColor}`}>#{i + 1}</span>
                       <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-sm">
                           <span className="truncate font-medium">{seller.name}</span>
@@ -247,12 +253,12 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                     <div className="min-w-0">
                       <p className="truncate font-medium">{sale.sellerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {sale.clientName ?? 'Sin cliente'} · {new Date(sale.date).toLocaleDateString('es-AR')}
+                        {sale.clientName ?? 'Sin registrar'} · {new Date(sale.date).toLocaleDateString('es-AR')}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : '—'}
+                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : 'A crédito'}
                       </Badge>
                       <span className="font-semibold">{formatCurrency(sale.total)}</span>
                     </div>

@@ -4,14 +4,12 @@ import type { Period, SellerDashboardStats } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils';
 
 import { PaymentMethodsChart } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
 import { SalesChart } from './sales-chart';
 import { StatCard } from './stat-card';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -54,7 +52,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
       />
 
       <main
-        className={`flex-1 space-y-6 px-4 pt-6 pb-8 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+        className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -207,7 +205,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
                     className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border px-3 py-2.5 text-sm"
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{sale.clientName ?? 'Sin cliente'}</p>
+                      <p className="truncate font-medium">{sale.clientName ?? 'Sin registrar'}</p>
                       <p className="text-xs text-muted-foreground">
                         {sale.itemCount} producto{sale.itemCount !== 1 ? 's' : ''} ·{' '}
                         {new Date(sale.date).toLocaleDateString('es-AR')}
@@ -215,7 +213,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : '—'}
+                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : 'A crédito'}
                       </Badge>
                       <span className="font-semibold">{formatCurrency(sale.total)}</span>
                     </div>

@@ -2,8 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
+import { formatCurrency } from '@/lib/utils';
 
 const formatCurrencyCompact = (value: number) => {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -28,7 +27,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
 
   if (total === 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center">
+      <div className="flex h-55 items-center justify-center">
         <p className="text-sm text-muted-foreground">Sin ventas este período</p>
       </div>
     );

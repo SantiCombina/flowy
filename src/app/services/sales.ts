@@ -4,6 +4,7 @@ import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
+import { formatCurrency } from '@/lib/utils';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
 
@@ -254,7 +255,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     sellerId,
     type: 'sale_created',
     title: 'Nueva venta',
-    body: `Nueva venta de ${sellerName} por $${total.toFixed(2)}`,
+    body: `Nueva venta de ${sellerName} por ${formatCurrency(total)}`,
     metadata: { saleId: sale.id, total, sellerId },
   });
   process.stdout.write('[sales] AFTER notifyEvent\n');
@@ -410,7 +411,7 @@ export async function registerPayment(
         ownerId: saleOwnerIdForNotif,
         type: 'payment_registered',
         title: 'Cobro registrado',
-        body: `${sellerName} registró cobro de $${amount.toFixed(2)}`,
+        body: `${sellerName} registró cobro de ${formatCurrency(amount)}`,
         metadata: { saleId, amount, sellerId: context.sellerId },
       });
     }

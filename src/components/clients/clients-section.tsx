@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
+import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import type { Client, User } from '@/payload-types';
 
 import { ClientModal } from './client-modal';
@@ -25,7 +26,7 @@ export function ClientsSection({ clients, currentUser }: ClientsSectionProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', 10);
 
   const handleSuccess = () => {
     router.refresh();

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
+import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn } from '@/lib/utils';
 
 import { getSalesAction } from './actions';
@@ -137,7 +138,7 @@ export function SalesSection({
     });
   }, [refreshCount]);
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:sales:limit', 10);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter ?? 'all');
@@ -335,7 +336,9 @@ export function SalesSection({
                           )}
                           {showSeller && <TableCell className="font-medium">{sale.sellerName}</TableCell>}
                           {visibleColumns.includes('client') && (
-                            <TableCell className="text-muted-foreground">{sale.clientName ?? '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {sale.clientName ?? 'Sin registrar'}
+                            </TableCell>
                           )}
                           {visibleColumns.includes('items') && (
                             <TableCell className="text-center tabular-nums">{sale.itemCount}</TableCell>
@@ -350,7 +353,7 @@ export function SalesSection({
                               <span>
                                 {sale.paymentMethod
                                   ? (PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod)
-                                  : '—'}
+                                  : 'A crédito'}
                               </span>
                               {sale.checkDueDate && (
                                 <span

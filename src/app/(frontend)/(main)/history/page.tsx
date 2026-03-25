@@ -1,5 +1,10 @@
 import { subDays } from 'date-fns';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Historial',
+};
 
 import { getHistoryMovements } from '@/app/services/stock-movements';
 import { HistorySection } from '@/components/history/history-section';
