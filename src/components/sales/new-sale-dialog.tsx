@@ -91,106 +91,113 @@ function ItemRow({
   };
 
   return (
-    <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2 items-start">
-      <Controller
-        control={control}
-        name={`items.${index}.variantId`}
-        render={({ field, fieldState }) => (
-          <div>
-            <Select value={field.value ? String(field.value) : ''} onValueChange={handleVariantChange}>
-              <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Producto..." />
-              </SelectTrigger>
-              <SelectContent>
-                {variants.map((v) => {
-                  const totalStock = v.warehouseStock + v.personalStock;
-                  return (
-                    <SelectItem key={v.variantId} value={String(v.variantId)} disabled={totalStock === 0}>
-                      {v.productName}
-                      {v.presentationLabel ? ` · ${v.presentationLabel}` : ''}
-                      {totalStock === 0 ? ' (sin stock)' : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-          </div>
-        )}
-      />
+    <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_80px_110px_140px_32px] sm:gap-2 sm:items-start">
+      <div className="flex gap-2 sm:contents">
+        <Controller
+          control={control}
+          name={`items.${index}.variantId`}
+          render={({ field, fieldState }) => (
+            <div className="flex-1 sm:flex-none">
+              <Select value={field.value ? String(field.value) : ''} onValueChange={handleVariantChange}>
+                <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Producto..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {variants.map((v) => {
+                    const totalStock = v.warehouseStock + v.personalStock;
+                    return (
+                      <SelectItem key={v.variantId} value={String(v.variantId)} disabled={totalStock === 0}>
+                        {v.productName}
+                        {v.presentationLabel ? ` · ${v.presentationLabel}` : ''}
+                        {totalStock === 0 ? ' (sin stock)' : ''}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+            </div>
+          )}
+        />
 
-      <Controller
-        control={control}
-        name={`items.${index}.quantity`}
-        render={({ field, fieldState }) => (
-          <div>
-            <Input
-              type="number"
-              min={1}
-              max={availableStock || undefined}
-              step={1}
-              placeholder="1"
-              value={field.value || ''}
-              onChange={(e) => {
-                const val = Number(e.target.value);
-                field.onChange(availableStock ? Math.min(val, availableStock) : val);
-              }}
-              className={fieldState.error ? 'border-destructive' : ''}
-              disabled={!variantId || availableStock === 0}
-            />
-            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-          </div>
-        )}
-      />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="h-9 w-8 text-muted-foreground hover:text-destructive shrink-0 sm:order-last"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
 
-      <Controller
-        control={control}
-        name={`items.${index}.unitPrice`}
-        render={({ field, fieldState }) => (
-          <div>
-            <PriceInput
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              className={fieldState.error ? 'border-destructive' : ''}
-            />
-            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-          </div>
-        )}
-      />
+      <div className="grid grid-cols-3 gap-2 sm:contents">
+        <Controller
+          control={control}
+          name={`items.${index}.quantity`}
+          render={({ field, fieldState }) => (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Cant.</p>
+              <Input
+                type="number"
+                min={1}
+                max={availableStock || undefined}
+                step={1}
+                placeholder="1"
+                value={field.value || ''}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  field.onChange(availableStock ? Math.min(val, availableStock) : val);
+                }}
+                className={fieldState.error ? 'border-destructive' : ''}
+                disabled={!variantId || availableStock === 0}
+              />
+              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+            </div>
+          )}
+        />
 
-      <Controller
-        control={control}
-        name={`items.${index}.stockSource`}
-        render={({ field, fieldState }) => (
-          <div>
-            <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
-              <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Origen..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="warehouse" disabled={warehouseStock === 0}>
-                  Depósito ({warehouseStock})
-                </SelectItem>
-                <SelectItem value="personal" disabled={personalStock === 0}>
-                  Mi inventario ({personalStock})
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-          </div>
-        )}
-      />
+        <Controller
+          control={control}
+          name={`items.${index}.unitPrice`}
+          render={({ field, fieldState }) => (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Precio</p>
+              <PriceInput
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                className={fieldState.error ? 'border-destructive' : ''}
+              />
+              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+            </div>
+          )}
+        />
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onRemove}
-        className="h-9 w-8 text-muted-foreground hover:text-destructive shrink-0"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+        <Controller
+          control={control}
+          name={`items.${index}.stockSource`}
+          render={({ field, fieldState }) => (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Origen</p>
+              <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
+                <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Origen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="warehouse" disabled={warehouseStock === 0}>
+                    Depósito ({warehouseStock})
+                  </SelectItem>
+                  <SelectItem value="personal" disabled={personalStock === 0}>
+                    Mi inventario ({personalStock})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
+            </div>
+          )}
+        />
+      </div>
     </div>
   );
 }
@@ -294,7 +301,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
               <ResponsiveModalBody className="flex flex-col gap-3">
-                <div className="grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
+                <div className="hidden sm:grid grid-cols-[1fr_80px_110px_140px_32px] gap-2">
                   <p className="text-xs font-medium text-muted-foreground">Producto</p>
                   <p className="text-xs font-medium text-muted-foreground">Cant.</p>
                   <p className="text-xs font-medium text-muted-foreground">Precio unit.</p>

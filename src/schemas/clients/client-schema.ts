@@ -9,7 +9,8 @@ export const clientSchema = z.object({
   cuit: z
     .string({ invalid_type_error: 'El CUIT debe ser texto' })
     .trim()
-    .max(20, 'El CUIT no puede superar los 20 caracteres')
+    .max(13, 'El CUIT no puede superar los 13 caracteres')
+    .refine((val) => !val || /^\d{2}-\d{8}-\d$/.test(val), 'El formato debe ser XX-XXXXXXXX-X')
     .optional()
     .or(z.literal('')),
   phone: z

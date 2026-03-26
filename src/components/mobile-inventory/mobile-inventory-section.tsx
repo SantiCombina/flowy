@@ -23,7 +23,6 @@ export function MobileInventorySection({ inventory }: MobileInventorySectionProp
           <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
             <Package className="h-12 w-12 text-muted-foreground/50" />
             <p className="text-muted-foreground">No tenés stock asignado actualmente.</p>
-            <p className="text-sm text-muted-foreground">El dueño te asignará stock cuando salgas a trabajar.</p>
           </div>
         ) : (
           <>
