@@ -3,6 +3,7 @@
 import { Bell, BellRing, CheckCheck } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import type { NotificationRow } from '@/app/services/notifications';
 import {
@@ -72,20 +73,27 @@ export function NotificationBell() {
       await navigator.serviceWorker.register('/sw.js');
       const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-      if (existing) await existing.unsubscribe();
-      const sub = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
+      const sub =
+        existing ??
+        (await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        }));
 
       const json = sub.toJSON();
       if (json.endpoint && json.keys) {
-        await subscribePushAction({
+        const result = await subscribePushAction({
           endpoint: json.endpoint,
           keys: { p256dh: json.keys['p256dh'] ?? '', auth: json.keys['auth'] ?? '' },
         });
-        setIsSubscribed(true);
+        if (result?.data?.success) {
+          setIsSubscribed(true);
+        } else {
+          toast.error('No se pudo activar las notificaciones. Intentá de nuevo.');
+        }
       }
+    } catch {
+      toast.error('Error al activar notificaciones. Verificá que la app esté instalada desde el inicio.');
     } finally {
       setIsSubscribing(false);
     }
