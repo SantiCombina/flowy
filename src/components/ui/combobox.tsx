@@ -6,6 +6,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -42,8 +44,58 @@ export function Combobox({
   className,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const isMobile = useIsMobile();
 
   const selected = options.find((o) => o.value === value);
+  const filter = (val: string, search: string) => (normalize(val).includes(normalize(search)) ? 1 : 0);
+
+  const renderItems = () =>
+    options.map((option) => (
+      <CommandItem
+        key={option.value}
+        value={option.label}
+        onSelect={() => {
+          onValueChange(option.value === value ? '' : option.value);
+          setOpen(false);
+        }}
+      >
+        {option.label}
+        <Check className={cn('ml-auto h-4 w-4', value === option.value ? 'opacity-100' : 'opacity-0')} />
+      </CommandItem>
+    ));
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          disabled={disabled}
+          className={cn('w-full justify-between font-normal', !selected && 'text-muted-foreground', className)}
+          onClick={() => setOpen(true)}
+        >
+          {selected ? selected.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="rounded-t-xl p-0 max-h-[60dvh] flex flex-col"
+          onOpenAutoFocus={() => undefined}
+        >
+          <Command filter={filter}>
+            <CommandInput placeholder={searchPlaceholder} />
+            <CommandList className="flex-1 overflow-y-auto min-h-0">
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+              <CommandGroup>{renderItems()}</CommandGroup>
+            </CommandList>
+          </Command>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,25 +112,11 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" collisionPadding={16}>
-        <Command filter={(value, search) => (normalize(value).includes(normalize(search)) ? 1 : 0)}>
+        <Command filter={filter}>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList className="max-h-[min(300px,40svh)]">
             <CommandEmpty>{emptyMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onValueChange(option.value === value ? '' : option.value);
-                    setOpen(false);
-                  }}
-                >
-                  {option.label}
-                  <Check className={cn('ml-auto h-4 w-4', value === option.value ? 'opacity-100' : 'opacity-0')} />
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <CommandGroup>{renderItems()}</CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
