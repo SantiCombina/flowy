@@ -17,32 +17,18 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 export function PushRegistration() {
   useEffect(() => {
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-    const register = async () => {
-      if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      await navigator.serviceWorker.register('/sw.js');
+    void navigator.serviceWorker.register('/sw.js');
+
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey || !('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const resync = async () => {
       const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-
-      if (existing) {
-        const json = existing.toJSON();
-        if (json.endpoint && json.keys) {
-          await subscribePushAction({
-            endpoint: json.endpoint,
-            keys: { p256dh: json.keys['p256dh'] ?? '', auth: json.keys['auth'] ?? '' },
-          });
-        }
-        return;
-      }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
-      });
-
-      const json = subscription.toJSON();
+      if (!existing) return;
+      const json = existing.toJSON();
       if (json.endpoint && json.keys) {
         await subscribePushAction({
           endpoint: json.endpoint,
@@ -51,7 +37,7 @@ export function PushRegistration() {
       }
     };
 
-    void register().catch(console.error);
+    void resync().catch(console.error);
   }, []);
 
   return null;

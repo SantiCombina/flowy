@@ -90,25 +90,16 @@ export function NotificationBell() {
   }, [isPushSupported]);
 
   const handleEnablePush = async () => {
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) return;
     setIsSubscribing(true);
     try {
-      const permission = await Notification.requestPermission();
-      setPushPermission(permission);
-      if (permission !== 'granted') return;
-
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) return;
-
-      await navigator.serviceWorker.register('/sw.js');
       const registration = await navigator.serviceWorker.ready;
-      const existing = await registration.pushManager.getSubscription();
-      const sub =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        }));
-
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+      setPushPermission('granted');
       const json = sub.toJSON();
       if (json.endpoint && json.keys) {
         const result = await subscribePushAction({
@@ -118,11 +109,17 @@ export function NotificationBell() {
         if (result?.data?.success) {
           setIsSubscribed(true);
         } else {
-          toast.error('No se pudo activar las notificaciones. Intentá de nuevo.');
+          toast.error('No se pudo guardar la suscripción. Intentá de nuevo.');
         }
       }
-    } catch {
-      toast.error('Error al activar notificaciones. Verificá que la app esté instalada desde el inicio.');
+    } catch (err) {
+      const name = err instanceof Error ? err.name : '';
+      if (name === 'NotAllowedError') {
+        setPushPermission(Notification.permission);
+        toast.error('Permiso denegado. Habilitá las notificaciones en la configuración del sistema.');
+      } else {
+        toast.error(`Error al activar: ${err instanceof Error ? err.message : 'desconocido'}`);
+      }
     } finally {
       setIsSubscribing(false);
     }
@@ -184,7 +181,7 @@ export function NotificationBell() {
           )}
         </div>
         <Separator />
-        <div className="max-h-[360px] overflow-y-auto">
+        <div className="max-h-90 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <Bell className="mb-2 h-8 w-8 text-muted-foreground/30" />
