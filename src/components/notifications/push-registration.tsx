@@ -21,6 +21,7 @@ export function PushRegistration() {
     if (!vapidKey || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     const register = async () => {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
       const registration = await navigator.serviceWorker.register('/sw.js');
       const existing = await registration.pushManager.getSubscription();
 
