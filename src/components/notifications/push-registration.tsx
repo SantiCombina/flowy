@@ -22,7 +22,8 @@ export function PushRegistration() {
 
     const register = async () => {
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.register('/sw.js');
+      const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
 
       if (existing) {

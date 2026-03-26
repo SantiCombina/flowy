@@ -31,10 +31,10 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
 
-  const isPushSupported =
-    typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
+  const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
 
   const { executeAsync: fetchNotifications } = useAction(getNotificationsAction);
   const { executeAsync: markRead } = useAction(markReadAction);
@@ -49,8 +49,13 @@ export function NotificationBell() {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    if (isPushSupported && 'Notification' in window) {
-      setPushPermission(Notification.permission);
+    if (!isPushSupported || !('Notification' in window)) return;
+    setPushPermission(Notification.permission);
+    if (Notification.permission === 'granted') {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => setIsSubscribed(!!sub))
+        .catch(() => undefined);
     }
   }, [isPushSupported]);
 
@@ -64,14 +69,14 @@ export function NotificationBell() {
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) return;
 
-      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.register('/sw.js');
+      const registration = await navigator.serviceWorker.ready;
       const existing = await registration.pushManager.getSubscription();
-      const sub =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        }));
+      if (existing) await existing.unsubscribe();
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
 
       const json = sub.toJSON();
       if (json.endpoint && json.keys) {
@@ -79,6 +84,7 @@ export function NotificationBell() {
           endpoint: json.endpoint,
           keys: { p256dh: json.keys['p256dh'] ?? '', auth: json.keys['auth'] ?? '' },
         });
+        setIsSubscribed(true);
       }
     } finally {
       setIsSubscribing(false);
@@ -156,7 +162,7 @@ export function NotificationBell() {
             </div>
           )}
         </div>
-        {isPushSupported && pushPermission !== 'granted' && (
+        {isPushSupported && !(pushPermission === 'granted' && isSubscribed) && (
           <>
             <Separator />
             <div className="px-4 py-3">
@@ -173,7 +179,11 @@ export function NotificationBell() {
                   disabled={isSubscribing}
                 >
                   <BellRing className="h-3.5 w-3.5" />
-                  {isSubscribing ? 'Activando...' : 'Activar notificaciones push'}
+                  {isSubscribing
+                    ? 'Activando...'
+                    : pushPermission === 'granted'
+                      ? 'Reactivar notificaciones push'
+                      : 'Activar notificaciones push'}
                 </Button>
               )}
             </div>

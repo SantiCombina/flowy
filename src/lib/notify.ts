@@ -124,6 +124,7 @@ async function sendPush({
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           notificationPayload,
+          { TTL: 60, urgency: 'high' },
         );
       } catch (err: unknown) {
         if (
