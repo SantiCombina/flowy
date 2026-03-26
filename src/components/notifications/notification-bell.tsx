@@ -12,11 +12,22 @@ import {
   markReadAction,
   subscribePushAction,
 } from '@/components/notifications/actions';
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { getPusherClient } from '@/lib/pusher-client';
 
 import { NotificationItem } from './notification-item';
+
+const NOTIFICATION_EVENTS = [
+  'sale_created',
+  'payment_registered',
+  'stock_dispatched',
+  'stock_returned',
+  'stock_low',
+  'stock_adjusted',
+] as const;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -28,6 +39,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 }
 
 export function NotificationBell() {
+  const { id: userId, role } = useUser();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -48,6 +60,23 @@ export function NotificationBell() {
       setUnreadCount(result.data.unreadCount);
     }
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return;
+    const channel = role === 'seller' ? `private-seller-${userId}` : `private-owner-${userId}`;
+    const pusher = getPusherClient();
+    const subscription = pusher.subscribe(channel);
+    const handleEvent = () => void loadNotifications();
+    for (const event of NOTIFICATION_EVENTS) {
+      subscription.bind(event, handleEvent);
+    }
+    return () => {
+      for (const event of NOTIFICATION_EVENTS) {
+        subscription.unbind(event, handleEvent);
+      }
+      pusher.unsubscribe(channel);
+    };
+  }, [userId, role, loadNotifications]);
 
   useEffect(() => {
     if (!isPushSupported || !('Notification' in window)) return;
@@ -106,8 +135,7 @@ export function NotificationBell() {
   }, [loadNotifications]);
 
   useEffect(() => {
-    const timer = setTimeout(() => void loadNotifications(), 0);
-    return () => clearTimeout(timer);
+    void loadNotifications();
   }, [loadNotifications]);
 
   const handleOpenChange = (value: boolean) => {
