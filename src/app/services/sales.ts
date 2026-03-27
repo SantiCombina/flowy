@@ -297,12 +297,12 @@ export async function getSales(filters: {
 
   return (result.docs as Sale[]).map((sale: Sale) => {
     const seller = typeof sale.seller === 'object' ? sale.seller : null;
-    const sellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? 0;
+    const sellerId = typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? 0);
     const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
 
     const items: SaleItemDetail[] = sale.items.map((item) => {
       const variant = typeof item.variant === 'object' ? item.variant : null;
-      const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number })?.id ?? 0;
+      const variantId = typeof item.variant === 'number' ? item.variant : ((item.variant as { id: number })?.id ?? 0);
       const product = variant && typeof variant.product === 'object' ? variant.product : null;
       const presentation =
         variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
@@ -448,11 +448,7 @@ export async function registerPayment(
   }
 }
 
-function verifySaleAccess(
-  sale: Sale,
-  callerId: number,
-  callerRole: 'owner' | 'seller',
-): void {
+function verifySaleAccess(sale: Sale, callerId: number, callerRole: 'owner' | 'seller'): void {
   if (callerRole === 'owner') {
     const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
     if (saleOwnerId !== callerId) throw new Error('No autorizado');
@@ -545,8 +541,9 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
   if (!sale) throw new Error('Venta no encontrada');
   verifySaleAccess(sale as Sale, callerId, callerRole);
 
-  const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? callerId;
-  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id ?? callerId;
+  const saleSellerId =
+    typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? callerId);
+  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : ((sale.owner as { id: number })?.id ?? callerId);
 
   for (const item of sale.items) {
     await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`);
@@ -576,8 +573,9 @@ export async function editSaleFull(
   if (!sale) throw new Error('Venta no encontrada');
   verifySaleAccess(sale as Sale, callerId, callerRole);
 
-  const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? callerId;
-  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id ?? callerId;
+  const saleSellerId =
+    typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? callerId);
+  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : ((sale.owner as { id: number })?.id ?? callerId);
 
   for (const item of sale.items) {
     await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Edición venta #${saleId} — reversión`);
@@ -663,8 +661,7 @@ export async function editSaleFull(
   const amountPaid = sale.amountPaid ?? 0;
   const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
 
-  const newPaymentStatus =
-    amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
+  const newPaymentStatus = amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
   const newOwnerPaymentStatus =
     ownerAmountPaid >= newTotal ? 'collected' : ownerAmountPaid > 0 ? 'partially_collected' : 'pending';
 
@@ -683,7 +680,9 @@ export async function editSaleFull(
       total: newTotal,
       ...(data.clientId ? { client: data.clientId } : { client: null }),
       notes: data.notes ?? null,
-      ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : { paymentMethod: null }),
+      ...(isImmediate
+        ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' }
+        : { paymentMethod: null }),
       ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
       paymentStatus: newPaymentStatus,
       ownerPaymentStatus: newOwnerPaymentStatus,

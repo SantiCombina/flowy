@@ -1,13 +1,23 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
 import { PageHeader } from '@/components/layout/page-header';
-import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import {
   DropdownMenu,
@@ -268,11 +279,13 @@ export function SalesSection({
   const totalCols = visibleOptionalCount + 1 + (canCollect ? 1 : 0) + (canManage ? 1 : 0);
 
   const sortableHead = (key: SortKey, label: string, className?: string) => (
-    <TableHead className={className}>
+    <TableHead
+      className={className}
+      aria-sort={sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
       <button
         type="button"
         onClick={() => handleSort(key)}
-        aria-sort={sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
         className={cn(
           'flex items-center gap-1 hover:text-foreground transition-colors',
           className?.includes('text-right') && 'w-full justify-end',
@@ -290,7 +303,11 @@ export function SalesSection({
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5" role="group" aria-label="Filtrar por estado">
+          <div
+            className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5"
+            role="group"
+            aria-label="Filtrar por estado"
+          >
             {(['all', 'pending', 'collected'] as StatusFilter[]).map((filter) => (
               <button
                 key={filter}

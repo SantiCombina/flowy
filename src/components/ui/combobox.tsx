@@ -76,7 +76,11 @@ export function Combobox({
           aria-expanded={open}
           aria-haspopup="listbox"
           disabled={disabled}
-          className={cn('w-full justify-between overflow-hidden font-normal', !selected && 'text-muted-foreground', className)}
+          className={cn(
+            'w-full justify-between overflow-hidden font-normal',
+            !selected && 'text-muted-foreground',
+            className,
+          )}
           onClick={() => setOpen(true)}
         >
           <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
@@ -108,7 +112,11 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn('w-full justify-between overflow-hidden font-normal', !selected && 'text-muted-foreground', className)}
+          className={cn(
+            'w-full justify-between overflow-hidden font-normal',
+            !selected && 'text-muted-foreground',
+            className,
+          )}
         >
           <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

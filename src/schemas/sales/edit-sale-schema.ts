@@ -10,10 +10,7 @@ export const editSaleSchema = z.object({
     .trim()
     .max(500, 'Las notas no pueden superar los 500 caracteres')
     .optional(),
-  clientId: z
-    .number({ invalid_type_error: 'El cliente debe ser un número' })
-    .nullable()
-    .optional(),
+  clientId: z.number({ invalid_type_error: 'El cliente debe ser un número' }).nullable().optional(),
 });
 
 export type EditSaleValues = z.infer<typeof editSaleSchema>;

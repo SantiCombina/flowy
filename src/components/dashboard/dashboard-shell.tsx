@@ -24,13 +24,7 @@ type DashboardShellProps =
       initialStats: SellerDashboardStats;
     };
 
-function OwnerDashboardShell({
-  userName,
-  initialStats,
-}: {
-  userName: string;
-  initialStats: OwnerDashboardStats;
-}) {
+function OwnerDashboardShell({ userName, initialStats }: { userName: string; initialStats: OwnerDashboardStats }) {
   const [period, setPeriod] = useState<Period>('month');
   const [stats, setStats] = useState<OwnerDashboardStats>(initialStats);
   const [isPending, startTransition] = useTransition();
@@ -94,19 +88,8 @@ function SellerDashboardShell({
 
 export function DashboardShell(props: DashboardShellProps) {
   if (props.kind === 'owner') {
-    return (
-      <OwnerDashboardShell
-        userName={props.userName}
-        initialStats={props.initialStats}
-      />
-    );
+    return <OwnerDashboardShell userName={props.userName} initialStats={props.initialStats} />;
   }
 
-  return (
-    <SellerDashboardShell
-      ownerId={props.ownerId}
-      userName={props.userName}
-      initialStats={props.initialStats}
-    />
-  );
+  return <SellerDashboardShell ownerId={props.ownerId} userName={props.userName} initialStats={props.initialStats} />;
 }

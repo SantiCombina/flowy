@@ -1,5 +1,7 @@
 'use server';
 
+import { z } from 'zod';
+
 import { getClients } from '@/app/services/clients';
 import {
   createSale,
@@ -16,7 +18,6 @@ import { collectSaleBySellerSchema, collectSaleSchema } from '@/schemas/sales/co
 import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
 import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
-import { z } from 'zod';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
   const user = await getCurrentUser();

@@ -213,9 +213,8 @@ function ItemRow({
 
 export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
   const { executeAsync: fetchSellerOptions, isExecuting: isLoadingSellerOptions } = useAction(getSaleOptionsAction);
-  const { executeAsync: fetchOwnerOptions, isExecuting: isLoadingOwnerOptions } = useAction(
-    getSaleOptionsForOwnerAction,
-  );
+  const { executeAsync: fetchOwnerOptions, isExecuting: isLoadingOwnerOptions } =
+    useAction(getSaleOptionsForOwnerAction);
   const { executeAsync: fetchClientsForSeller } = useAction(getClientsForSaleAction);
   const { executeAsync: fetchClientsForOwner } = useAction(getClientsForOwnerAction);
   const { executeAsync: submitEdit, isExecuting: isSubmitting } = useAction(editSaleFullAction);
@@ -272,9 +271,6 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
       notes: sale.notes ?? '',
       checkDueDate: sale.checkDueDate ?? undefined,
     });
-    setShowSuccess(false);
-    setServerError(null);
-    setClientsOverride(null);
 
     const loadOptions = async () => {
       if (isSeller) {
