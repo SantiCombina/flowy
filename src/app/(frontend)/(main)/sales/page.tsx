@@ -31,6 +31,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           sales={sales}
           showSellerColumn={false}
           canCollect={true}
+          canManage={true}
           isSeller={true}
           initialStatusFilter={initialStatusFilter}
         />
@@ -48,6 +49,7 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
           sales={sales}
           showSellerColumn={true}
           canCollect={true}
+          canManage={true}
           isSeller={false}
           initialStatusFilter={initialStatusFilter}
         />

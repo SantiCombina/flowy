@@ -1,10 +1,22 @@
 'use server';
 
-import { createSale, getSaleOptions, getSales, registerPayment } from '@/app/services/sales';
+import { getClients } from '@/app/services/clients';
+import {
+  createSale,
+  deleteSale,
+  editSaleFull,
+  getSaleOptions,
+  getSaleOptionsForOwner,
+  getSales,
+  registerPayment,
+} from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { collectSaleBySellerSchema, collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
+import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
+import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
+import { z } from 'zod';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
   const user = await getCurrentUser();
@@ -23,6 +35,20 @@ export const getSaleOptionsAction = actionClient.action(async () => {
 
   return { success: true, ...options };
 });
+
+export const getSaleOptionsForOwnerAction = actionClient
+  .schema(z.object({ sellerId: z.number() }))
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'owner') {
+      throw new Error('No autorizado');
+    }
+
+    const options = await getSaleOptionsForOwner(parsedInput.sellerId, user.id);
+
+    return { success: true, ...options };
+  });
 
 export const createSaleAction = actionClient.schema(saleSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
@@ -71,6 +97,48 @@ export const markSaleAsCollectedBySellerAction = actionClient
 
     return { success: true };
   });
+
+export const deleteSaleAction = actionClient.schema(deleteSaleSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
+    throw new Error('No autorizado');
+  }
+
+  const callerRole = user.role as 'owner' | 'seller';
+  await deleteSale(parsedInput.saleId, user.id, callerRole);
+
+  return { success: true };
+});
+
+export const editSaleFullAction = actionClient.schema(editSaleFullSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
+    throw new Error('No autorizado');
+  }
+
+  const { saleId, ...saleData } = parsedInput;
+  const callerRole = user.role as 'owner' | 'seller';
+  await editSaleFull(saleId, user.id, callerRole, saleData);
+
+  return { success: true };
+});
+
+export const getClientsForOwnerAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+
+  if (!user || user.role !== 'owner') {
+    throw new Error('No autorizado');
+  }
+
+  const clients = await getClients({ ownerId: user.id });
+
+  return {
+    success: true,
+    clients: clients.map((c) => ({ id: c.id, name: c.name })),
+  };
+});
 
 export const getSalesAction = actionClient.action(async () => {
   const user = await getCurrentUser();

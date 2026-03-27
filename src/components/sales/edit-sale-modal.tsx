@@ -6,7 +6,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
-import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
+import type { SaleClientOption, SaleRow, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -25,16 +25,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
-import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
+import { editSaleFullSchema, type EditSaleFullValues } from '@/schemas/sales/edit-sale-full-schema';
+import type { SaleValues } from '@/schemas/sales/sale-schema';
 
 import { getClientsForSaleAction } from '../clients/actions';
 
-import { createSaleAction, getSaleOptionsAction } from './actions';
+import {
+  editSaleFullAction,
+  getClientsForOwnerAction,
+  getSaleOptionsAction,
+  getSaleOptionsForOwnerAction,
+} from './actions';
 
-interface NewSaleDialogProps {
+interface EditSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  sale: SaleRow;
+  isSeller: boolean;
 }
 
 const PAYMENT_OPTIONS = [
@@ -69,11 +77,9 @@ function ItemRow({
     const id = Number(value);
     setValue(`items.${index}.variantId`, id);
     setValue(`items.${index}.quantity`, 1);
-
     const variant = variants.find((v) => v.variantId === id);
     if (variant) {
       setValue(`items.${index}.unitPrice`, variant.price);
-
       if (variant.warehouseStock > 0) {
         setValue(`items.${index}.stockSource`, 'warehouse');
       } else if (variant.personalStock > 0) {
@@ -86,9 +92,7 @@ function ItemRow({
     const source = v as 'warehouse' | 'personal';
     const newMax = source === 'personal' ? personalStock : warehouseStock;
     setValue(`items.${index}.stockSource`, source);
-    if (quantity > newMax) {
-      setValue(`items.${index}.quantity`, newMax);
-    }
+    if (quantity > newMax) setValue(`items.${index}.quantity`, newMax);
   };
 
   return (
@@ -125,7 +129,6 @@ function ItemRow({
             </div>
           )}
         />
-
         <Button
           type="button"
           variant="ghost"
@@ -208,32 +211,46 @@ function ItemRow({
   );
 }
 
-export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
-  const {
-    executeAsync: fetchOptions,
-    isExecuting: isLoadingOptions,
-    result: optionsResult,
-  } = useAction(getSaleOptionsAction);
-  const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
-  const { executeAsync: fetchClients } = useAction(getClientsForSaleAction);
+export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
+  const { executeAsync: fetchSellerOptions, isExecuting: isLoadingSellerOptions } = useAction(getSaleOptionsAction);
+  const { executeAsync: fetchOwnerOptions, isExecuting: isLoadingOwnerOptions } = useAction(
+    getSaleOptionsForOwnerAction,
+  );
+  const { executeAsync: fetchClientsForSeller } = useAction(getClientsForSaleAction);
+  const { executeAsync: fetchClientsForOwner } = useAction(getClientsForOwnerAction);
+  const { executeAsync: submitEdit, isExecuting: isSubmitting } = useAction(editSaleFullAction);
+
+  const isLoadingOptions = isLoadingSellerOptions || isLoadingOwnerOptions;
+
+  const [variants, setVariants] = useState<SaleVariantOption[]>([]);
+  const [clients, setClients] = useState<SaleClientOption[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
 
-  const variants: SaleVariantOption[] = optionsResult?.data?.variants ?? [];
-  const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.data?.clients ?? [];
+  const localClients = clientsOverride ?? clients;
 
-  const form = useForm<SaleValues>({
-    resolver: zodResolver(saleSchema),
+  const currentPaymentMethod = sale.paymentMethod ?? 'credit';
+
+  const form = useForm<EditSaleFullValues>({
+    resolver: zodResolver(editSaleFullSchema),
     defaultValues: {
-      paymentMethod: 'credit',
-      items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
+      saleId: sale.id,
+      paymentMethod: currentPaymentMethod,
+      items: sale.items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        stockSource: item.stockSource,
+      })),
+      clientId: sale.clientId ?? undefined,
+      notes: sale.notes ?? '',
+      checkDueDate: sale.checkDueDate ?? undefined,
     },
   });
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' });
-
   const watchedItems = useWatch({ control: form.control, name: 'items' });
   const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
@@ -241,8 +258,42 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
 
   useEffect(() => {
     if (!isOpen) return;
-    void fetchOptions();
-  }, [isOpen]);
+
+    form.reset({
+      saleId: sale.id,
+      paymentMethod: sale.paymentMethod ?? 'credit',
+      items: sale.items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        stockSource: item.stockSource,
+      })),
+      clientId: sale.clientId ?? undefined,
+      notes: sale.notes ?? '',
+      checkDueDate: sale.checkDueDate ?? undefined,
+    });
+    setShowSuccess(false);
+    setServerError(null);
+    setClientsOverride(null);
+
+    const loadOptions = async () => {
+      if (isSeller) {
+        const result = await fetchSellerOptions();
+        if (result?.data) {
+          setVariants(result.data.variants ?? []);
+          setClients(result.data.clients ?? []);
+        }
+      } else {
+        const result = await fetchOwnerOptions({ sellerId: sale.sellerId });
+        if (result?.data) {
+          setVariants(result.data.variants ?? []);
+          setClients(result.data.clients ?? []);
+        }
+      }
+    };
+
+    void loadOptions();
+  }, [isOpen, sale.id]);
 
   const handleClose = () => {
     setClientsOverride(null);
@@ -252,19 +303,28 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   };
 
   const handleNewClientSuccess = async (newClient: Client) => {
-    const result = await fetchClients();
-    if (result?.data?.clients) {
-      setClientsOverride(result.data.clients);
+    if (isSeller) {
+      const result = await fetchClientsForSeller();
+      if (result?.data?.clients) {
+        setClientsOverride(result.data.clients);
+      } else {
+        setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
+      }
     } else {
-      setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
+      const result = await fetchClientsForOwner();
+      if (result?.data?.clients) {
+        setClientsOverride(result.data.clients);
+      } else {
+        setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
+      }
     }
     form.setValue('clientId', newClient.id);
     setIsClientModalOpen(false);
   };
 
-  const onSubmit = async (data: SaleValues) => {
+  const onSubmit = async (data: EditSaleFullValues) => {
     setServerError(null);
-    const result = await submitSale(data);
+    const result = await submitEdit(data);
 
     if (result?.serverError) {
       setServerError(result.serverError);
@@ -285,8 +345,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     <>
       <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-3xl">
         <ResponsiveModalHeader>
-          <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
-          <ResponsiveModalDescription>Completá los datos de la venta para registrarla.</ResponsiveModalDescription>
+          <ResponsiveModalTitle>Editar venta</ResponsiveModalTitle>
+          <ResponsiveModalDescription>Modificá los datos de la venta.</ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         {showSuccess ? (
@@ -295,8 +355,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
               <CheckCircle2 className="h-6 w-6 text-green-600" />
             </div>
             <div className="text-center space-y-1">
-              <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
-              <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
+              <h3 className="font-semibold text-lg">¡Venta actualizada!</h3>
+              <p className="text-sm text-muted-foreground">Los cambios fueron guardados correctamente.</p>
             </div>
           </ResponsiveModalBody>
         ) : isLoadingOptions ? (
@@ -321,7 +381,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     index={index}
                     variants={variants}
                     onRemove={() => remove(index)}
-                    form={form}
+                    form={form as unknown as ReturnType<typeof useForm<SaleValues>>}
                   />
                 ))}
 
@@ -457,7 +517,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
-                    {isSubmitting ? 'Registrando…' : 'Registrar venta'}
+                    {isSubmitting ? 'Guardando…' : 'Actualizar venta'}
                   </Button>
                 </div>
               </ResponsiveModalFooter>

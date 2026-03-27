@@ -26,6 +26,14 @@ const TYPE_CONFIG: Record<MovementType, { label: string; className: string }> = 
     label: 'Devolución',
     className: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
   },
+  sale_cancelled: {
+    label: 'Venta cancelada',
+    className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
+  },
+  sale_edit: {
+    label: 'Edición venta',
+    className: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
+  },
 };
 
 interface MovementTypeBadgeProps {

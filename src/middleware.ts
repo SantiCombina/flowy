@@ -55,6 +55,8 @@ export const config = {
     '/statistics',
     '/settings',
     '/profile',
+    '/clients',
+    '/mobile-inventory',
     '/login',
     '/register',
   ],

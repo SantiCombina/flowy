@@ -133,3 +133,8 @@
     background-size: 20px 20px;
   }
 }
+
+@keyframes loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}

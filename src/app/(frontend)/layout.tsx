@@ -24,6 +24,8 @@ export const metadata: Metadata = {
   description: 'Sistema de gestión de inventario y ventas para distribuidoras.',
   appleWebApp: {
     title: 'Flowy',
+    capable: true,
+    statusBarStyle: 'default',
   },
   openGraph: {
     title: 'Flowy',

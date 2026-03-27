@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
@@ -11,6 +12,7 @@ import type { SaleValues } from '@/schemas/sales/sale-schema';
 export interface SaleVariantOption {
   variantId: number;
   productName: string;
+  brandName?: string;
   presentationLabel?: string;
   code?: string;
   price: number;
@@ -29,17 +31,22 @@ export interface SaleOptions {
 }
 
 export interface SaleItemDetail {
+  variantId: number;
   variantName: string;
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  stockSource: 'warehouse' | 'personal';
 }
 
 export interface SaleRow {
   id: number;
   date: string;
+  sellerId: number;
   sellerName: string;
+  clientId?: number;
   clientName?: string;
+  notes?: string;
   itemCount: number;
   total: number;
   paymentMethod: 'cash' | 'transfer' | 'check' | null;
@@ -90,10 +97,12 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
   const variants: SaleVariantOption[] = variantsResult.docs.map((variant) => {
     const product = typeof variant.product === 'object' ? variant.product : null;
     const presentation = variant.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+    const brand = product?.brand && typeof product.brand === 'object' ? product.brand : null;
 
     return {
       variantId: variant.id,
       productName: product?.name ?? 'Producto desconocido',
+      brandName: brand?.name ?? undefined,
       presentationLabel: presentation?.label ?? undefined,
       code: variant.code ?? undefined,
       price: variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100),
@@ -258,6 +267,9 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     metadata: { saleId: sale.id, total, sellerId },
   });
 
+  revalidateTag('owner-dashboard');
+  revalidateTag('seller-dashboard');
+
   return sale as Sale;
 }
 
@@ -285,10 +297,12 @@ export async function getSales(filters: {
 
   return (result.docs as Sale[]).map((sale: Sale) => {
     const seller = typeof sale.seller === 'object' ? sale.seller : null;
+    const sellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? 0;
     const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
 
     const items: SaleItemDetail[] = sale.items.map((item) => {
       const variant = typeof item.variant === 'object' ? item.variant : null;
+      const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number })?.id ?? 0;
       const product = variant && typeof variant.product === 'object' ? variant.product : null;
       const presentation =
         variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
@@ -297,18 +311,23 @@ export async function getSales(filters: {
       const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
 
       return {
+        variantId,
         variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         subtotal: item.quantity * item.unitPrice,
+        stockSource: (item.stockSource ?? 'warehouse') as 'warehouse' | 'personal',
       };
     });
 
     return {
       id: sale.id,
       date: sale.date,
+      sellerId,
       sellerName: seller?.name ?? 'Vendedor desconocido',
+      clientId: client?.id ?? undefined,
       clientName: client?.name ?? undefined,
+      notes: sale.notes ?? undefined,
       itemCount: sale.items.length,
       total: sale.total,
       paymentMethod: sale.paymentMethod ?? null,
@@ -427,4 +446,255 @@ export async function registerPayment(
       });
     }
   }
+}
+
+function verifySaleAccess(
+  sale: Sale,
+  callerId: number,
+  callerRole: 'owner' | 'seller',
+): void {
+  if (callerRole === 'owner') {
+    const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+    if (saleOwnerId !== callerId) throw new Error('No autorizado');
+  } else {
+    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    if (saleSellerId !== callerId) throw new Error('No autorizado');
+  }
+}
+
+async function restoreItemStock(
+  payload: Awaited<ReturnType<typeof getPayloadClient>>,
+  item: { variant: number | { id: number }; quantity: number; stockSource?: string | null },
+  saleSellerId: number,
+  ownerId: number,
+  reason: string,
+): Promise<void> {
+  const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+
+  if (item.stockSource === 'warehouse') {
+    const variant = await payload.findByID({
+      collection: 'product-variants',
+      id: variantId,
+      overrideAccess: true,
+    });
+    if (!variant) return;
+    const newStock = variant.stock + item.quantity;
+    await payload.update({
+      collection: 'product-variants',
+      id: variantId,
+      data: { stock: newStock },
+      overrideAccess: true,
+    });
+    await payload.create({
+      collection: 'stock-movements',
+      data: {
+        variant: variantId,
+        type: 'sale_cancelled' as const,
+        quantity: item.quantity,
+        previousStock: variant.stock,
+        newStock,
+        reason,
+        owner: ownerId,
+        createdBy: saleSellerId,
+      },
+      overrideAccess: true,
+    });
+  } else {
+    const { docs } = await payload.find({
+      collection: 'mobile-seller-inventory',
+      where: { and: [{ seller: { equals: saleSellerId } }, { variant: { equals: variantId } }] },
+      limit: 1,
+      overrideAccess: true,
+    });
+    if (!docs[0]) return;
+    const newQty = docs[0].quantity + item.quantity;
+    await payload.update({
+      collection: 'mobile-seller-inventory',
+      id: docs[0].id,
+      data: { quantity: newQty },
+      overrideAccess: true,
+    });
+    await payload.create({
+      collection: 'stock-movements',
+      data: {
+        variant: variantId,
+        type: 'sale_cancelled' as const,
+        quantity: item.quantity,
+        previousStock: docs[0].quantity,
+        newStock: newQty,
+        reason,
+        mobileSeller: saleSellerId,
+        owner: ownerId,
+        createdBy: saleSellerId,
+      },
+      overrideAccess: true,
+    });
+  }
+}
+
+export async function deleteSale(saleId: number, callerId: number, callerRole: 'owner' | 'seller'): Promise<void> {
+  const payload = await getPayloadClient();
+
+  const sale = await payload.findByID({
+    collection: 'sales',
+    id: saleId,
+    depth: 1,
+    overrideAccess: true,
+  });
+
+  if (!sale) throw new Error('Venta no encontrada');
+  verifySaleAccess(sale as Sale, callerId, callerRole);
+
+  const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? callerId;
+  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id ?? callerId;
+
+  for (const item of sale.items) {
+    await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`);
+  }
+
+  await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true });
+
+  revalidateTag('owner-dashboard');
+  revalidateTag('seller-dashboard');
+}
+
+export async function editSaleFull(
+  saleId: number,
+  callerId: number,
+  callerRole: 'owner' | 'seller',
+  data: SaleValues,
+): Promise<void> {
+  const payload = await getPayloadClient();
+
+  const sale = await payload.findByID({
+    collection: 'sales',
+    id: saleId,
+    depth: 1,
+    overrideAccess: true,
+  });
+
+  if (!sale) throw new Error('Venta no encontrada');
+  verifySaleAccess(sale as Sale, callerId, callerRole);
+
+  const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id ?? callerId;
+  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id ?? callerId;
+
+  for (const item of sale.items) {
+    await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Edición venta #${saleId} — reversión`);
+  }
+
+  for (const item of data.items) {
+    const variant = await payload.findByID({
+      collection: 'product-variants',
+      id: item.variantId,
+      depth: 1,
+      overrideAccess: true,
+    });
+    if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+    if (item.stockSource === 'warehouse') {
+      if (variant.stock < item.quantity) {
+        throw new Error(
+          `Stock insuficiente en depósito para ${variant.code ?? item.variantId}. ` +
+            `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
+        );
+      }
+      const newStock = variant.stock - item.quantity;
+      await payload.update({
+        collection: 'product-variants',
+        id: item.variantId,
+        data: { stock: newStock },
+        overrideAccess: true,
+      });
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'sale_edit' as const,
+          quantity: -item.quantity,
+          previousStock: variant.stock,
+          newStock,
+          reason: `Edición venta #${saleId}`,
+          owner: saleOwnerId,
+          createdBy: callerId,
+        },
+        overrideAccess: true,
+      });
+    } else {
+      const { docs: inventoryDocs } = await payload.find({
+        collection: 'mobile-seller-inventory',
+        where: { and: [{ seller: { equals: saleSellerId } }, { variant: { equals: item.variantId } }] },
+        limit: 1,
+        overrideAccess: true,
+      });
+      const inventoryRecord = inventoryDocs[0];
+      if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
+        throw new Error(
+          `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
+            `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
+        );
+      }
+      const newMobileStock = inventoryRecord.quantity - item.quantity;
+      await payload.update({
+        collection: 'mobile-seller-inventory',
+        id: inventoryRecord.id,
+        data: { quantity: newMobileStock },
+        overrideAccess: true,
+      });
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'sale_edit' as const,
+          quantity: -item.quantity,
+          previousStock: inventoryRecord.quantity,
+          newStock: newMobileStock,
+          reason: `Edición venta #${saleId}`,
+          mobileSeller: saleSellerId,
+          owner: saleOwnerId,
+          createdBy: callerId,
+        },
+        overrideAccess: true,
+      });
+    }
+  }
+
+  const newTotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const amountPaid = sale.amountPaid ?? 0;
+  const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
+
+  const newPaymentStatus =
+    amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
+  const newOwnerPaymentStatus =
+    ownerAmountPaid >= newTotal ? 'collected' : ownerAmountPaid > 0 ? 'partially_collected' : 'pending';
+
+  const isImmediate = data.paymentMethod !== 'credit';
+
+  await payload.update({
+    collection: 'sales',
+    id: saleId,
+    data: {
+      items: data.items.map((item) => ({
+        variant: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        stockSource: item.stockSource,
+      })),
+      total: newTotal,
+      ...(data.clientId ? { client: data.clientId } : { client: null }),
+      notes: data.notes ?? null,
+      ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : { paymentMethod: null }),
+      ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
+      paymentStatus: newPaymentStatus,
+      ownerPaymentStatus: newOwnerPaymentStatus,
+    } as Partial<Sale>,
+    overrideAccess: true,
+  });
+
+  revalidateTag('owner-dashboard');
+  revalidateTag('seller-dashboard');
+}
+
+export async function getSaleOptionsForOwner(sellerId: number, ownerId: number): Promise<SaleOptions> {
+  return getSaleOptions(sellerId, ownerId);
 }

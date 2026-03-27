@@ -48,7 +48,7 @@ export function ResponsiveModalDescription({ className, ...props }: React.Compon
 }
 
 export function ResponsiveModalBody({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('flex-1 overflow-y-auto px-6 py-4', className)} {...props} />;
+  return <div className={cn('flex-1 overflow-x-hidden overflow-y-auto px-6 py-4', className)} {...props} />;
 }
 
 export function ResponsiveModalFooter({ className, ...props }: React.ComponentProps<'div'>) {

@@ -41,7 +41,16 @@ const DEFAULT_DATE_RANGE = {
   to: new Date(),
 };
 
-const ALL_TYPES: MovementType[] = ['entry', 'exit', 'adjustment', 'sale', 'dispatch_to_mobile', 'return_from_mobile'];
+const ALL_TYPES: MovementType[] = [
+  'entry',
+  'exit',
+  'adjustment',
+  'sale',
+  'dispatch_to_mobile',
+  'return_from_mobile',
+  'sale_cancelled',
+  'sale_edit',
+];
 
 const TYPE_LABELS: Record<MovementType, string> = {
   entry: 'Ingreso',
@@ -50,6 +59,8 @@ const TYPE_LABELS: Record<MovementType, string> = {
   sale: 'Venta',
   dispatch_to_mobile: 'Asignación',
   return_from_mobile: 'Devolución',
+  sale_cancelled: 'Venta cancelada',
+  sale_edit: 'Edición venta',
 };
 
 type SortKey = 'createdAt' | 'type' | 'productName' | 'quantity';
@@ -59,6 +70,7 @@ type StockImpact = 'positive' | 'negative' | 'neutral';
 function getStockImpact(movement: HistoryMovement): StockImpact {
   switch (movement.type) {
     case 'entry':
+    case 'sale_cancelled':
       return 'positive';
     case 'exit':
     case 'sale':
@@ -67,6 +79,7 @@ function getStockImpact(movement: HistoryMovement): StockImpact {
     case 'return_from_mobile':
       return 'neutral';
     case 'adjustment':
+    case 'sale_edit':
       return movement.quantity > 0 ? 'positive' : movement.quantity < 0 ? 'negative' : 'neutral';
   }
 }

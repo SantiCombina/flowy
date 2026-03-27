@@ -7,7 +7,15 @@ import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Product, ProductVariant, StockMovement, User } from '@/payload-types';
 
-export type MovementType = 'entry' | 'exit' | 'adjustment' | 'sale' | 'dispatch_to_mobile' | 'return_from_mobile';
+export type MovementType =
+  | 'entry'
+  | 'exit'
+  | 'adjustment'
+  | 'sale'
+  | 'dispatch_to_mobile'
+  | 'return_from_mobile'
+  | 'sale_cancelled'
+  | 'sale_edit';
 
 export interface HistoryMovement {
   id: number;

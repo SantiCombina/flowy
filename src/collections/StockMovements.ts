@@ -61,6 +61,14 @@ export const StockMovements: CollectionConfig = {
           label: 'Devolución de vendedor móvil',
           value: 'return_from_mobile',
         },
+        {
+          label: 'Venta cancelada',
+          value: 'sale_cancelled',
+        },
+        {
+          label: 'Edición de venta',
+          value: 'sale_edit',
+        },
       ],
     },
     {

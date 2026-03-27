@@ -4,7 +4,7 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const MIN_ACTION_DURATION = process.env.NODE_ENV === 'development' ? 1500 : 0;
+const MIN_ACTION_DURATION = process.env.NODE_ENV === 'development' ? 500 : 0;
 
 export const actionClient = createSafeActionClient({
   handleServerError(e) {
@@ -16,8 +16,8 @@ export const actionClient = createSafeActionClient({
   const actionId = Math.random().toString(36).substring(2, 9);
 
   if (process.env.NODE_ENV === 'development') {
-    console.warn(`[${actionId}] Action started`);
-    console.warn(`[${actionId}] Input:`, clientInput);
+    console.log(`[${actionId}] Action started`);
+    console.log(`[${actionId}] Input:`, clientInput);
   }
 
   try {
@@ -26,8 +26,8 @@ export const actionClient = createSafeActionClient({
     const duration = Math.round(endTime - startTime);
 
     if (process.env.NODE_ENV === 'development') {
-      console.warn(`[${actionId}] Completed in ${duration}ms`);
-      console.warn(`[${actionId}] Output:`, result);
+      console.log(`[${actionId}] Completed in ${duration}ms`);
+      console.log(`[${actionId}] Output:`, result);
     }
 
     if (duration < MIN_ACTION_DURATION) {

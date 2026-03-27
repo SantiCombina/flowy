@@ -2,8 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Gestión de Negocio',
+    name: 'Flowy — Gestión de Negocio',
     short_name: 'Flowy',
+    start_url: '/',
     icons: [
       {
         src: '/web-app-manifest-192x192.png',
@@ -21,5 +22,6 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#ffffff',
     background_color: '#ffffff',
     display: 'standalone',
+    orientation: 'portrait',
   };
 }

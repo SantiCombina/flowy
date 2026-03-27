@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 interface ComboboxOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface ComboboxProps {
@@ -54,7 +55,9 @@ export function Combobox({
       <CommandItem
         key={option.value}
         value={option.label}
+        disabled={option.disabled}
         onSelect={() => {
+          if (option.disabled) return;
           onValueChange(option.value === value ? '' : option.value);
           setOpen(false);
         }}
@@ -73,10 +76,10 @@ export function Combobox({
           aria-expanded={open}
           aria-haspopup="listbox"
           disabled={disabled}
-          className={cn('w-full justify-between font-normal', !selected && 'text-muted-foreground', className)}
+          className={cn('w-full justify-between overflow-hidden font-normal', !selected && 'text-muted-foreground', className)}
           onClick={() => setOpen(true)}
         >
-          {selected ? selected.label : placeholder}
+          <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
         <SheetContent
@@ -105,9 +108,9 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn('w-full justify-between font-normal', !selected && 'text-muted-foreground', className)}
+          className={cn('w-full justify-between overflow-hidden font-normal', !selected && 'text-muted-foreground', className)}
         >
-          {selected ? selected.label : placeholder}
+          <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

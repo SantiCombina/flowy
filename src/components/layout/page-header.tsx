@@ -13,20 +13,26 @@ interface PageHeaderProps {
   title: string;
   description: string;
   actions?: ReactNode;
+  isLoading?: boolean;
 }
 
-export function PageHeader({ title, description, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, isLoading }: PageHeaderProps) {
   const user = useUser();
 
   return (
     <>
-      <header className="flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
+      <header className="relative flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
           {user?.role === 'seller' && <NewSaleButton />}
           <NotificationBell />
           <UserDropdown user={user} />
         </div>
+        {isLoading && (
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden">
+            <div className="h-full w-1/3 animate-[loading_1.2s_ease-in-out_infinite] bg-primary" />
+          </div>
+        )}
       </header>
 
       <div className="px-4 sm:px-6 py-5">

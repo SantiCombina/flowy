@@ -1,12 +1,31 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSalesRefresh } from '@/contexts/sales-refresh-context';
@@ -15,8 +34,9 @@ import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 
-import { getSalesAction } from './actions';
+import { deleteSaleAction, getSalesAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
+import { EditSaleModal } from './edit-sale-modal';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -85,6 +105,7 @@ interface SalesSectionProps {
   sales: SaleRow[];
   showSellerColumn: boolean;
   canCollect: boolean;
+  canManage: boolean;
   isSeller: boolean;
   initialStatusFilter?: StatusFilter;
 }
@@ -93,6 +114,7 @@ export function SalesSection({
   sales,
   showSellerColumn,
   canCollect,
+  canManage,
   isSeller,
   initialStatusFilter,
 }: SalesSectionProps) {
@@ -104,21 +126,6 @@ export function SalesSection({
 
   const [localSales, setLocalSales] = useState<SaleRow[]>(sales);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-
-  const { refreshCount } = useSalesRefresh();
-
-  useEffect(() => {
-    setLocalSales(sales);
-  }, [sales]);
-
-  useEffect(() => {
-    if (refreshCount === 0) return;
-    void getSalesAction().then((result) => {
-      if (result?.data?.success) {
-        setLocalSales(result.data.sales);
-      }
-    });
-  }, [refreshCount]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:sales:limit', 10);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -129,6 +136,25 @@ export function SalesSection({
     total: number;
     amountPaid: number;
   } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
+
+  const { refreshCount } = useSalesRefresh();
+  const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
+  const { executeAsync: executeFetchSales, isExecuting: isFetchingSales } = useAction(getSalesAction);
+
+  useEffect(() => {
+    setLocalSales(sales);
+  }, [sales]);
+
+  useEffect(() => {
+    if (refreshCount === 0) return;
+    void executeFetchSales().then((result) => {
+      if (result?.data?.success) {
+        setLocalSales(result.data.sales);
+      }
+    });
+  }, [refreshCount, executeFetchSales]);
 
   const handleCollectSuccess = (
     saleId: number,
@@ -157,6 +183,30 @@ export function SalesSection({
       }),
     );
     setCollectingModal(null);
+  };
+
+  const handleEditSuccess = () => {
+    setEditingSale(null);
+    void executeFetchSales().then((result) => {
+      if (result?.data?.success) {
+        setLocalSales(result.data.sales);
+      }
+    });
+  };
+
+  const handleDelete = async (saleId: number) => {
+    const result = await executeDelete({ saleId });
+    setDeleteConfirmId(null);
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      toast.success('Venta eliminada correctamente');
+      setLocalSales((prev) => prev.filter((s) => s.id !== saleId));
+    }
   };
 
   const toggleExpand = (id: number) => {
@@ -215,13 +265,14 @@ export function SalesSection({
       visibleColumns.includes(k),
     ).length + (showSeller ? 1 : 0);
 
-  const totalCols = visibleOptionalCount + 1 + (canCollect ? 1 : 0);
+  const totalCols = visibleOptionalCount + 1 + (canCollect ? 1 : 0) + (canManage ? 1 : 0);
 
   const sortableHead = (key: SortKey, label: string, className?: string) => (
     <TableHead className={className}>
       <button
         type="button"
         onClick={() => handleSort(key)}
+        aria-sort={sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
         className={cn(
           'flex items-center gap-1 hover:text-foreground transition-colors',
           className?.includes('text-right') && 'w-full justify-end',
@@ -235,11 +286,11 @@ export function SalesSection({
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Ventas" description="Registro y seguimiento de ventas" />
+      <PageHeader title="Ventas" description="Registro y seguimiento de ventas" isLoading={isFetchingSales} />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5">
+          <div className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5" role="group" aria-label="Filtrar por estado">
             {(['all', 'pending', 'collected'] as StatusFilter[]).map((filter) => (
               <button
                 key={filter}
@@ -248,6 +299,7 @@ export function SalesSection({
                   setStatusFilter(filter);
                   setPage(1);
                 }}
+                aria-pressed={statusFilter === filter}
                 className={cn(
                   'inline-flex items-center rounded-md px-3 py-1 text-sm font-medium transition-colors',
                   statusFilter === filter
@@ -283,6 +335,7 @@ export function SalesSection({
                   {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-36')}
                   {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-32')}
                   {canCollect && <TableHead className="w-28" />}
+                  {canManage && <TableHead className="w-10" />}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -382,6 +435,31 @@ export function SalesSection({
                               )}
                             </TableCell>
                           )}
+                          {canManage && (
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setEditingSale(sale)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setDeleteConfirmId(sale.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          )}
                           <TableCell className="text-right pr-2">
                             <Button
                               variant="ghost"
@@ -475,6 +553,12 @@ export function SalesSection({
                                   )}
                                 </div>
                               )}
+                              {sale.notes && (
+                                <div className="py-2 text-sm">
+                                  <p className="text-xs text-muted-foreground">Notas</p>
+                                  <p className="text-sm">{sale.notes}</p>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         )}
@@ -522,8 +606,9 @@ export function SalesSection({
                   className="h-8 w-8 p-0"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={safePage <= 1}
+                  aria-label="Página anterior"
                 >
-                  ‹
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
@@ -531,8 +616,9 @@ export function SalesSection({
                   className="h-8 w-8 p-0"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={safePage >= totalPages}
+                  aria-label="Página siguiente"
                 >
-                  ›
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -549,6 +635,37 @@ export function SalesSection({
           {...collectingModal}
         />
       )}
+
+      {editingSale && (
+        <EditSaleModal
+          isOpen
+          onClose={() => setEditingSale(null)}
+          onSuccess={handleEditSuccess}
+          sale={editingSale}
+          isSeller={isSeller}
+        />
+      )}
+
+      <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar venta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El stock de los productos será restaurado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId !== null && void handleDelete(deleteConfirmId)}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Eliminando…' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

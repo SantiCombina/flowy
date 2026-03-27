@@ -261,7 +261,7 @@ export const getOwnerDashboardStats = unstable_cache(
     };
   },
   ['owner-dashboard'],
-  { revalidate: 60 * 5 },
+  { revalidate: 60 * 5, tags: ['owner-dashboard'] },
 );
 
 export const getSellerDashboardStats = unstable_cache(
@@ -338,5 +338,5 @@ export const getSellerDashboardStats = unstable_cache(
     };
   },
   ['seller-dashboard'],
-  { revalidate: 60 * 5 },
+  { revalidate: 60 * 5, tags: ['seller-dashboard'] },
 );
