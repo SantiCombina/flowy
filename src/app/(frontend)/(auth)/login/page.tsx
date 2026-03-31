@@ -1,5 +1,6 @@
 import { Box, Package, ShoppingCart, Users } from 'lucide-react';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -51,7 +52,13 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <p className="text-xs text-primary-foreground/40">© 2026 Flowy</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-primary-foreground/60">© 2026 Flowy</p>
+          <a href="https://forge.ar" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+            <span className="text-xs text-primary-foreground/70">Un desarrollo de</span>
+            <Image src="/Forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto" />
+          </a>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 p-6 bg-muted/20">
