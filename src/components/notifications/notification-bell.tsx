@@ -74,7 +74,6 @@ export function NotificationBell() {
       for (const event of NOTIFICATION_EVENTS) {
         subscription.unbind(event, handleEvent);
       }
-      pusher.unsubscribe(channel);
     };
   }, [userId, role, loadNotifications]);
 
@@ -124,12 +123,6 @@ export function NotificationBell() {
       setIsSubscribing(false);
     }
   };
-
-  useEffect(() => {
-    const handleNewNotification = () => void loadNotifications();
-    window.addEventListener('flowy:notification', handleNewNotification);
-    return () => window.removeEventListener('flowy:notification', handleNewNotification);
-  }, [loadNotifications]);
 
   useEffect(() => {
     void loadNotifications();

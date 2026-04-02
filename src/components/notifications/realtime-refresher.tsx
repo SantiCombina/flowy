@@ -23,7 +23,6 @@ export function RealtimeRefresher({ channel, events }: RealtimeRefresherProps) {
 
     const handleEvent = () => {
       router.refresh();
-      window.dispatchEvent(new CustomEvent('flowy:notification'));
     };
 
     for (const event of eventList) {
@@ -34,7 +33,6 @@ export function RealtimeRefresher({ channel, events }: RealtimeRefresherProps) {
       for (const event of eventList) {
         subscription.unbind(event, handleEvent);
       }
-      pusher.unsubscribe(channel);
     };
   }, [channel, eventsKey, router]);
 
