@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -94,7 +94,7 @@ export function ChangePasswordDialog() {
                     <FormItem>
                       <FormLabel>Contraseña actual</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <PasswordInput placeholder="••••••••" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -108,7 +108,7 @@ export function ChangePasswordDialog() {
                     <FormItem>
                       <FormLabel>Nueva contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <PasswordInput placeholder="••••••••" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -122,7 +122,7 @@ export function ChangePasswordDialog() {
                     <FormItem>
                       <FormLabel>Confirmar nueva contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <PasswordInput placeholder="••••••••" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

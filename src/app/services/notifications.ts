@@ -17,7 +17,7 @@ export async function getNotifications(userId: number): Promise<NotificationRow[
 
   const result = await payload.find({
     collection: 'notifications',
-    where: { recipient: { equals: userId } },
+    where: { and: [{ recipient: { equals: userId } }, { read: { equals: false } }] },
     sort: '-createdAt',
     limit: 50,
     overrideAccess: true,

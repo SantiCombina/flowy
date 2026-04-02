@@ -142,13 +142,13 @@ export function NotificationBell() {
 
   const handleMarkRead = async (id: number) => {
     await markRead({ id });
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
   const handleMarkAllRead = async () => {
     await markAllRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications([]);
     setUnreadCount(0);
   };
 
