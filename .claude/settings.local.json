@@ -72,7 +72,8 @@
       "mcp__plugin_engram_engram__mem_context",
       "mcp__plugin_engram_engram__mem_search",
       "mcp__plugin_engram_engram__mem_session_start",
-      "mcp__plugin_engram_engram__mem_save"
+      "mcp__plugin_engram_engram__mem_save",
+      "Bash(pnpm generate:importmap)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",

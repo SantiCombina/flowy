@@ -58,7 +58,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Invitación Inválida</CardTitle>
+          <CardTitle className="text-2xl">Invitación inválida</CardTitle>
           <CardDescription>El enlace de invitación no es válido o ha expirado.</CardDescription>
         </CardHeader>
       </Card>
@@ -68,7 +68,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
+        <CardTitle className="text-2xl">Crear cuenta</CardTitle>
         <CardDescription>
           Registrándose como <span className="font-medium capitalize">{role === 'owner' ? 'Dueño' : 'Vendedor'}</span>
           <br />
@@ -99,7 +99,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirmar Contraseña</FormLabel>
+                  <FormLabel>Confirmar contraseña</FormLabel>
                   <FormControl>
                     <PasswordInput placeholder="••••••••" {...field} />
                   </FormControl>
@@ -109,7 +109,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={status === 'executing'}>
-              {status === 'executing' ? 'Creando cuenta...' : 'Crear Cuenta'}
+              {status === 'executing' ? 'Creando cuenta...' : 'Crear cuenta'}
             </Button>
           </form>
         </Form>

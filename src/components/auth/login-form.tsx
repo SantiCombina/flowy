@@ -143,7 +143,7 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <Form {...loginForm}>
-          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-2">
+          <form method="post" onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-2">
             {registered && (
               <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
                 Cuenta creada exitosamente. Ingresá tus credenciales.

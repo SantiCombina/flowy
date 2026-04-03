@@ -24,10 +24,31 @@ export async function createUser(data: CreateUserData): Promise<CreateUserResult
     collection: 'users',
     where: { email: { equals: data.email } },
     limit: 1,
+    overrideAccess: true,
   });
 
-  if (existingUsers.length > 0) {
-    return { success: false, error: 'El email ya está registrado' };
+  const existingUser = existingUsers[0];
+
+  if (existingUser) {
+    if (!existingUser.isDeleted) {
+      return { success: false, error: 'El email ya está registrado' };
+    }
+
+    const user = await payload.update({
+      collection: 'users',
+      id: existingUser.id,
+      data: {
+        name: data.name,
+        password: data.password,
+        role: data.role,
+        isActive: true,
+        isDeleted: false,
+        ...(data.owner ? { owner: data.owner } : {}),
+      },
+      overrideAccess: true,
+    });
+
+    return { success: true, user: { id: user.id, email: user.email } };
   }
 
   try {
@@ -78,6 +99,16 @@ interface LoginUserResult {
 export async function loginUser(data: LoginUserData): Promise<LoginUserResult> {
   const payload = await getPayloadClient();
 
+  const user = await getUserByEmail(data.email);
+
+  if (user && user.isDeleted === true) {
+    return { success: false, error: 'Credenciales inválidas' };
+  }
+
+  if (user && user.isActive === false) {
+    return { success: false, error: 'Tu cuenta está desactivada. Contactá a tu administrador.' };
+  }
+
   try {
     const result = await payload.login({
       collection: 'users',
@@ -100,7 +131,7 @@ export async function getSellers(ownerId: number): Promise<User[]> {
   const result = await payload.find({
     collection: 'users',
     where: {
-      and: [{ owner: { equals: ownerId } }, { role: { equals: 'seller' } }],
+      and: [{ owner: { equals: ownerId } }, { role: { equals: 'seller' } }, { isDeleted: { not_equals: true } }],
     },
     sort: '-createdAt',
     limit: 1000,
@@ -136,9 +167,10 @@ export async function updateSeller(sellerId: number, data: UpdateSellerData): Pr
 export async function deleteSeller(sellerId: number): Promise<void> {
   const payload = await getPayloadClient();
 
-  await payload.delete({
+  await payload.update({
     collection: 'users',
     id: sellerId,
+    data: { isDeleted: true, isActive: false },
     overrideAccess: true,
   });
 }

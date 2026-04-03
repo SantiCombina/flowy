@@ -161,6 +161,10 @@ export interface User {
    */
   isActive?: boolean | null;
   /**
+   * Indica si el vendedor fue eliminado por el owner
+   */
+  isDeleted?: boolean | null;
+  /**
    * Número de teléfono del vendedor
    */
   phone?: string | null;
@@ -763,6 +767,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   owner?: T;
   isActive?: T;
+  isDeleted?: T;
   phone?: T;
   dni?: T;
   cuitCuil?: T;

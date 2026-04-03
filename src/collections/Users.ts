@@ -86,6 +86,14 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'isDeleted',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Indica si el vendedor fue eliminado por el owner',
+      },
+    },
+    {
       name: 'phone',
       type: 'text',
       admin: {

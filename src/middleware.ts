@@ -13,11 +13,37 @@ const routeToFeature: Record<string, string> = {
 
 const publicRoutes = ['/login', '/register'];
 
+function getTokenRole(token: string): string | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64)) as { role?: string };
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-
   const token = request.cookies.get('payload-token');
   const isAuthenticated = !!token?.value;
+
+  if (pathname.startsWith('/admin')) {
+    if (pathname.startsWith('/admin/login')) {
+      return NextResponse.next();
+    }
+
+    if (!isAuthenticated) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
+    const role = getTokenRole(token!.value);
+    if (role !== 'admin') {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    return NextResponse.next();
+  }
 
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
@@ -47,6 +73,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/',
+    '/admin/:path*',
     '/products',
     '/sellers',
     '/assignments',

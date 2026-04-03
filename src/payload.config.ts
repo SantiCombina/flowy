@@ -35,6 +35,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      graphics: {
+        Logo: '@/components/admin/logo',
+      },
+    },
+    access: ({ req: { user } }) => user?.role === 'admin',
   },
   collections: [
     Users,
