@@ -68,7 +68,11 @@
       "mcp__stitch__list_screens",
       "mcp__stitch__get_project",
       "mcp__stitch__get_screen",
-      "Bash(ls -la /c/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/)"
+      "Bash(ls -la /c/Users/santi/Documents/Workspace/flowy/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(main\\\\\\)/)",
+      "mcp__plugin_engram_engram__mem_context",
+      "mcp__plugin_engram_engram__mem_search",
+      "mcp__plugin_engram_engram__mem_session_start",
+      "mcp__plugin_engram_engram__mem_save"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",
