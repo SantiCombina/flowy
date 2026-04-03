@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { phoneSchema } from '@/lib/phone';
+
 export const editSellerSchema = z.object({
   name: z
     .string({
@@ -22,15 +24,7 @@ export const editSellerSchema = z.object({
     .email({
       message: 'Por favor ingresa una dirección de email válida.',
     }),
-  phone: z
-    .string({
-      invalid_type_error: 'El teléfono debe ser una cadena de texto.',
-    })
-    .max(20, {
-      message: 'El teléfono debe tener como máximo 20 caracteres.',
-    })
-    .optional()
-    .or(z.literal('')),
+  phone: phoneSchema.optional().or(z.literal('')),
   dni: z
     .string({
       invalid_type_error: 'El DNI debe ser una cadena de texto.',

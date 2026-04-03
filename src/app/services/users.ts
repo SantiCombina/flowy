@@ -149,6 +149,7 @@ interface UpdateSellerData {
   dni?: string;
   cuitCuil?: string;
   cbu?: string;
+  businessName?: string;
 }
 
 export async function updateSeller(sellerId: number, data: UpdateSellerData): Promise<User> {
@@ -204,4 +205,20 @@ export async function changePassword(userId: number, newPassword: string): Promi
     data: { password: newPassword },
     overrideAccess: true,
   });
+}
+
+export async function getOwnerById(ownerId: number): Promise<User | null> {
+  const payload = await getPayloadClient();
+
+  try {
+    const owner = await payload.findByID({
+      collection: 'users',
+      id: ownerId,
+      overrideAccess: true,
+    });
+
+    return owner as User;
+  } catch {
+    return null;
+  }
 }

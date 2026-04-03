@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { getOwnerById } from '@/app/services/users';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PushRegistration } from '@/components/notifications/push-registration';
 import { UserProvider } from '@/components/providers/user-provider';
@@ -21,6 +22,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false';
 
+  const ownerForSeller =
+    user.role === 'seller' && typeof user.owner === 'number' ? await getOwnerById(user.owner) : null;
+
+  const businessName = user.role === 'owner' ? (user.businessName ?? null) : (ownerForSeller?.businessName ?? null);
+
   return (
     <UserProvider
       user={{
@@ -28,6 +34,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         name: user.name,
         email: user.email,
         role: user.role,
+        businessName,
       }}
     >
       <SettingsProvider>

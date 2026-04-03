@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
+import { formatPhoneInput } from '@/lib/phone';
 import type { Client } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
 
@@ -30,17 +31,6 @@ function formatCuit(raw: string): string {
   if (digits.length <= 2) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
   return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
-}
-
-function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 10);
-  if (digits.length <= 4) return digits;
-  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-}
-
-function stripPhonePrefix(stored: string): string {
-  const trimmed = stored.replace(/^\+54\s*/, '');
-  return trimmed;
 }
 
 interface ClientModalProps {
@@ -227,24 +217,12 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                   <FormItem>
                     <FormLabel>Teléfono</FormLabel>
                     <FormControl>
-                      <div className="flex">
-                        <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground">
-                          +54
-                        </span>
-                        <Input
-                          inputMode="numeric"
-                          placeholder="3564-123456"
-                          className="rounded-l-none"
-                          value={stripPhonePrefix(field.value ?? '')}
-                          onChange={(e) => {
-                            const formatted = formatPhone(e.target.value);
-                            field.onChange(formatted ? `+54 ${formatted}` : '');
-                          }}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                          ref={field.ref}
-                        />
-                      </div>
+                      <Input
+                        inputMode="tel"
+                        placeholder="+54 9 11 1234-5678"
+                        {...field}
+                        onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -180,6 +180,10 @@ export interface User {
    * Clave Bancaria Uniforme para pagos
    */
   cbu?: string | null;
+  /**
+   * Nombre del negocio visible en el sidebar
+   */
+  businessName?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -772,6 +776,7 @@ export interface UsersSelect<T extends boolean = true> {
   dni?: T;
   cuitCuil?: T;
   cbu?: T;
+  businessName?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

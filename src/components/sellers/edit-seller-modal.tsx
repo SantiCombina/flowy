@@ -18,6 +18,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { formatPhoneInput } from '@/lib/phone';
 import type { User } from '@/payload-types';
 import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
 
@@ -142,7 +143,12 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>Teléfono</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="+54 9 11 1234-5678" maxLength={20} />
+                      <Input
+                        inputMode="tel"
+                        placeholder="+54 9 11 1234-5678"
+                        {...field}
+                        onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

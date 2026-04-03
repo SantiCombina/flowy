@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { phoneSchema } from '@/lib/phone';
+
 export const clientSchema = z.object({
   name: z
     .string({ required_error: 'El nombre es requerido', invalid_type_error: 'El nombre debe ser texto' })
@@ -13,12 +15,7 @@ export const clientSchema = z.object({
     .refine((val) => !val || /^\d{2}-\d{8}-\d$/.test(val), 'El formato debe ser XX-XXXXXXXX-X')
     .optional()
     .or(z.literal('')),
-  phone: z
-    .string({ invalid_type_error: 'El teléfono debe ser texto' })
-    .trim()
-    .max(50, 'El teléfono no puede superar los 50 caracteres')
-    .optional()
-    .or(z.literal('')),
+  phone: phoneSchema.optional().or(z.literal('')),
   email: z
     .string({ invalid_type_error: 'El email debe ser texto' })
     .trim()

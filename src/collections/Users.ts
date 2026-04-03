@@ -125,5 +125,13 @@ export const Users: CollectionConfig = {
         description: 'Clave Bancaria Uniforme para pagos',
       },
     },
+    {
+      name: 'businessName',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Nombre del negocio visible en el sidebar',
+      },
+    },
   ],
 };

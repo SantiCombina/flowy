@@ -92,7 +92,9 @@ export function AppSidebar({ features }: AppSidebarProps) {
           </div>
           <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-300 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">Flowy</span>
-            <span className="text-xs text-sidebar-foreground/60 whitespace-nowrap">Gestión de negocio</span>
+            <span className="text-xs text-sidebar-foreground/60 whitespace-nowrap">
+              {user?.businessName?.trim() || 'Mi negocio'}
+            </span>
           </div>
         </Link>
       </SidebarHeader>
