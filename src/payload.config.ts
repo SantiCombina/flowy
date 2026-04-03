@@ -40,7 +40,6 @@ export default buildConfig({
         Logo: '@/components/admin/logo',
       },
     },
-    access: ({ req: { user } }) => user?.role === 'admin',
   },
   collections: [
     Users,
