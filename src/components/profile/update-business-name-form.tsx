@@ -56,7 +56,7 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
           )}
         />
 
-        <Button type="submit" disabled={isExecuting}>
+        <Button type="submit" disabled={isExecuting} className="ml-auto block">
           {isExecuting ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </form>

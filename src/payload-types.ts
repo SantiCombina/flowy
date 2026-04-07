@@ -184,6 +184,22 @@ export interface User {
    * Nombre del negocio visible en el sidebar
    */
   businessName?: string | null;
+  /**
+   * CUIT de la empresa (XX-XXXXXXXX-X)
+   */
+  businessCuit?: string | null;
+  /**
+   * Teléfono comercial del negocio
+   */
+  businessPhone?: string | null;
+  /**
+   * Domicilio fiscal de la empresa
+   */
+  businessAddress?: string | null;
+  /**
+   * Condición ante IVA
+   */
+  ivaCondition?: ('responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -777,6 +793,10 @@ export interface UsersSelect<T extends boolean = true> {
   cuitCuil?: T;
   cbu?: T;
   businessName?: T;
+  businessCuit?: T;
+  businessPhone?: T;
+  businessAddress?: T;
+  ivaCondition?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

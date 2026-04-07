@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PageHeader } from '../layout/page-header';
 
 import { ChangePasswordDialog } from './change-password-dialog';
+import { UpdateBusinessDataForm } from './update-business-data-form';
 import { UpdateBusinessNameForm } from './update-business-name-form';
 import { UpdateProfileForm } from './update-profile-form';
 
@@ -31,9 +32,23 @@ interface ProfileSectionProps {
   cuitCuil?: string | null;
   cbu?: string | null;
   businessName?: string | null;
+  businessCuit?: string | null;
+  businessPhone?: string | null;
+  businessAddress?: string | null;
+  ivaCondition?: string | null;
 }
 
-export function ProfileSection({ phone, dni, cuitCuil, cbu, businessName }: ProfileSectionProps) {
+export function ProfileSection({
+  phone,
+  dni,
+  cuitCuil,
+  cbu,
+  businessName,
+  businessCuit,
+  businessPhone,
+  businessAddress,
+  ivaCondition,
+}: ProfileSectionProps) {
   const user = useUser();
 
   const initials = user.name
@@ -45,10 +60,14 @@ export function ProfileSection({ phone, dni, cuitCuil, cbu, businessName }: Prof
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Mi perfil" description="Información de tu cuenta" />
+      <PageHeader title="Mi perfil" description="Información de tu cuenta" hideTitle />
 
-      <main className="flex-1 px-4 pb-6 sm:px-6">
-        <div className="max-w-2xl space-y-6">
+      <main className="flex-1 px-4 py-6 sm:px-6">
+        <div className="flex flex-col gap-6 w-full lg:w-3/5 lg:mx-auto">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Mi perfil</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground/80">Información de tu cuenta</p>
+          </div>
           <Card>
             <CardContent className="pt-6 pb-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
@@ -90,7 +109,7 @@ export function ProfileSection({ phone, dni, cuitCuil, cbu, businessName }: Prof
               </div>
               <CardDescription>Gestioná el acceso a tu cuenta</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">Contraseña</p>
@@ -110,23 +129,28 @@ export function ProfileSection({ phone, dni, cuitCuil, cbu, businessName }: Prof
                 </div>
                 <CardDescription>Este nombre aparecerá en el sidebar para vos y tus vendedores</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <UpdateBusinessNameForm initialValue={businessName} />
               </CardContent>
             </Card>
           )}
 
-          {user.role === 'seller' && (
+          {user.role === 'owner' && (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-base">Datos personales</CardTitle>
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">Datos fiscales</CardTitle>
                 </div>
-                <CardDescription>Tu información de contacto y datos fiscales</CardDescription>
+                <CardDescription>Información de tu empresa para facturación</CardDescription>
               </CardHeader>
-              <CardContent>
-                <UpdateProfileForm phone={phone} dni={dni} cuitCuil={cuitCuil} cbu={cbu} />
+              <CardContent className="pt-4">
+                <UpdateBusinessDataForm
+                  businessCuit={businessCuit}
+                  businessPhone={businessPhone}
+                  businessAddress={businessAddress}
+                  ivaCondition={ivaCondition}
+                />
               </CardContent>
             </Card>
           )}
@@ -141,6 +165,21 @@ export function ProfileSection({ phone, dni, cuitCuil, cbu, businessName }: Prof
                   <p className="text-sm font-medium">Trabajando para</p>
                   <p className="text-sm text-muted-foreground">{user.businessName}</p>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {user.role === 'seller' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">Datos personales</CardTitle>
+                </div>
+                <CardDescription>Tu información de contacto y datos fiscales</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <UpdateProfileForm phone={phone} dni={dni} cuitCuil={cuitCuil} cbu={cbu} />
               </CardContent>
             </Card>
           )}

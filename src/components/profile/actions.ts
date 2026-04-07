@@ -4,6 +4,7 @@ import { changePassword, loginUser as loginUserService, updateSeller } from '@/a
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { changePasswordSchema } from '@/schemas/profile/change-password-schema';
+import { updateBusinessDataSchema } from '@/schemas/profile/update-business-data-schema';
 import { updateBusinessNameSchema } from '@/schemas/profile/update-business-name-schema';
 import { updateProfileSchema } from '@/schemas/profile/update-profile-schema';
 
@@ -35,6 +36,20 @@ export const updateProfileAction = actionClient.schema(updateProfileSchema).acti
 
   return { success: true };
 });
+
+export const updateBusinessDataAction = actionClient
+  .schema(updateBusinessDataSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+
+    if (!user) throw new Error('No autenticado');
+
+    if (user.role !== 'owner') throw new Error('Solo los dueños pueden actualizar los datos de empresa');
+
+    await updateSeller(user.id, parsedInput);
+
+    return { success: true };
+  });
 
 export const updateBusinessNameAction = actionClient
   .schema(updateBusinessNameSchema)

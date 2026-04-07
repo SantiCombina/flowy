@@ -14,9 +14,10 @@ interface PageHeaderProps {
   description: string;
   actions?: ReactNode;
   isLoading?: boolean;
+  hideTitle?: boolean;
 }
 
-export function PageHeader({ title, description, actions, isLoading }: PageHeaderProps) {
+export function PageHeader({ title, description, actions, isLoading, hideTitle }: PageHeaderProps) {
   const user = useUser();
 
   return (
@@ -35,15 +36,17 @@ export function PageHeader({ title, description, actions, isLoading }: PageHeade
         )}
       </header>
 
-      <div className="px-4 sm:px-6 py-5">
-        <div className="flex flex-row items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground/80">{description}</p>
+      {!hideTitle && (
+        <div className="px-4 sm:px-6 py-5">
+          <div className="flex flex-row items-end justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground/80">{description}</p>
+            </div>
+            {actions && <div className="shrink-0">{actions}</div>}
           </div>
-          {actions && <div className="shrink-0">{actions}</div>}
         </div>
-      </div>
+      )}
     </>
   );
 }

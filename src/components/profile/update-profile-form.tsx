@@ -59,7 +59,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="phone"
@@ -131,7 +131,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
           )}
         />
 
-        <Button type="submit" disabled={isExecuting}>
+        <Button type="submit" disabled={isExecuting} className="ml-auto block">
           {isExecuting ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </form>

@@ -133,5 +133,43 @@ export const Users: CollectionConfig = {
         description: 'Nombre del negocio visible en el sidebar',
       },
     },
+    {
+      name: 'businessCuit',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'CUIT de la empresa (XX-XXXXXXXX-X)',
+      },
+    },
+    {
+      name: 'businessPhone',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Teléfono comercial del negocio',
+      },
+    },
+    {
+      name: 'businessAddress',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Domicilio fiscal de la empresa',
+      },
+    },
+    {
+      name: 'ivaCondition',
+      type: 'select',
+      options: [
+        { label: 'Responsable Inscripto', value: 'responsable_inscripto' },
+        { label: 'Monotributista', value: 'monotributista' },
+        { label: 'Exento', value: 'exento' },
+        { label: 'No Responsable', value: 'no_responsable' },
+      ],
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Condición ante IVA',
+      },
+    },
   ],
 };

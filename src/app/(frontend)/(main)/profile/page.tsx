@@ -17,6 +17,10 @@ export default async function ProfilePage() {
       cuitCuil={user?.cuitCuil ?? null}
       cbu={user?.cbu ?? null}
       businessName={user?.businessName ?? null}
+      businessCuit={user?.businessCuit ?? null}
+      businessPhone={user?.businessPhone ?? null}
+      businessAddress={user?.businessAddress ?? null}
+      ivaCondition={user?.ivaCondition ?? null}
     />
   );
 }

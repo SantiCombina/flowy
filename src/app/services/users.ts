@@ -150,6 +150,10 @@ interface UpdateSellerData {
   cuitCuil?: string;
   cbu?: string;
   businessName?: string;
+  businessCuit?: string;
+  businessPhone?: string;
+  businessAddress?: string;
+  ivaCondition?: 'responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable';
 }
 
 export async function updateSeller(sellerId: number, data: UpdateSellerData): Promise<User> {
