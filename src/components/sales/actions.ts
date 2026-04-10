@@ -53,20 +53,36 @@ export const getSaleOptionsForOwnerAction = actionClient
     return { success: true, ...options };
   });
 
-export const createSaleAction = actionClient.schema(saleSchema).action(async ({ parsedInput }) => {
+export const getSaleOptionsAsOwnerAction = actionClient.action(async () => {
   const user = await getCurrentUser();
 
-  if (!user || user.role !== 'seller') {
+  if (!user || user.role !== 'owner') {
     throw new Error('No autorizado');
   }
 
-  const ownerId = typeof user.owner === 'number' ? user.owner : user.owner?.id;
+  const options = await getSaleOptions(user.id, user.id);
 
-  if (!ownerId) {
-    throw new Error('El vendedor no tiene un dueño asignado');
+  return { success: true, ...options };
+});
+
+export const createSaleAction = actionClient.schema(saleSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'seller' && user.role !== 'owner')) {
+    throw new Error('No autorizado');
   }
 
-  await createSale(user.id, ownerId, parsedInput);
+  if (user.role === 'owner') {
+    await createSale(user.id, user.id, parsedInput);
+  } else {
+    const ownerId = typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    if (!ownerId) {
+      throw new Error('El vendedor no tiene un dueño asignado');
+    }
+
+    await createSale(user.id, ownerId, parsedInput);
+  }
 
   return { success: true };
 });

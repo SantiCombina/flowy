@@ -25,7 +25,7 @@ export function PageHeader({ title, description, actions, isLoading, hideTitle }
       <header className="relative flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
         <SidebarTrigger />
         <div className="flex items-center gap-2">
-          {user?.role === 'seller' && <NewSaleButton />}
+          {(user?.role === 'seller' || user?.role === 'owner') && <NewSaleButton />}
           <NotificationBell />
           <UserDropdown user={user} />
         </div>

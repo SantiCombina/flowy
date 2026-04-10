@@ -28,9 +28,11 @@ import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 
+import { useUser } from '@/components/providers/user-provider';
+
 import { getClientsForSaleAction } from '../clients/actions';
 
-import { createSaleAction, getSaleOptionsAction } from './actions';
+import { createSaleAction, getSaleOptionsAction, getSaleOptionsAsOwnerAction } from './actions';
 
 interface NewSaleDialogProps {
   isOpen: boolean;
@@ -210,11 +212,24 @@ function ItemRow({
 }
 
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
+  const user = useUser();
+  const isOwner = user?.role === 'owner';
+
   const {
-    executeAsync: fetchOptions,
-    isExecuting: isLoadingOptions,
-    result: optionsResult,
+    executeAsync: fetchSellerOptions,
+    isExecuting: isLoadingSellerOptions,
+    result: sellerOptionsResult,
   } = useAction(getSaleOptionsAction);
+
+  const {
+    executeAsync: fetchOwnerOptions,
+    isExecuting: isLoadingOwnerOptions,
+    result: ownerOptionsResult,
+  } = useAction(getSaleOptionsAsOwnerAction);
+
+  const fetchOptions = isOwner ? fetchOwnerOptions : fetchSellerOptions;
+  const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
+  const optionsResult = isOwner ? ownerOptionsResult : sellerOptionsResult;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
   const { executeAsync: fetchClients } = useAction(getClientsForSaleAction);
   const [showSuccess, setShowSuccess] = useState(false);
