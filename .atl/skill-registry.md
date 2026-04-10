@@ -1,6 +1,6 @@
 # Skill Registry — flowy
 
-Generated: 2026-04-02
+Generated: 2026-04-10
 
 ## Convention Files
 - `CLAUDE.md` (project-level) — architecture, conventions, 3-layer pattern, Payload CMS rules
@@ -11,10 +11,14 @@ Generated: 2026-04-02
 | Skill | Trigger |
 |-------|---------|
 | `branch-pr` | Creating a PR, opening a pull request, preparing changes for review |
+| `frontend-design` | Building web components, pages, dashboards, or styling/beautifying UI |
 | `issue-creation` | Creating a GitHub issue, reporting a bug, requesting a feature |
 | `judgment-day` | Adversarial review of code, parallel judge review protocol |
+| `next-best-practices` | Next.js 15 App Router patterns — loaded automatically for frontend tasks |
+| `payload` | Working with Payload collections, hooks, access control, debugging Payload |
 | `seo-audit` | SEO audit, technical SEO, why am I not ranking, SEO issues |
 | `skill-creator` | Create a new skill, add agent instructions, document patterns for AI |
+| `web-design-guidelines` | Reviewing UI for accessibility, design compliance, UX audit |
 
 ## SDD Phase Skills
 

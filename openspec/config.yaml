@@ -1,0 +1,61 @@
+schema: spec-driven
+
+context: |
+  Stack: Next.js 15 (App Router), Payload CMS 3.75, PostgreSQL (Neon), Tailwind CSS 4, shadcn/ui, next-safe-action 8, React Hook Form 7, Zod 3, Pusher, Resend, UploadThing
+  Architecture: Multi-tenant SaaS. 3-layer: Client Component → Action Layer → Service Layer
+  Roles: admin, owner, seller (fixed/mobile)
+  Paths: src/app/services/ (services), src/components/[feature]/ (actions.ts + components), src/schemas/[feature]/
+  Types: payload-types.ts (auto-generated, never edit)
+
+strict_tdd: false
+
+testing:
+  strict_tdd: false
+  reason: No test runner detected in devDependencies
+  test_runner: NOT FOUND
+  unit: NOT AVAILABLE
+  integration: NOT AVAILABLE
+  e2e: NOT AVAILABLE
+  coverage: NOT AVAILABLE
+  linter:
+    available: true
+    command: pnpm lint
+  type_checker:
+    available: true
+    command: tsc --noEmit
+  formatter:
+    available: true
+    command: prettier
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes (migrations, schema changes)
+    - Identify affected collections and payload-types.ts impact
+    - Note if pnpm generate:types is required
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Specify role-based access (admin/owner/seller) in scenarios
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+    - Note Payload CMS collection changes explicitly
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+    - Always include "run pnpm generate:types" after collection changes
+  apply:
+    - Follow 3-layer architecture strictly
+    - Never use `any` or unsafe `as` casts
+    - Import schemas from src/schemas/[feature]/ — never inline
+    - Use overrideAccess: true in services only
+    - Verify TypeScript with tsc --noEmit after each task
+  verify:
+    - Run tsc --noEmit to validate TypeScript
+    - Run pnpm lint for code quality
+    - Compare implementation against every spec scenario
+    - Verify role-based access controls match specs
+  archive:
+    - Warn before merging destructive deltas (large removals)
+    - Run pnpm generate:types if any collection changed

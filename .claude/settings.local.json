@@ -75,7 +75,12 @@
       "mcp__plugin_engram_engram__mem_save",
       "Bash(pnpm generate:importmap)",
       "mcp__plugin_engram_engram__mem_get_observation",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(pnpm lint:fix:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",
