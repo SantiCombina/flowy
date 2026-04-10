@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowUpDown,
-  Check,
   ChevronDown,
   Filter,
   TrendingDown,
@@ -22,12 +21,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { FilterSheet } from '@/components/ui/filter-sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -216,45 +210,45 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
       <PageHeader title="Historial" description="Registro de movimientos de inventario" />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="space-y-2">
           <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 gap-1.5">
-                <Filter className="h-4 w-4" />
-                Tipo
-                {selectedTypes.length > 0 && (
-                  <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-                    {selectedTypes.length}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {ALL_TYPES.map((type) => (
-                <DropdownMenuItem key={type} onClick={() => toggleType(type)}>
-                  {TYPE_LABELS[type]}
-                  {selectedTypes.includes(type) && <Check className="ml-auto h-4 w-4" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <FilterSheet
+              title="Tipo de movimiento"
+              align="start"
+              trigger={
+                <Button variant="outline" size="sm" className="h-9 gap-1.5">
+                  <Filter className="h-4 w-4" />
+                  Tipo
+                  {selectedTypes.length > 0 && (
+                    <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                      {selectedTypes.length}
+                    </span>
+                  )}
+                </Button>
+              }
+              items={ALL_TYPES.map((type) => ({
+                key: type,
+                label: TYPE_LABELS[type],
+                checked: selectedTypes.includes(type),
+                onToggle: () => toggleType(type),
+              }))}
+            />
 
-          {(hasActiveFilters || !isDefaultRange) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
-              onClick={clearFilters}
-            >
-              <X className="h-4 w-4" />
-              Limpiar filtros
-            </Button>
-          )}
-
-          <div className="ml-auto">
             <ColumnVisibilityDropdown tableName="history" />
+
+            {(hasActiveFilters || !isDefaultRange) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+                onClick={clearFilters}
+              >
+                <X className="h-4 w-4" />
+                Limpiar filtros
+              </Button>
+            )}
           </div>
         </div>
 

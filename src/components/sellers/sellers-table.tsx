@@ -1,10 +1,11 @@
 'use client';
 
-import { ArrowDownToLine, ArrowUpFromLine, Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { User } from '@/payload-types';
@@ -125,43 +118,15 @@ export function SellersTable({
     key: 'actions',
     header: '',
     cell: (seller) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onViewDetails?.(seller)}>
-            <Eye className="mr-2 h-4 w-4" />
-            Ver detalles
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onEdit?.(seller)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </DropdownMenuItem>
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onDispatch?.(seller)}>
-              <ArrowDownToLine className="mr-2 h-4 w-4" />
-              Despachar stock
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onReturn?.(seller)}>
-              <ArrowUpFromLine className="mr-2 h-4 w-4" />
-              Registrar devolución
-            </DropdownMenuItem>
-          </>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setSellerToDelete(seller)}
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-            Eliminar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ActionMenu
+        items={[
+          { label: 'Ver detalles', icon: Eye, onClick: () => onViewDetails?.(seller) },
+          { label: 'Despachar stock', icon: ArrowDownToLine, onClick: () => onDispatch?.(seller) },
+          { label: 'Devolver stock', icon: ArrowUpFromLine, onClick: () => onReturn?.(seller) },
+          { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(seller), separator: true },
+          { label: 'Eliminar', icon: Trash2, onClick: () => setSellerToDelete(seller), variant: 'destructive' },
+        ]}
+      />
     ),
     className: 'w-16',
   };

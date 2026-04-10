@@ -9,6 +9,8 @@ import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface DateRangeValue {
@@ -63,13 +65,14 @@ export function DateRangePicker({
   placeholder = 'Seleccionar período',
   className,
 }: DateRangePickerProps) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [selectingFrom, setSelectingFrom] = useState<Date | undefined>();
   const [hoveredDay, setHoveredDay] = useState<Date | undefined>();
   const lastHoveredIso = useRef<string | null>(null);
 
   const calendarSelected: DateRange | undefined = (() => {
-    if (!selectingFrom) return undefined;
+    if (!selectingFrom) return value ? { from: value.from, to: value.to } : undefined;
     if (hoveredDay) {
       const start = selectingFrom <= hoveredDay ? selectingFrom : hoveredDay;
       const end = selectingFrom <= hoveredDay ? hoveredDay : selectingFrom;
@@ -117,28 +120,107 @@ export function DateRangePicker({
     onChange(undefined);
   }
 
+  const trigger = (
+    <Button
+      variant="outline"
+      className={cn('h-9 justify-start gap-2 px-3 text-sm font-normal', !value && 'text-muted-foreground', className)}
+    >
+      <CalendarDays className="h-4 w-4 shrink-0" />
+      <span className="flex-1 text-left">{value ? formatRange(value) : placeholder}</span>
+      {value && (
+        <X
+          className="h-3.5 w-3.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={handleClear}
+        />
+      )}
+    </Button>
+  );
+
+  const calendarContent = (
+    <div
+      className="w-full"
+      onMouseMove={
+        isMobile
+          ? undefined
+          : (e) => {
+              if (!selectingFrom) return;
+              const target = (e.target as HTMLElement).closest('[data-date]');
+              const iso = target?.getAttribute('data-date') ?? null;
+              if (iso === lastHoveredIso.current) return;
+              lastHoveredIso.current = iso;
+              setHoveredDay(iso ? new Date(iso) : undefined);
+            }
+      }
+      onMouseLeave={
+        isMobile
+          ? undefined
+          : () => {
+              lastHoveredIso.current = null;
+              setHoveredDay(undefined);
+            }
+      }
+    >
+      <Calendar
+        mode="range"
+        selected={calendarSelected}
+        onSelect={() => undefined}
+        onDayClick={handleDayClick}
+        className={isMobile ? 'w-full' : undefined}
+        numberOfMonths={isMobile ? 1 : 2}
+        locale={es}
+        fixedWeeks
+        showOutsideDays={false}
+        disabled={{ after: new Date() }}
+        defaultMonth={value?.from ?? subDays(new Date(), 29)}
+        classNames={{
+          months: 'relative flex flex-col gap-0 md:flex-row',
+          month: isMobile
+            ? 'flex w-full flex-col gap-4 px-2'
+            : 'flex w-full flex-col gap-4 px-3 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-border/50',
+        }}
+        formatters={{
+          formatCaption: (date, options) => {
+            const str = format(date, 'LLLL yyyy', { locale: options?.locale });
+            return str.charAt(0).toUpperCase() + str.slice(1);
+          },
+          formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
+        }}
+      />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <div onClick={() => setOpen(true)}>{trigger}</div>
+        <Sheet open={open} onOpenChange={handleOpenChange}>
+          <SheetContent side="bottom" className="rounded-t-xl p-0 max-h-[90svh] overflow-y-auto">
+            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
+            <div className="px-4 pt-4 pb-2">
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
+            </div>
+            <div className="flex flex-wrap gap-2 px-4 pb-3">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => handlePreset(preset.getRange)}
+                  className="rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <div className="border-t pt-2 pb-8">{calendarContent}</div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            'h-9 justify-start gap-2 px-3 text-sm font-normal',
-            !value && 'text-muted-foreground',
-            className,
-          )}
-        >
-          <CalendarDays className="h-4 w-4 shrink-0" />
-          <span className="flex-1 text-left">{value ? formatRange(value) : placeholder}</span>
-          {value && (
-            <X
-              className="h-3.5 w-3.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={handleClear}
-            />
-          )}
-        </Button>
-      </PopoverTrigger>
-
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <div className="flex">
           <div className="flex flex-col border-r py-3">
@@ -153,46 +235,7 @@ export function DateRangePicker({
               </button>
             ))}
           </div>
-
-          <div
-            onMouseMove={(e) => {
-              if (!selectingFrom) return;
-              const target = (e.target as HTMLElement).closest('[data-date]');
-              const iso = target?.getAttribute('data-date') ?? null;
-              if (iso === lastHoveredIso.current) return;
-              lastHoveredIso.current = iso;
-              setHoveredDay(iso ? new Date(iso) : undefined);
-            }}
-            onMouseLeave={() => {
-              lastHoveredIso.current = null;
-              setHoveredDay(undefined);
-            }}
-          >
-            <Calendar
-              mode="range"
-              selected={calendarSelected}
-              onSelect={() => undefined}
-              onDayClick={handleDayClick}
-              numberOfMonths={2}
-              locale={es}
-              fixedWeeks
-              showOutsideDays={false}
-              disabled={{ after: new Date() }}
-              defaultMonth={value?.from ?? subDays(new Date(), 29)}
-              classNames={{
-                months: 'relative flex flex-col gap-0 md:flex-row',
-                month:
-                  'flex w-full flex-col gap-4 px-3 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-border/50',
-              }}
-              formatters={{
-                formatCaption: (date, options) => {
-                  const str = format(date, 'LLLL yyyy', { locale: options?.locale });
-                  return str.charAt(0).toUpperCase() + str.slice(1);
-                },
-                formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
-              }}
-            />
-          </div>
+          {calendarContent}
         </div>
       </PopoverContent>
     </Popover>

@@ -1,10 +1,11 @@
 'use client';
 
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,15 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { Client, User } from '@/payload-types';
@@ -157,27 +150,12 @@ export function ClientsTable({
     key: 'actions',
     header: '',
     cell: (c) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit?.(c)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setClientToDelete(c)}
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-            Eliminar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <ActionMenu
+        items={[
+          { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(c) },
+          { label: 'Eliminar', icon: Trash2, onClick: () => setClientToDelete(c), variant: 'destructive' },
+        ]}
+      />
     ),
     className: 'w-16',
   };

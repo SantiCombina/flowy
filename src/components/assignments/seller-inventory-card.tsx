@@ -46,7 +46,7 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
   return (
     <Card className="flex flex-col overflow-hidden">
       <div className={`h-1 ${accentGradient}`} />
-      <CardHeader className="pb-3">
+      <CardHeader className="pt-4 pb-3">
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${avatarColor}`}

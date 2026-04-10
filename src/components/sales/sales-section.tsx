@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Pencil,
   Trash2,
   Truck,
@@ -19,6 +18,7 @@ import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
 import { PageHeader } from '@/components/layout/page-header';
+import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,13 +31,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSalesRefresh } from '@/contexts/sales-refresh-context';
@@ -474,54 +467,39 @@ export function SalesSection({
                           </TableCell>
                           {hasActions && (
                             <TableCell onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {canCollect && isPending && (
-                                    <DropdownMenuItem
-                                      onClick={() =>
+                              <ActionMenu
+                                items={[
+                                  canCollect &&
+                                    isPending && {
+                                      label: 'Cobrar',
+                                      icon: Banknote,
+                                      onClick: () =>
                                         setCollectingModal({
                                           saleId: sale.id,
                                           total: sale.total,
                                           amountPaid: displayAmountPaid,
-                                        })
-                                      }
-                                    >
-                                      <Banknote className="mr-2 h-4 w-4" />
-                                      Cobrar
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canMarkDelivery && sale.deliveryStatus === 'pending' && (
-                                    <DropdownMenuItem onClick={() => setDeliverConfirmId(sale.id)}>
-                                      <Truck className="mr-2 h-4 w-4" />
-                                      Marcar entregada
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canManage && (canCollect || canMarkDelivery) && <DropdownMenuSeparator />}
-                                  {canManage && (
-                                    <DropdownMenuItem onClick={() => setEditingSale(sale)}>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Editar
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canManage && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        onClick={() => setDeleteConfirmId(sale.id)}
-                                        className="text-destructive focus:text-destructive"
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Eliminar
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                        }),
+                                    },
+                                  canMarkDelivery &&
+                                    sale.deliveryStatus === 'pending' && {
+                                      label: 'Marcar entregada',
+                                      icon: Truck,
+                                      onClick: () => setDeliverConfirmId(sale.id),
+                                    },
+                                  canManage && {
+                                    label: 'Editar',
+                                    icon: Pencil,
+                                    onClick: () => setEditingSale(sale),
+                                    separator: !!(canCollect || canMarkDelivery),
+                                  },
+                                  canManage && {
+                                    label: 'Eliminar',
+                                    icon: Trash2,
+                                    onClick: () => setDeleteConfirmId(sale.id),
+                                    variant: 'destructive' as const,
+                                  },
+                                ]}
+                              />
                             </TableCell>
                           )}
                           <TableCell className="text-right pr-2">

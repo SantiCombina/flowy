@@ -1,12 +1,13 @@
 'use client';
 
-import { ImageOff, MoreVertical, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
+import { ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
+import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,14 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { Product } from '@/payload-types';
@@ -312,38 +306,18 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
       cell: (variant) => {
         const product = variant.product;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  if (onEdit) {
-                    onEdit(product.id);
-                  } else {
-                    router.push(`/products/${product.id}/edit`);
-                  }
-                }}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setVariantForMovement(variant)}>
-                <PackagePlus className="mr-2 h-4 w-4" />
-                Registrar movimiento
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setProductToDelete(product)}
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu
+            items={[
+              { label: 'Registrar movimiento', icon: PackagePlus, onClick: () => setVariantForMovement(variant) },
+              {
+                label: 'Editar',
+                icon: Pencil,
+                onClick: () => (onEdit ? onEdit(product.id) : router.push(`/products/${product.id}/edit`)),
+                separator: true,
+              },
+              { label: 'Eliminar', icon: Trash2, onClick: () => setProductToDelete(product), variant: 'destructive' },
+            ]}
+          />
         );
       },
       className: 'w-16',
