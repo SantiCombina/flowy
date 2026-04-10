@@ -10,6 +10,7 @@ import {
   getSaleOptions,
   getSaleOptionsForOwner,
   getSales,
+  markAsDelivered,
   registerPayment,
 } from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
@@ -17,6 +18,7 @@ import { actionClient } from '@/lib/safe-action';
 import { collectSaleBySellerSchema, collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
 import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
 import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
+import { markAsDeliveredSchema } from '@/schemas/sales/mark-as-delivered-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
@@ -139,6 +141,19 @@ export const getClientsForOwnerAction = actionClient.action(async () => {
     success: true,
     clients: clients.map((c) => ({ id: c.id, name: c.name })),
   };
+});
+
+export const markAsDeliveredAction = actionClient.schema(markAsDeliveredSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
+    throw new Error('No autorizado');
+  }
+
+  const callerRole = user.role as 'owner' | 'seller';
+  await markAsDelivered(parsedInput.saleId, user.id, callerRole);
+
+  return { success: true };
 });
 
 export const getSalesAction = actionClient.action(async () => {

@@ -4,13 +4,14 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CheckCircle2,
+  Banknote,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   MoreVertical,
   Pencil,
   Trash2,
+  Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { Fragment, useEffect, useMemo, useState } from 'react';
@@ -45,7 +46,7 @@ import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 
-import { deleteSaleAction, getSalesAction } from './actions';
+import { deleteSaleAction, getSalesAction, markAsDeliveredAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
 import { EditSaleModal } from './edit-sale-modal';
 
@@ -63,7 +64,7 @@ const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
   collected: 'Cobrado',
 };
 
-type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod' | 'paymentStatus';
+type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod' | 'paymentStatus' | 'deliveryStatus';
 
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -88,6 +89,20 @@ function PaymentStatusBadge({ status }: { status: 'pending' | 'partially_collect
   );
 }
 
+function DeliveryStatusBadge({ status }: { status: 'pending' | 'delivered' }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+        status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+        status === 'delivered' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+      )}
+    >
+      {status === 'pending' ? 'Pendiente' : 'Entregado'}
+    </span>
+  );
+}
+
 function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | number {
   switch (key) {
     case 'date':
@@ -104,6 +119,8 @@ function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | 
       return sale.paymentMethod ? (PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod) : '';
     case 'paymentStatus':
       return isSeller ? sale.paymentStatus : sale.ownerPaymentStatus;
+    case 'deliveryStatus':
+      return sale.deliveryStatus;
   }
 }
 
@@ -148,11 +165,13 @@ export function SalesSection({
     amountPaid: number;
   } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deliverConfirmId, setDeliverConfirmId] = useState<number | null>(null);
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
 
   const { refreshCount } = useSalesRefresh();
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
   const { executeAsync: executeFetchSales, isExecuting: isFetchingSales } = useAction(getSalesAction);
+  const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
   useEffect(() => {
     setLocalSales(sales);
@@ -194,6 +213,24 @@ export function SalesSection({
       }),
     );
     setCollectingModal(null);
+  };
+
+  const handleMarkDelivered = async (saleId: number) => {
+    const result = await executeMarkDelivered({ saleId });
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      toast.success('Venta marcada como entregada.');
+      setLocalSales((prev) =>
+        prev.map((s) =>
+          s.id === saleId ? { ...s, deliveryStatus: 'delivered' as const, deliveredAt: new Date().toISOString() } : s,
+        ),
+      );
+    }
   };
 
   const handleEditSuccess = () => {
@@ -276,7 +313,9 @@ export function SalesSection({
       visibleColumns.includes(k),
     ).length + (showSeller ? 1 : 0);
 
-  const totalCols = visibleOptionalCount + 1 + (canCollect ? 1 : 0) + (canManage ? 1 : 0);
+  const canMarkDelivery = canCollect || isSeller;
+  const hasActions = canManage || canCollect || canMarkDelivery;
+  const totalCols = visibleOptionalCount + 1 + 1 + (hasActions ? 1 : 0);
 
   const sortableHead = (key: SortKey, label: string, className?: string) => (
     <TableHead
@@ -351,8 +390,8 @@ export function SalesSection({
                   {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-36 text-right')}
                   {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-36')}
                   {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-32')}
-                  {canCollect && <TableHead className="w-28" />}
-                  {canManage && <TableHead className="w-10" />}
+                  {sortableHead('deliveryStatus', 'Entrega', 'w-28')}
+                  {hasActions && <TableHead className="w-10" />}
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
@@ -430,29 +469,10 @@ export function SalesSection({
                               <PaymentStatusBadge status={displayStatus} />
                             </TableCell>
                           )}
-                          {canCollect && (
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                              {isPending ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  onClick={() =>
-                                    setCollectingModal({
-                                      saleId: sale.id,
-                                      total: sale.total,
-                                      amountPaid: displayAmountPaid,
-                                    })
-                                  }
-                                >
-                                  Cobrar
-                                </Button>
-                              ) : (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500 ml-auto" />
-                              )}
-                            </TableCell>
-                          )}
-                          {canManage && (
+                          <TableCell>
+                            <DeliveryStatusBadge status={sale.deliveryStatus} />
+                          </TableCell>
+                          {hasActions && (
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -461,18 +481,45 @@ export function SalesSection({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setEditingSale(sale)}>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => setDeleteConfirmId(sale.id)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Eliminar
-                                  </DropdownMenuItem>
+                                  {canCollect && isPending && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        setCollectingModal({
+                                          saleId: sale.id,
+                                          total: sale.total,
+                                          amountPaid: displayAmountPaid,
+                                        })
+                                      }
+                                    >
+                                      <Banknote className="mr-2 h-4 w-4" />
+                                      Cobrar
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canMarkDelivery && sale.deliveryStatus === 'pending' && (
+                                    <DropdownMenuItem onClick={() => setDeliverConfirmId(sale.id)}>
+                                      <Truck className="mr-2 h-4 w-4" />
+                                      Marcar entregada
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canManage && (canCollect || canMarkDelivery) && <DropdownMenuSeparator />}
+                                  {canManage && (
+                                    <DropdownMenuItem onClick={() => setEditingSale(sale)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Editar
+                                    </DropdownMenuItem>
+                                  )}
+                                  {canManage && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => setDeleteConfirmId(sale.id)}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Eliminar
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -535,7 +582,7 @@ export function SalesSection({
                                   </tbody>
                                 </table>
                               </div>
-                              {(sale.checkDueDate || displayAmountPaid > 0) && (
+                              {(sale.checkDueDate || displayAmountPaid > 0 || sale.deliveredAt) && (
                                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 py-3 text-sm sm:grid-cols-4">
                                   {sale.checkDueDate && (
                                     <div>
@@ -566,6 +613,12 @@ export function SalesSection({
                                       <p className="font-medium">
                                         {formatShortDate((isSeller ? sale.collectedAt : sale.ownerCollectedAt)!)}
                                       </p>
+                                    </div>
+                                  )}
+                                  {sale.deliveredAt && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Entregado el</p>
+                                      <p className="font-medium">{formatShortDate(sale.deliveredAt)}</p>
                                     </div>
                                   )}
                                 </div>
@@ -662,6 +715,28 @@ export function SalesSection({
           isSeller={isSeller}
         />
       )}
+
+      <AlertDialog open={deliverConfirmId !== null} onOpenChange={(open) => !open && setDeliverConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Marcar como entregada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La venta quedará registrada como entregada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isMarkingDelivered}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deliverConfirmId !== null && void handleMarkDelivered(deliverConfirmId)}
+              disabled={isMarkingDelivered}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Truck className="mr-2 h-4 w-4" />
+              {isMarkingDelivered ? 'Registrando…' : 'Confirmar entrega'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>

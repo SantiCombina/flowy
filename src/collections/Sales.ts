@@ -195,5 +195,24 @@ export const Sales: CollectionConfig = {
           data?.ownerPaymentStatus === 'collected' || data?.ownerPaymentStatus === 'partially_collected',
       },
     },
+    {
+      name: 'deliveryStatus',
+      type: 'select',
+      required: true,
+      label: 'Estado de entrega',
+      defaultValue: 'pending',
+      options: [
+        { label: 'Pendiente', value: 'pending' },
+        { label: 'Entregado', value: 'delivered' },
+      ],
+    },
+    {
+      name: 'deliveredAt',
+      type: 'date',
+      label: 'Entregado el',
+      admin: {
+        condition: (data) => data?.deliveryStatus === 'delivered',
+      },
+    },
   ],
 };

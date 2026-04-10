@@ -57,6 +57,8 @@ export interface SaleRow {
   ownerPaymentStatus: 'pending' | 'partially_collected' | 'collected';
   ownerAmountPaid: number;
   ownerCollectedAt?: string;
+  deliveryStatus: 'pending' | 'delivered';
+  deliveredAt?: string;
   items: SaleItemDetail[];
 }
 
@@ -240,6 +242,8 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
       total,
       amountPaid: isImmediate ? total : 0,
       paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+      deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
+      ...(data.immediateDelivery ? { deliveredAt: now } : {}),
       ownerPaymentStatus: 'pending' as const,
       ownerAmountPaid: 0,
       ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
@@ -338,6 +342,8 @@ export async function getSales(filters: {
       ownerPaymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
       ownerAmountPaid: sale.ownerAmountPaid ?? 0,
       ownerCollectedAt: sale.ownerCollectedAt ?? undefined,
+      deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
+      deliveredAt: sale.deliveredAt ?? undefined,
       items,
     };
   });
@@ -692,6 +698,32 @@ export async function editSaleFull(
 
   revalidateTag('owner-dashboard');
   revalidateTag('seller-dashboard');
+}
+
+export async function markAsDelivered(saleId: number, callerId: number, callerRole: 'owner' | 'seller'): Promise<void> {
+  const payload = await getPayloadClient();
+
+  const sale = await payload.findByID({
+    collection: 'sales',
+    id: saleId,
+    overrideAccess: true,
+  });
+
+  if (!sale) throw new Error('Venta no encontrada');
+
+  verifySaleAccess(sale as Sale, callerId, callerRole);
+
+  if (sale.deliveryStatus === 'delivered') throw new Error('La venta ya fue marcada como entregada');
+
+  await payload.update({
+    collection: 'sales',
+    id: saleId,
+    data: {
+      deliveryStatus: 'delivered',
+      deliveredAt: new Date().toISOString(),
+    } as Partial<Sale>,
+    overrideAccess: true,
+  });
 }
 
 export async function getSaleOptionsForOwner(sellerId: number, ownerId: number): Promise<SaleOptions> {

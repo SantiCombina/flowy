@@ -42,6 +42,9 @@ export const saleSchema = z
       .max(500, { message: 'Las notas deben tener como máximo 500 caracteres.' })
       .optional(),
     checkDueDate: z.string({ invalid_type_error: 'La fecha de cobro debe ser una fecha válida.' }).optional(),
+    immediateDelivery: z
+      .boolean({ invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.' })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === 'check' && !data.checkDueDate) {

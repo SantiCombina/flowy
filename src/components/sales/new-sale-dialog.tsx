@@ -9,6 +9,7 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -229,6 +230,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     defaultValues: {
       paymentMethod: 'credit',
       items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
+      immediateDelivery: false,
     },
   });
 
@@ -436,6 +438,19 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         <Textarea {...field} placeholder="Observaciones..." rows={2} />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="immediateDelivery"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel className="font-normal cursor-pointer">Entrega inmediata</FormLabel>
                     </FormItem>
                   )}
                 />
