@@ -1,12 +1,13 @@
 'use client';
 
-import { ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
+import { BarChart2, ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
+import type { VariantDemandSummary } from '@/app/services/sales';
 import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
@@ -24,12 +25,17 @@ import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { Product } from '@/payload-types';
 
-import { getVariantsAction, deleteProductAction } from './actions';
+import { getVariantsAction, deleteProductAction, getProductDemandSummaryAction } from './actions';
+import { ProductDemandSheet } from './product-demand-sheet';
 import { StockMovementModal } from './stock-movement-modal';
 
 const variantsCache: { data: PopulatedProductVariant[]; timestamp: number; isLoaded: boolean } = {
   data: [],
   timestamp: 0,
+  isLoaded: false,
+};
+const demandCache: { data: Record<number, VariantDemandSummary>; isLoaded: boolean } = {
+  data: {},
   isLoaded: false,
 };
 const STALE_TIME = 2 * 60 * 1000;
@@ -56,6 +62,8 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
+    const [variantForDemand, setVariantForDemand] = useState<PopulatedProductVariant | null>(null);
+    const [demandMap, setDemandMap] = useState<Record<number, VariantDemandSummary>>(demandCache.data);
     const itemsPerPageSyncedRef = useRef(false);
 
     const inventoryValue = useMemo(() => allVariants.reduce((sum, v) => sum + v.stock * v.costPrice, 0), [allVariants]);
@@ -85,12 +93,15 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     const loadVariants = useCallback(async (silent = false) => {
       if (!silent) setIsLoading(true);
       try {
-        const result = await getVariantsAction({
-          options: {
-            limit: 10000,
-            sort: 'product',
-          },
-        });
+        const [result, demandResult] = await Promise.all([
+          getVariantsAction({
+            options: {
+              limit: 10000,
+              sort: 'product',
+            },
+          }),
+          demandCache.isLoaded ? Promise.resolve(null) : getProductDemandSummaryAction(),
+        ]);
 
         if (result?.serverError) {
           if (!silent) toast.error(result.serverError);
@@ -104,6 +115,12 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           setAllVariants(result.data.docs);
         } else {
           if (!silent) toast.error('Error al cargar productos');
+        }
+
+        if (demandResult?.data?.success) {
+          demandCache.data = demandResult.data.demand;
+          demandCache.isLoaded = true;
+          setDemandMap(demandResult.data.demand);
         }
       } catch {
         if (!silent) toast.error('Error al cargar productos');
@@ -298,6 +315,25 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
         },
         className: 'text-right',
       },
+      lastSold: {
+        key: 'lastSold',
+        header: COLUMN_LABELS.lastSold,
+        sortable: true,
+        sortValue: (v) => demandMap[v.id]?.lastSoldAt ?? '',
+        cell: (variant) => {
+          const lastSoldAt = demandMap[variant.id]?.lastSoldAt;
+          if (!lastSoldAt) return <span className="text-muted-foreground text-sm">Sin ventas</span>;
+          return (
+            <span className="text-sm">
+              {new Date(lastSoldAt).toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })}
+            </span>
+          );
+        },
+      },
     };
 
     const actionsColumn: Column<PopulatedProductVariant> = {
@@ -309,6 +345,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           <ActionMenu
             items={[
               { label: 'Registrar movimiento', icon: PackagePlus, onClick: () => setVariantForMovement(variant) },
+              { label: 'Ver demanda', icon: BarChart2, onClick: () => setVariantForDemand(variant) },
               {
                 label: 'Editar',
                 icon: Pencil,
@@ -394,6 +431,8 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
             updateVariantStock(variantId, newStock);
           }}
         />
+
+        <ProductDemandSheet variant={variantForDemand} onClose={() => setVariantForDemand(null)} />
       </>
     );
   },

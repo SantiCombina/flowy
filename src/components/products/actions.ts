@@ -20,6 +20,7 @@ import {
   type UpdateVariantData,
   type VariantFilters,
 } from '@/app/services/products';
+import { getProductDemandSummary, getVariantSalesHistory } from '@/app/services/sales';
 import { getPayloadClient } from '@/lib/payload';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
@@ -317,6 +318,22 @@ export const getReferenceDataAction = actionClient.action(async () => {
     presentations,
   };
 });
+
+export const getProductDemandSummaryAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+  if (!user || user.role !== 'owner') throw new Error('No autorizado');
+  const demand = await getProductDemandSummary(user.id);
+  return { success: true, demand };
+});
+
+export const getVariantSalesHistoryAction = actionClient
+  .schema(z.object({ variantId: z.number() }))
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'owner') throw new Error('No autorizado');
+    const history = await getVariantSalesHistory(parsedInput.variantId, user.id);
+    return { success: true, history };
+  });
 
 export const getProductVariantsAction = actionClient
   .schema(z.object({ productId: z.number() }))

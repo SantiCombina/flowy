@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
@@ -8,6 +8,32 @@ import { getPayloadClient } from '@/lib/payload';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
+
+export interface MonthlyDemand {
+  month: string;
+  units: number;
+  revenue: number;
+}
+
+export interface MonthSummary {
+  units: number;
+  revenue: number;
+}
+
+export interface VariantSalesHistory {
+  variantId: number;
+  lastSoldAt: string | null;
+  totalUnits: number;
+  totalRevenue: number;
+  monthly: MonthlyDemand[];
+  currentMonth: MonthSummary;
+  previousMonth: MonthSummary;
+}
+
+export interface VariantDemandSummary {
+  lastSoldAt: string | null;
+  totalUnits: number;
+}
 
 export interface SaleVariantOption {
   variantId: number;
@@ -273,6 +299,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
 
   revalidateTag('owner-dashboard');
   revalidateTag('seller-dashboard');
+  revalidateTag('product-demand');
 
   return sale as Sale;
 }
@@ -559,6 +586,7 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
 
   revalidateTag('owner-dashboard');
   revalidateTag('seller-dashboard');
+  revalidateTag('product-demand');
 }
 
 export async function editSaleFull(
@@ -698,6 +726,7 @@ export async function editSaleFull(
 
   revalidateTag('owner-dashboard');
   revalidateTag('seller-dashboard');
+  revalidateTag('product-demand');
 }
 
 export async function markAsDelivered(saleId: number, callerId: number, callerRole: 'owner' | 'seller'): Promise<void> {
@@ -729,3 +758,124 @@ export async function markAsDelivered(saleId: number, callerId: number, callerRo
 export async function getSaleOptionsForOwner(sellerId: number, ownerId: number): Promise<SaleOptions> {
   return getSaleOptions(sellerId, ownerId);
 }
+
+export const getProductDemandSummary = unstable_cache(
+  async (ownerId: number): Promise<Record<number, VariantDemandSummary>> => {
+    const payload = await getPayloadClient();
+
+    const thirteenMonthsAgo = new Date();
+    thirteenMonthsAgo.setMonth(thirteenMonthsAgo.getMonth() - 13);
+
+    const result = await payload.find({
+      collection: 'sales',
+      where: {
+        and: [{ owner: { equals: ownerId } }, { date: { greater_than_equal: thirteenMonthsAgo.toISOString() } }],
+      },
+      depth: 0,
+      limit: 10000,
+      overrideAccess: true,
+    });
+
+    const demandMap: Record<number, VariantDemandSummary> = {};
+
+    for (const sale of result.docs) {
+      for (const item of sale.items) {
+        const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+        const existing = demandMap[variantId];
+        if (!existing) {
+          demandMap[variantId] = { lastSoldAt: sale.date, totalUnits: item.quantity };
+        } else {
+          existing.totalUnits += item.quantity;
+          if (sale.date > (existing.lastSoldAt ?? '')) {
+            existing.lastSoldAt = sale.date;
+          }
+        }
+      }
+    }
+
+    return demandMap;
+  },
+  ['product-demand-summary'],
+  { revalidate: 60 * 5, tags: ['product-demand'] },
+);
+
+export const getVariantSalesHistory = unstable_cache(
+  async (variantId: number, ownerId: number): Promise<VariantSalesHistory> => {
+    const payload = await getPayloadClient();
+
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+
+    const result = await payload.find({
+      collection: 'sales',
+      where: {
+        and: [
+          { owner: { equals: ownerId } },
+          { 'items.variant': { equals: variantId } },
+          { date: { greater_than_equal: twelveMonthsAgo.toISOString() } },
+        ],
+      },
+      depth: 0,
+      limit: 10000,
+      overrideAccess: true,
+    });
+
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+    const monthly: MonthlyDemand[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthly.push({
+        month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        units: 0,
+        revenue: 0,
+      });
+    }
+
+    const monthMap = new Map<string, MonthlyDemand>();
+    for (const m of monthly) monthMap.set(m.month, m);
+
+    const prevMonthEntry: MonthlyDemand = { month: previousMonthKey, units: 0, revenue: 0 };
+    if (!monthMap.has(previousMonthKey)) monthMap.set(previousMonthKey, prevMonthEntry);
+
+    let lastSoldAt: string | null = null;
+    let totalUnits = 0;
+    let totalRevenue = 0;
+
+    for (const sale of result.docs) {
+      const saleDate = new Date(sale.date);
+      const saleMonth = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
+
+      for (const item of sale.items) {
+        const itemVariantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+        if (itemVariantId !== variantId) continue;
+
+        const itemRevenue = item.quantity * item.unitPrice;
+
+        if (saleMonth !== previousMonthKey) {
+          totalUnits += item.quantity;
+          totalRevenue += itemRevenue;
+        }
+
+        if (!lastSoldAt || sale.date > lastSoldAt) {
+          lastSoldAt = sale.date;
+        }
+
+        const entry = monthMap.get(saleMonth);
+        if (entry) {
+          entry.units += item.quantity;
+          entry.revenue += itemRevenue;
+        }
+      }
+    }
+
+    const currentMonth: MonthSummary = monthMap.get(currentMonthKey) ?? { units: 0, revenue: 0 };
+    const previousMonth: MonthSummary = monthMap.get(previousMonthKey) ?? { units: 0, revenue: 0 };
+
+    return { variantId, lastSoldAt, totalUnits, totalRevenue, monthly, currentMonth, previousMonth };
+  },
+  ['product-demand-history'],
+  { revalidate: 60 * 5, tags: ['product-demand'] },
+);
