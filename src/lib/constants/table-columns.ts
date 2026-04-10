@@ -1,5 +1,5 @@
 export const TABLE_COLUMNS = {
-  products: ['name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price'],
+  products: ['name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price', 'lastSold'],
   clients: ['name', 'cuit', 'phone', 'email', 'address', 'localidad', 'provincia'],
   sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status', 'items', 'notes'],
@@ -12,7 +12,7 @@ export type TableName = keyof typeof TABLE_COLUMNS;
 export type TableColumns = typeof TABLE_COLUMNS;
 
 export const DEFAULT_COLUMNS: Record<TableName, string[]> = {
-  products: ['name', 'brand', 'presentation', 'stock', 'price'],
+  products: ['name', 'brand', 'presentation', 'stock', 'price', 'lastSold'],
   clients: ['name', 'phone', 'email', 'localidad'],
   sales: ['date', 'seller', 'client', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status'],
@@ -64,6 +64,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   reason: 'Razón',
   reference: 'Referencia',
   createdAt: 'Fecha de creación',
+  lastSold: 'Última venta',
 };
 
 export const TABLE_LABELS: Record<TableName, string> = {

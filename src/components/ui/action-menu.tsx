@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -46,22 +46,26 @@ export function ActionMenu({ items }: ActionMenuProps) {
             <MoreVertical className="h-4 w-4" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-xl p-0">
+        <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
+          <SheetTitle className="sr-only">Acciones</SheetTitle>
           <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
           <div className="py-2 pb-6">
             {filtered.map((item, index) => (
               <React.Fragment key={item.label}>
                 {item.separator && index > 0 && <div className="my-1 h-px bg-border" />}
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => handleSelect(item)}
                   className={cn(
-                    'flex w-full items-center gap-4 px-6 py-4 text-left text-base transition-colors active:bg-muted',
-                    item.variant === 'destructive' && 'text-destructive',
+                    'flex w-full items-center justify-start gap-3 !px-4 py-3.5 text-left text-base h-auto rounded-md',
+                    item.variant === 'destructive'
+                      ? 'text-destructive hover:bg-destructive/10 hover:text-destructive active:bg-destructive/10'
+                      : '',
                   )}
                 >
-                  <item.icon className="h-5 w-5 shrink-0" />
+                  <item.icon className={cn('h-5 w-5 shrink-0', item.variant === 'destructive' && 'text-destructive')} />
                   {item.label}
-                </button>
+                </Button>
               </React.Fragment>
             ))}
           </div>
@@ -87,7 +91,7 @@ export function ActionMenu({ items }: ActionMenuProps) {
                 item.variant === 'destructive' && 'text-destructive focus:bg-destructive/10 focus:text-destructive',
               )}
             >
-              <item.icon className="mr-2 h-4 w-4" />
+              <item.icon className={cn('mr-2 h-4 w-4', item.variant === 'destructive' && 'text-destructive')} />
               {item.label}
             </DropdownMenuItem>
           </React.Fragment>

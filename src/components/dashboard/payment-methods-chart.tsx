@@ -43,7 +43,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
 
   return (
     <div className="space-y-4">
-      <div className="relative">
+      <div className="relative [&_svg]:outline-none [&_*:focus]:outline-none">
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>
             <Pie
@@ -62,7 +62,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => [formatCurrency(value as number), '']}
+              formatter={(value, name) => [formatCurrency(value as number), String(name)]}
               contentStyle={{
                 borderRadius: '8px',
                 border: '1px solid hsl(var(--border))',

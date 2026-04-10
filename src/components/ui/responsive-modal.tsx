@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog';
-import { Sheet, SheetContent } from './sheet';
+import { Sheet, SheetContent, SheetTitle } from './sheet';
 
 interface ResponsiveModalProps {
   open: boolean;
@@ -22,6 +22,7 @@ export function ResponsiveModal({ open, onOpenChange, children, className }: Res
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="flex flex-col gap-0 p-0 rounded-t-xl max-h-[90svh]">
+          <SheetTitle className="sr-only">Modal</SheetTitle>
           {children}
         </SheetContent>
       </Sheet>

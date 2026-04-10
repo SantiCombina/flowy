@@ -2,14 +2,14 @@
 
 import { endOfDay, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarDays, X } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -115,11 +115,6 @@ export function DateRangePicker({
     setOpen(false);
   }
 
-  function handleClear(e: React.MouseEvent) {
-    e.stopPropagation();
-    onChange(undefined);
-  }
-
   const trigger = (
     <Button
       variant="outline"
@@ -127,12 +122,6 @@ export function DateRangePicker({
     >
       <CalendarDays className="h-4 w-4 shrink-0" />
       <span className="flex-1 text-left">{value ? formatRange(value) : placeholder}</span>
-      {value && (
-        <X
-          className="h-3.5 w-3.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={handleClear}
-        />
-      )}
     </Button>
   );
 
@@ -165,7 +154,7 @@ export function DateRangePicker({
         selected={calendarSelected}
         onSelect={() => undefined}
         onDayClick={handleDayClick}
-        className={isMobile ? 'w-full' : undefined}
+        className={isMobile ? 'w-full !p-0 !px-4' : undefined}
         numberOfMonths={isMobile ? 1 : 2}
         locale={es}
         fixedWeeks
@@ -175,7 +164,7 @@ export function DateRangePicker({
         classNames={{
           months: 'relative flex flex-col gap-0 md:flex-row',
           month: isMobile
-            ? 'flex w-full flex-col gap-4 px-2'
+            ? 'flex w-full flex-col gap-4'
             : 'flex w-full flex-col gap-4 px-3 [&:not(:last-child)]:border-r [&:not(:last-child)]:border-border/50',
         }}
         formatters={{
@@ -194,9 +183,14 @@ export function DateRangePicker({
       <>
         <div onClick={() => setOpen(true)}>{trigger}</div>
         <Sheet open={open} onOpenChange={handleOpenChange}>
-          <SheetContent side="bottom" className="rounded-t-xl p-0 max-h-[90svh] overflow-y-auto">
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
-            <div className="px-4 pt-4 pb-2">
+          <SheetContent
+            side="bottom"
+            className="rounded-t-xl p-0 gap-0 max-h-[90svh] overflow-y-auto"
+            showCloseButton={false}
+          >
+            <SheetTitle className="sr-only">Seleccionar período</SheetTitle>
+            <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted" />
+            <div className="px-4 pt-1 pb-2">
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
             </div>
             <div className="flex flex-wrap gap-2 px-4 pb-3">

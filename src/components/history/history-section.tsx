@@ -210,10 +210,22 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
       <PageHeader title="Historial" description="Registro de movimientos de inventario" />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
 
-          <div className="flex items-center gap-2">
+          {(hasActiveFilters || !isDefaultRange) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+              onClick={clearFilters}
+            >
+              <X className="h-4 w-4" />
+              Limpiar filtros
+            </Button>
+          )}
+
+          <div className="flex items-center gap-2 ml-auto">
             <FilterSheet
               title="Tipo de movimiento"
               align="start"
@@ -237,21 +249,8 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
             />
 
             <ColumnVisibilityDropdown tableName="history" />
-
-            {(hasActiveFilters || !isDefaultRange) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
-                onClick={clearFilters}
-              >
-                <X className="h-4 w-4" />
-                Limpiar filtros
-              </Button>
-            )}
           </div>
         </div>
-
         <div className="space-y-3">
           <div
             className={cn(

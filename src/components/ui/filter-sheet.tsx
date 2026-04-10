@@ -10,7 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -39,17 +39,19 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
           {trigger}
         </div>
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="rounded-t-xl p-0">
+          <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
+            <SheetTitle className="sr-only">{title}</SheetTitle>
             <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
-            <div className="px-6 pt-4 pb-2">
+            <div className="px-4 pt-4 pb-2">
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
             </div>
             <div className="pb-8">
               {items.map((item) => (
-                <button
+                <Button
                   key={item.key}
+                  variant="ghost"
                   onClick={() => item.onToggle(!item.checked)}
-                  className="flex w-full items-center gap-4 px-6 py-4 text-left text-base transition-colors active:bg-muted"
+                  className="flex w-full items-center gap-4 px-4 py-4 text-left text-base transition-colors active:bg-muted h-auto justify-start rounded-none"
                 >
                   <div
                     className={cn(
@@ -60,7 +62,7 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
                     {item.checked && <Check className="h-3 w-3" />}
                   </div>
                   {item.label}
-                </button>
+                </Button>
               ))}
             </div>
           </SheetContent>
