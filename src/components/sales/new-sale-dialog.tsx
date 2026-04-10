@@ -8,6 +8,7 @@ import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
@@ -27,8 +28,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
-
-import { useUser } from '@/components/providers/user-provider';
 
 import { getClientsForSaleAction } from '../clients/actions';
 

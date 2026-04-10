@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownToLine, ArrowUpFromLine, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Eye, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -33,12 +33,20 @@ import { deleteSellerAction } from './actions';
 interface SellersTableProps {
   sellers: User[];
   searchQuery?: string;
+  onViewDetails?: (seller: User) => void;
   onEdit?: (seller: User) => void;
   onDispatch?: (seller: User) => void;
   onReturn?: (seller: User) => void;
 }
 
-export function SellersTable({ sellers, searchQuery = '', onEdit, onDispatch, onReturn }: SellersTableProps) {
+export function SellersTable({
+  sellers,
+  searchQuery = '',
+  onViewDetails,
+  onEdit,
+  onDispatch,
+  onReturn,
+}: SellersTableProps) {
   const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sellers');
@@ -124,6 +132,11 @@ export function SellersTable({ sellers, searchQuery = '', onEdit, onDispatch, on
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => onViewDetails?.(seller)}>
+            <Eye className="mr-2 h-4 w-4" />
+            Ver detalles
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => onEdit?.(seller)}>
             <Pencil className="mr-2 h-4 w-4" />
             Editar

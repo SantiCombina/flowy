@@ -16,6 +16,7 @@ import { DispatchStockModal } from './dispatch-stock-modal';
 import { EditSellerModal } from './edit-seller-modal';
 import { InviteSellerModal } from './invite-seller-modal';
 import { ReturnStockModal } from './return-stock-modal';
+import { SellerDetailsModal } from './seller-details-modal';
 import { SellersTable } from './sellers-table';
 
 interface SellersSectionProps {
@@ -31,6 +32,8 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [sellerForDetails, setSellerForDetails] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
@@ -40,6 +43,11 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
 
   const handleSuccess = () => {
     router.refresh();
+  };
+
+  const handleOpenDetails = (seller: User) => {
+    setSellerForDetails(seller);
+    setIsDetailsModalOpen(true);
   };
 
   const handleOpenDispatch = (seller: User) => {
@@ -84,6 +92,7 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
         <SellersTable
           sellers={sellers}
           searchQuery={searchQuery}
+          onViewDetails={handleOpenDetails}
           onEdit={(seller) => {
             setSellerToEdit(seller);
             setIsEditModalOpen(true);
@@ -97,6 +106,14 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         onSuccess={handleSuccess}
+      />
+      <SellerDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSellerForDetails(null);
+        }}
+        seller={sellerForDetails}
       />
       <EditSellerModal
         isOpen={isEditModalOpen}
