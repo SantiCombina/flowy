@@ -166,12 +166,15 @@ export async function deleteProduct(id: number): Promise<void> {
     where: { product: { equals: id } },
     overrideAccess: true,
     limit: 1000,
+    depth: 0,
   });
 
-  for (const variant of variants.docs) {
+  if (variants.docs.length > 0) {
+    const variantIds = variants.docs.map((v) => v.id);
+
     const { totalDocs } = await payload.find({
       collection: 'sales',
-      where: { 'items.variant': { equals: variant.id } },
+      where: { 'items.variant': { in: variantIds } },
       limit: 1,
       overrideAccess: true,
     });
@@ -179,26 +182,28 @@ export async function deleteProduct(id: number): Promise<void> {
     if (totalDocs > 0) {
       throw new Error('No se puede eliminar el producto porque tiene ventas asociadas.');
     }
-  }
 
-  for (const variant of variants.docs) {
-    await payload.delete({
-      collection: 'stock-movements',
-      where: { variant: { equals: variant.id } },
-      overrideAccess: true,
-    });
-
-    await payload.delete({
-      collection: 'mobile-seller-inventory',
-      where: { variant: { equals: variant.id } },
-      overrideAccess: true,
-    });
-
-    await payload.delete({
-      collection: 'product-variants',
-      id: variant.id,
-      overrideAccess: true,
-    });
+    await Promise.all(
+      variants.docs.map((variant) =>
+        Promise.all([
+          payload.delete({
+            collection: 'stock-movements',
+            where: { variant: { equals: variant.id } },
+            overrideAccess: true,
+          }),
+          payload.delete({
+            collection: 'mobile-seller-inventory',
+            where: { variant: { equals: variant.id } },
+            overrideAccess: true,
+          }),
+          payload.delete({
+            collection: 'product-variants',
+            id: variant.id,
+            overrideAccess: true,
+          }),
+        ]),
+      ),
+    );
   }
 
   await payload.delete({

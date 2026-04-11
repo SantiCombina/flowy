@@ -21,7 +21,6 @@ import {
   type VariantFilters,
 } from '@/app/services/products';
 import { getProductDemandSummary, getVariantSalesHistory } from '@/app/services/sales';
-import { getPayloadClient } from '@/lib/payload';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
@@ -56,7 +55,7 @@ export const getProductsAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const ownerId = user.role === 'admin' ? user.id : user.id;
+    const ownerId = user.id;
 
     const result = await getProducts(ownerId, parsedInput.filters, parsedInput.options);
 
@@ -230,7 +229,7 @@ export const createEntityAction = actionClient.schema(createEntitySchema).action
     throw new Error('No autorizado');
   }
 
-  const payload = await getPayloadClient();
+  const { createBrand, createCategory, createQuality, createPresentation } = await import('@/app/services/entities');
   const ownerId = user.id;
 
   type EntityResult = { id: number; name: string };
@@ -238,29 +237,17 @@ export const createEntityAction = actionClient.schema(createEntitySchema).action
 
   switch (parsedInput.type) {
     case 'brand': {
-      const brand = await payload.create({
-        collection: 'brands',
-        data: { name: parsedInput.name, owner: ownerId },
-        overrideAccess: true,
-      });
+      const brand = await createBrand(parsedInput.name, ownerId);
       result = { id: brand.id, name: brand.name };
       break;
     }
     case 'category': {
-      const category = await payload.create({
-        collection: 'categories',
-        data: { name: parsedInput.name, owner: ownerId },
-        overrideAccess: true,
-      });
+      const category = await createCategory(parsedInput.name, ownerId);
       result = { id: category.id, name: category.name };
       break;
     }
     case 'quality': {
-      const quality = await payload.create({
-        collection: 'qualities',
-        data: { name: parsedInput.name, owner: ownerId },
-        overrideAccess: true,
-      });
+      const quality = await createQuality(parsedInput.name, ownerId);
       result = { id: quality.id, name: quality.name };
       break;
     }
@@ -268,16 +255,7 @@ export const createEntityAction = actionClient.schema(createEntitySchema).action
       const match = parsedInput.name.match(/^(\d+\.?\d*)\s*(\w+)$/);
       const amount = match ? parseFloat(match[1]) : 1;
       const unit = match ? match[2] : 'unidad';
-      const presentation = await payload.create({
-        collection: 'presentations',
-        data: {
-          label: parsedInput.name,
-          amount,
-          unit,
-          owner: ownerId,
-        },
-        overrideAccess: true,
-      });
+      const presentation = await createPresentation(parsedInput.name, ownerId, { amount, unit });
       result = { id: presentation.id, name: presentation.label };
       break;
     }

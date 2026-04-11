@@ -150,14 +150,36 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
 export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
   const payload = await getPayloadClient();
 
-  for (const item of data.items) {
-    const variant = await payload.findByID({
-      collection: 'product-variants',
-      id: item.variantId,
-      depth: 1,
+  const variantIds = data.items.map((item) => item.variantId);
+  const variantsResult = await payload.find({
+    collection: 'product-variants',
+    where: { id: { in: variantIds } },
+    depth: 1,
+    limit: variantIds.length,
+    overrideAccess: true,
+  });
+  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+
+  const personalItems = data.items.filter((item) => item.stockSource === 'personal');
+  const inventoryMap = new Map<number, { id: number; quantity: number }>();
+  if (personalItems.length > 0) {
+    const personalVariantIds = personalItems.map((item) => item.variantId);
+    const inventoryResult = await payload.find({
+      collection: 'mobile-seller-inventory',
+      where: {
+        and: [{ seller: { equals: sellerId } }, { variant: { in: personalVariantIds } }],
+      },
+      limit: personalVariantIds.length,
       overrideAccess: true,
     });
+    for (const inv of inventoryResult.docs) {
+      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+      inventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
+    }
+  }
 
+  for (const item of data.items) {
+    const variant = variantMap.get(item.variantId);
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
 
     if (item.stockSource === 'warehouse') {
@@ -168,7 +190,9 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         );
       }
 
-      const newStock = variant.stock - item.quantity;
+      const previousStock = variant.stock;
+      const newStock = previousStock - item.quantity;
+      variant.stock = newStock;
 
       await payload.update({
         collection: 'product-variants',
@@ -183,7 +207,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
           variant: item.variantId,
           type: 'sale',
           quantity: item.quantity,
-          previousStock: variant.stock,
+          previousStock,
           newStock,
           owner: ownerId,
           createdBy: sellerId,
@@ -203,16 +227,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         });
       }
     } else {
-      const { docs: inventoryDocs } = await payload.find({
-        collection: 'mobile-seller-inventory',
-        where: {
-          and: [{ seller: { equals: sellerId } }, { variant: { equals: item.variantId } }],
-        },
-        limit: 1,
-        overrideAccess: true,
-      });
-
-      const inventoryRecord = inventoryDocs[0];
+      const inventoryRecord = inventoryMap.get(item.variantId);
 
       if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
         throw new Error(
@@ -221,7 +236,9 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         );
       }
 
-      const newMobileStock = inventoryRecord.quantity - item.quantity;
+      const previousQuantity = inventoryRecord.quantity;
+      const newMobileStock = previousQuantity - item.quantity;
+      inventoryRecord.quantity = newMobileStock;
 
       await payload.update({
         collection: 'mobile-seller-inventory',
@@ -236,7 +253,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
           variant: item.variantId,
           type: 'sale',
           quantity: item.quantity,
-          previousStock: inventoryRecord.quantity,
+          previousStock: previousQuantity,
           newStock: newMobileStock,
           mobileSeller: sellerId,
           owner: ownerId,
@@ -615,13 +632,36 @@ export async function editSaleFull(
     await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Edición venta #${saleId} — reversión`);
   }
 
-  for (const item of data.items) {
-    const variant = await payload.findByID({
-      collection: 'product-variants',
-      id: item.variantId,
-      depth: 1,
+  const editVariantIds = data.items.map((item) => item.variantId);
+  const editVariantsResult = await payload.find({
+    collection: 'product-variants',
+    where: { id: { in: editVariantIds } },
+    depth: 1,
+    limit: editVariantIds.length,
+    overrideAccess: true,
+  });
+  const editVariantMap = new Map(editVariantsResult.docs.map((v) => [v.id, { ...v }]));
+
+  const editPersonalItems = data.items.filter((item) => item.stockSource === 'personal');
+  const editInventoryMap = new Map<number, { id: number; quantity: number }>();
+  if (editPersonalItems.length > 0) {
+    const editPersonalVariantIds = editPersonalItems.map((item) => item.variantId);
+    const editInventoryResult = await payload.find({
+      collection: 'mobile-seller-inventory',
+      where: {
+        and: [{ seller: { equals: saleSellerId } }, { variant: { in: editPersonalVariantIds } }],
+      },
+      limit: editPersonalVariantIds.length,
       overrideAccess: true,
     });
+    for (const inv of editInventoryResult.docs) {
+      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+      editInventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
+    }
+  }
+
+  for (const item of data.items) {
+    const variant = editVariantMap.get(item.variantId);
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
 
     if (item.stockSource === 'warehouse') {
@@ -631,7 +671,9 @@ export async function editSaleFull(
             `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
         );
       }
-      const newStock = variant.stock - item.quantity;
+      const previousStock = variant.stock;
+      const newStock = previousStock - item.quantity;
+      variant.stock = newStock;
       await payload.update({
         collection: 'product-variants',
         id: item.variantId,
@@ -644,7 +686,7 @@ export async function editSaleFull(
           variant: item.variantId,
           type: 'sale_edit' as const,
           quantity: -item.quantity,
-          previousStock: variant.stock,
+          previousStock,
           newStock,
           reason: `Edición venta #${saleId}`,
           owner: saleOwnerId,
@@ -653,20 +695,16 @@ export async function editSaleFull(
         overrideAccess: true,
       });
     } else {
-      const { docs: inventoryDocs } = await payload.find({
-        collection: 'mobile-seller-inventory',
-        where: { and: [{ seller: { equals: saleSellerId } }, { variant: { equals: item.variantId } }] },
-        limit: 1,
-        overrideAccess: true,
-      });
-      const inventoryRecord = inventoryDocs[0];
+      const inventoryRecord = editInventoryMap.get(item.variantId);
       if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
         throw new Error(
           `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
             `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
         );
       }
-      const newMobileStock = inventoryRecord.quantity - item.quantity;
+      const previousQuantity = inventoryRecord.quantity;
+      const newMobileStock = previousQuantity - item.quantity;
+      inventoryRecord.quantity = newMobileStock;
       await payload.update({
         collection: 'mobile-seller-inventory',
         id: inventoryRecord.id,
@@ -679,7 +717,7 @@ export async function editSaleFull(
           variant: item.variantId,
           type: 'sale_edit' as const,
           quantity: -item.quantity,
-          previousStock: inventoryRecord.quantity,
+          previousStock: previousQuantity,
           newStock: newMobileStock,
           reason: `Edición venta #${saleId}`,
           mobileSeller: saleSellerId,

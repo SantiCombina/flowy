@@ -56,26 +56,45 @@ export async function dispatchStockToMobileSeller(
 ): Promise<void> {
   const payload = await getPayloadClient();
 
+  const activeItems = items.filter((item) => item.quantity > 0);
+  if (activeItems.length === 0) return;
+
+  const variantIds = activeItems.map((item) => item.variantId);
+
+  const [variantsResult, inventoryResult] = await Promise.all([
+    payload.find({
+      collection: 'product-variants',
+      where: { id: { in: variantIds } },
+      depth: 1,
+      limit: variantIds.length,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'mobile-seller-inventory',
+      where: {
+        and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
+      },
+      limit: variantIds.length,
+      overrideAccess: true,
+    }),
+  ]);
+
+  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+  const inventoryMap = new Map(
+    inventoryResult.docs.map((inv) => {
+      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+      return [variantId, inv];
+    }),
+  );
+
   const dispatchedProductNames: string[] = [];
 
-  for (const item of items) {
-    if (item.quantity <= 0) continue;
-
-    const variant = await payload.findByID({
-      collection: 'product-variants',
-      id: item.variantId,
-      depth: 1,
-      overrideAccess: true,
-    });
-
-    const productName = variant
-      ? typeof variant.product === 'object'
-        ? variant.product.name
-        : `Variante ${item.variantId}`
-      : `Variante ${item.variantId}`;
-    dispatchedProductNames.push(`${item.quantity}x ${productName}`);
-
+  for (const item of activeItems) {
+    const variant = variantMap.get(item.variantId);
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+    const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+    dispatchedProductNames.push(`${item.quantity}x ${productName}`);
 
     const warehouseStock = variant.stock;
 
@@ -86,8 +105,9 @@ export async function dispatchStockToMobileSeller(
       );
     }
 
-    // Decrement warehouse stock
     const newWarehouseStock = warehouseStock - item.quantity;
+    variant.stock = newWarehouseStock;
+
     await payload.update({
       collection: 'product-variants',
       id: item.variantId,
@@ -95,21 +115,13 @@ export async function dispatchStockToMobileSeller(
       overrideAccess: true,
     });
 
-    // Upsert mobile seller inventory
-    const { docs: existingInventory } = await payload.find({
-      collection: 'mobile-seller-inventory',
-      where: {
-        and: [{ seller: { equals: sellerId } }, { variant: { equals: item.variantId } }],
-      },
-      limit: 1,
-      overrideAccess: true,
-    });
+    const existingInventory = inventoryMap.get(item.variantId);
 
-    if (existingInventory.length > 0) {
+    if (existingInventory) {
       await payload.update({
         collection: 'mobile-seller-inventory',
-        id: existingInventory[0].id,
-        data: { quantity: existingInventory[0].quantity + item.quantity },
+        id: existingInventory.id,
+        data: { quantity: existingInventory.quantity + item.quantity },
         overrideAccess: true,
       });
     } else {
@@ -125,7 +137,6 @@ export async function dispatchStockToMobileSeller(
       });
     }
 
-    // Create stock movement record
     await payload.create({
       collection: 'stock-movements',
       data: {
@@ -167,33 +178,47 @@ export async function returnStockFromMobileSeller(
 ): Promise<void> {
   const payload = await getPayloadClient();
 
-  const returnedProductNames: string[] = [];
+  const activeItems = items.filter((item) => item.quantity > 0);
+  if (activeItems.length === 0) return;
 
-  const sellerUser = await payload.findByID({
-    collection: 'users',
-    id: sellerId,
-    overrideAccess: true,
-  });
-  const sellerName = sellerUser?.name ?? 'Vendedor';
+  const variantIds = activeItems.map((item) => item.variantId);
 
-  for (const item of items) {
-    if (item.quantity <= 0) continue;
-
-    // Find mobile seller inventory record
-    const { docs: existingInventory } = await payload.find({
+  const [sellerUser, variantsResult, inventoryResult] = await Promise.all([
+    payload.findByID({ collection: 'users', id: sellerId, overrideAccess: true }),
+    payload.find({
+      collection: 'product-variants',
+      where: { id: { in: variantIds } },
+      depth: 1,
+      limit: variantIds.length,
+      overrideAccess: true,
+    }),
+    payload.find({
       collection: 'mobile-seller-inventory',
       where: {
-        and: [{ seller: { equals: sellerId } }, { variant: { equals: item.variantId } }],
+        and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
       },
-      limit: 1,
+      limit: variantIds.length,
       overrideAccess: true,
-    });
+    }),
+  ]);
 
-    if (existingInventory.length === 0) {
+  const sellerName = sellerUser?.name ?? 'Vendedor';
+  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+  const inventoryMap = new Map(
+    inventoryResult.docs.map((inv) => {
+      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+      return [variantId, { ...inv }];
+    }),
+  );
+
+  const returnedProductNames: string[] = [];
+
+  for (const item of activeItems) {
+    const mobileInventory = inventoryMap.get(item.variantId);
+
+    if (!mobileInventory) {
       throw new Error(`El vendedor no tiene stock de la variante ${item.variantId}`);
     }
-
-    const mobileInventory = existingInventory[0];
 
     if (mobileInventory.quantity < item.quantity) {
       throw new Error(
@@ -201,13 +226,7 @@ export async function returnStockFromMobileSeller(
       );
     }
 
-    const variant = await payload.findByID({
-      collection: 'product-variants',
-      id: item.variantId,
-      depth: 1,
-      overrideAccess: true,
-    });
-
+    const variant = variantMap.get(item.variantId);
     if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
 
     const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
@@ -215,8 +234,11 @@ export async function returnStockFromMobileSeller(
 
     const warehouseStock = variant.stock;
     const newWarehouseStock = warehouseStock + item.quantity;
+    variant.stock = newWarehouseStock;
 
-    // Increment warehouse stock
+    const previousMobileQuantity = mobileInventory.quantity;
+    mobileInventory.quantity = previousMobileQuantity - item.quantity;
+
     await payload.update({
       collection: 'product-variants',
       id: item.variantId,
@@ -224,15 +246,13 @@ export async function returnStockFromMobileSeller(
       overrideAccess: true,
     });
 
-    // Decrement mobile seller inventory
     await payload.update({
       collection: 'mobile-seller-inventory',
       id: mobileInventory.id,
-      data: { quantity: mobileInventory.quantity - item.quantity },
+      data: { quantity: mobileInventory.quantity },
       overrideAccess: true,
     });
 
-    // Create stock movement record
     await payload.create({
       collection: 'stock-movements',
       data: {

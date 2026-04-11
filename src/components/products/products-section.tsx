@@ -9,7 +9,7 @@ import { useUserOptional } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
-import type { Brand, Category, Quality, Presentation } from '@/payload-types';
+import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 import { getReferenceDataAction } from './actions';
 import { ProductModal } from './product-modal-new/index';
@@ -22,16 +22,11 @@ interface RefData {
   presentations: Presentation[];
 }
 
-let refDataCache: RefData | null = null;
+interface Props {
+  initialRefData: RefData;
+}
 
-const emptyRefData: RefData = {
-  brands: [],
-  categories: [],
-  qualities: [],
-  presentations: [],
-};
-
-export function ProductsSection() {
+export function ProductsSection({ initialRefData }: Props) {
   const user = useUserOptional();
   const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
   const tableRef = useRef<ProductsTableRef>(null);
@@ -39,44 +34,32 @@ export function ProductsSection() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
-  const [referenceData, setReferenceData] = useState<RefData>(refDataCache ?? emptyRefData);
+  const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
 
-  const loadReferenceData = useCallback(async (forceRefresh = false) => {
-    if (refDataCache && !forceRefresh) {
-      setReferenceData(refDataCache);
-      return true;
-    }
-
+  const handleRefreshEntities = useCallback(async () => {
     const result = await getReferenceDataAction();
-
     if (result?.serverError) {
       toast.error(result.serverError);
-      return false;
+      return;
     }
-
     if (result?.data?.success) {
-      refDataCache = {
+      setReferenceData({
         brands: result.data.brands,
         categories: result.data.categories,
         qualities: result.data.qualities,
         presentations: result.data.presentations,
-      };
-      setReferenceData(refDataCache);
-      return true;
+      });
     }
-    return false;
   }, []);
 
   const handleOpenCreateModal = () => {
     setEditingProductId(undefined);
     setIsModalOpen(true);
-    void loadReferenceData();
   };
 
   const handleOpenEditModal = (productId: number) => {
     setEditingProductId(productId);
     setIsModalOpen(true);
-    void loadReferenceData();
   };
 
   const handleSuccess = useCallback(() => {
@@ -136,7 +119,7 @@ export function ProductsSection() {
         categories={referenceData.categories}
         qualities={referenceData.qualities}
         presentations={referenceData.presentations}
-        onRefreshEntities={() => loadReferenceData(true)}
+        onRefreshEntities={handleRefreshEntities}
       />
     </div>
   );

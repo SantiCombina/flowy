@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -7,8 +8,29 @@ export const metadata: Metadata = {
 
 import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/dashboard';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
+
+async function OwnerDashboardData({ userId, userName }: { userId: number; userName: string }) {
+  const initialStats = await getOwnerDashboardStats(userId, 'month');
+  return <DashboardShell kind="owner" userId={userId} userName={userName} initialStats={initialStats} />;
+}
+
+async function SellerDashboardData({
+  userId,
+  ownerId,
+  userName,
+}: {
+  userId: number;
+  ownerId: number;
+  userName: string;
+}) {
+  const initialStats = await getSellerDashboardStats(userId, ownerId, 'month');
+  return (
+    <DashboardShell kind="seller" userId={userId} ownerId={ownerId} userName={userName} initialStats={initialStats} />
+  );
+}
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -18,7 +40,6 @@ export default async function HomePage() {
   }
 
   if (user.role === 'owner' || user.role === 'admin') {
-    const initialStats = await getOwnerDashboardStats(user.id, 'month');
     return (
       <>
         <RealtimeRefresher
@@ -32,24 +53,21 @@ export default async function HomePage() {
             'stock_adjusted',
           ]}
         />
-        <DashboardShell kind="owner" userId={user.id} userName={user.name} initialStats={initialStats} />
+        <Suspense fallback={<DashboardSkeleton />}>
+          <OwnerDashboardData userId={user.id} userName={user.name} />
+        </Suspense>
       </>
     );
   }
 
   const ownerRef = user.owner;
   const ownerId = typeof ownerRef === 'object' && ownerRef !== null ? ownerRef.id : (ownerRef ?? 0);
-  const initialStats = await getSellerDashboardStats(user.id, ownerId, 'month');
   return (
     <>
       <RealtimeRefresher channel={`private-seller-${user.id}`} events={['stock_dispatched', 'sale_created']} />
-      <DashboardShell
-        kind="seller"
-        userId={user.id}
-        ownerId={ownerId}
-        userName={user.name}
-        initialStats={initialStats}
-      />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <SellerDashboardData userId={user.id} ownerId={ownerId} userName={user.name} />
+      </Suspense>
     </>
   );
 }

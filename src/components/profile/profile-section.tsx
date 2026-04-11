@@ -7,8 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { PageHeader } from '../layout/page-header';
-
 import { ChangePasswordDialog } from './change-password-dialog';
 import { UpdateBusinessDataForm } from './update-business-data-form';
 import { UpdateBusinessNameForm } from './update-business-name-form';
@@ -60,8 +58,6 @@ export function ProfileSection({
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Mi perfil" description="Información de tu cuenta" hideTitle />
-
       <main className="flex-1 px-4 py-6 sm:px-6">
         <div className="flex flex-col gap-6 w-full lg:w-3/5 lg:mx-auto">
           <div>

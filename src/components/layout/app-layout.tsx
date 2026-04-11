@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import type { FeatureFlags } from '@/lib/features';
 
 import { AppSidebar } from './app-sidebar';
+import { AppTopbar } from './app-topbar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -15,7 +16,10 @@ export function AppLayout({ children, features, defaultSidebarOpen = true }: App
   return (
     <SidebarProvider defaultOpen={defaultSidebarOpen}>
       <AppSidebar features={features} />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset>
+        <AppTopbar />
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }

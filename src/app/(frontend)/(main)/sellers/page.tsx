@@ -1,27 +1,34 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getVariantsWithProducts } from '@/app/services/products';
 import { getSellers } from '@/app/services/users';
 import { SellersSection } from '@/components/sellers/sellers-section';
 import { getCurrentUser } from '@/lib/payload';
 
+import SellersLoading from './loading';
+
 export const metadata: Metadata = {
   title: 'Vendedores',
 };
 
-export default async function SellersPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  const ownerId = user.id;
+async function SellersData({ ownerId }: { ownerId: number }) {
   const [sellers, variantsResult] = await Promise.all([
     getSellers(ownerId),
     getVariantsWithProducts(ownerId, undefined, { limit: 1000 }),
   ]);
 
   return <SellersSection sellers={sellers} variants={variantsResult.docs} ownerId={ownerId} />;
+}
+
+export default async function SellersPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+
+  return (
+    <Suspense fallback={<SellersLoading />}>
+      <SellersData ownerId={user.id} />
+    </Suspense>
+  );
 }
