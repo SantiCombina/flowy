@@ -159,9 +159,20 @@ export function ProductsSection({ initialRefData }: Props) {
         </div>
 
         {selectedKeys.size > 0 && canCreateProduct && (
-          <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
-            <span className="text-sm font-medium text-foreground">{selectedKeys.size} seleccionadas</span>
-            <div className="ml-auto flex items-center gap-2">
+          <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 px-3 py-2 sm:flex-row sm:items-center">
+            <div className="flex items-center justify-between sm:justify-start">
+              <span className="text-sm font-medium text-foreground">{selectedKeys.size} seleccionadas</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedKeys(new Set())}
+                aria-label="Deseleccionar todo"
+                className="sm:hidden"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 sm:ml-auto">
               <Button
                 variant="outline"
                 size="sm"
@@ -186,6 +197,7 @@ export function ProductsSection({ initialRefData }: Props) {
                 size="sm"
                 onClick={() => setSelectedKeys(new Set())}
                 aria-label="Deseleccionar todo"
+                className="hidden sm:inline-flex"
               >
                 <X className="h-4 w-4" />
               </Button>

@@ -8,6 +8,7 @@ import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { bulkUpdateVariantPricesAction } from './actions';
 
@@ -25,6 +26,9 @@ interface PriceRow {
 }
 
 export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPriceSheetProps) {
+  const isMobile = useIsMobile();
+  const side = isMobile ? 'bottom' : 'right';
+
   const [rows, setRows] = useState<PriceRow[]>(() =>
     variants.map((v) => ({
       variantId: v.id,
@@ -74,7 +78,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
+      <SheetContent side={side} className="flex w-full flex-col gap-0 p-0 sm:max-w-2xl max-h-[85dvh] sm:max-h-none">
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle>Editar precios ({variants.length} variantes)</SheetTitle>
         </SheetHeader>
