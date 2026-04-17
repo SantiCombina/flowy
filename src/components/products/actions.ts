@@ -24,6 +24,7 @@ import { getProductDemandSummary, getVariantSalesHistory } from '@/app/services/
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
+import { bulkUpdatePricesSchema, bulkToggleActiveSchema } from '@/schemas/products/bulk-actions-schema';
 import {
   productFiltersSchema,
   variantFiltersSchema,
@@ -395,5 +396,41 @@ export const deleteVariantAction = actionClient.schema(deleteVariantActionSchema
 
   return {
     success: true,
+  };
+});
+
+export const bulkUpdateVariantPricesAction = actionClient
+  .schema(bulkUpdatePricesSchema)
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'owner') {
+      throw new Error('No autorizado');
+    }
+
+    await Promise.all(parsedInput.updates.map(({ variantId, costPrice }) => updateVariant(variantId, { costPrice })));
+
+    revalidatePath('/products');
+
+    return {
+      success: true,
+      updated: parsedInput.updates.length,
+    };
+  });
+
+export const bulkToggleProductsAction = actionClient.schema(bulkToggleActiveSchema).action(async ({ parsedInput }) => {
+  const user = await getCurrentUser();
+
+  if (!user || user.role !== 'owner') {
+    throw new Error('No autorizado');
+  }
+
+  await Promise.all(parsedInput.productIds.map((id) => updateProduct(id, { isActive: parsedInput.isActive })));
+
+  revalidatePath('/products');
+
+  return {
+    success: true,
+    updated: parsedInput.productIds.length,
   };
 });

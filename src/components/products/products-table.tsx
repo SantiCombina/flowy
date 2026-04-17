@@ -45,15 +45,30 @@ interface ProductsTableProps {
   onEdit?: (productId: number) => void;
   showActions?: boolean;
   showInventoryValue?: boolean;
+  selectable?: boolean;
+  selectedKeys?: Set<string | number>;
+  onSelectionChange?: (keys: Set<string | number>) => void;
 }
 
 export interface ProductsTableRef {
   refresh: () => Promise<void>;
   silentRefresh: () => Promise<void>;
+  getVariants: () => PopulatedProductVariant[];
 }
 
 export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
-  ({ searchQuery = '', onEdit, showActions = true, showInventoryValue = true }, ref) => {
+  (
+    {
+      searchQuery = '',
+      onEdit,
+      showActions = true,
+      showInventoryValue = true,
+      selectable = false,
+      selectedKeys,
+      onSelectionChange,
+    },
+    ref,
+  ) => {
     const router = useRouter();
     const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
 
@@ -142,11 +157,8 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
 
       const productId = productToDelete.id;
 
-      // Optimistic: capture current state for potential rollback
       const previousVariants = allVariants;
       const nextVariants = allVariants.filter((v) => v.product.id !== productId);
-
-      // Remove from UI and close dialog immediately
       variantsCache.data = nextVariants;
       setAllVariants(nextVariants);
       setProductToDelete(null);
@@ -172,6 +184,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     useImperativeHandle(ref, () => ({
       refresh: () => loadVariants(false),
       silentRefresh: () => loadVariants(true),
+      getVariants: () => allVariants,
     }));
 
     const updateVariantStock = useCallback((variantId: number, newStock: number) => {
@@ -403,6 +416,9 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           emptyMessage={searchQuery ? 'No se encontraron productos' : 'No hay productos'}
           defaultItemsPerPage={getItemsPerPage()}
           onItemsPerPageChange={(n) => void updateItemsPerPage(n as Parameters<typeof updateItemsPerPage>[0])}
+          selectable={selectable}
+          selectedKeys={selectedKeys}
+          onSelectionChange={onSelectionChange}
         />
 
         <AlertDialog open={productToDelete !== null} onOpenChange={() => setProductToDelete(null)}>

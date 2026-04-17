@@ -1,17 +1,29 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
+import { DollarSign, EyeOff, Eye, Plus, Search, X } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 import { PageHeader } from '@/components/layout/page-header';
 import { useUserOptional } from '@/components/providers/user-provider';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
-import { getReferenceDataAction } from './actions';
+import { getReferenceDataAction, bulkToggleProductsAction } from './actions';
+import { BulkPriceSheet } from './bulk-price-sheet';
 import { ProductModal } from './product-modal-new/index';
 import { ProductsTable, type ProductsTableRef } from './products-table';
 
@@ -35,6 +47,20 @@ export function ProductsSection({ initialRefData }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
   const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
+
+  const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
+  const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
+  const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
+
+  const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
+
+  const selectedVariants = (() => {
+    if (selectedKeys.size === 0) return [];
+    const allVariants = tableRef.current?.getVariants() ?? [];
+    return allVariants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`));
+  })();
+
+  const uniqueProductIds = [...new Set(selectedVariants.map((v) => v.product.id))];
 
   const handleRefreshEntities = useCallback(async () => {
     const result = await getReferenceDataAction();
@@ -71,6 +97,35 @@ export function ProductsSection({ initialRefData }: Props) {
     setEditingProductId(undefined);
   };
 
+  const handleBulkPriceSuccess = () => {
+    setSelectedKeys(new Set());
+    void tableRef.current?.silentRefresh();
+  };
+
+  const handleBulkToggleConfirm = async () => {
+    if (bulkToggleTarget === null || uniqueProductIds.length === 0) return;
+
+    const result = await executeToggle({
+      productIds: uniqueProductIds,
+      isActive: bulkToggleTarget,
+    });
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      const label = bulkToggleTarget ? 'activados' : 'pausados';
+      toast.success(`${result.data.updated} productos ${label}`);
+      setSelectedKeys(new Set());
+      setBulkToggleTarget(null);
+      void tableRef.current?.silentRefresh();
+    } else {
+      toast.error('No se pudo actualizar el estado de los productos');
+    }
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader
@@ -101,12 +156,43 @@ export function ProductsSection({ initialRefData }: Props) {
           <ColumnVisibilityDropdown tableName="products" />
         </div>
 
+        {selectedKeys.size > 0 && canCreateProduct && (
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+            <span className="text-sm font-medium text-foreground">{selectedKeys.size} seleccionadas</span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsBulkPriceOpen(true)}>
+                <DollarSign className="h-4 w-4" />
+                Editar precios
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setBulkToggleTarget(false)}>
+                <EyeOff className="h-4 w-4" />
+                Pausar
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setBulkToggleTarget(true)}>
+                <Eye className="h-4 w-4" />
+                Activar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedKeys(new Set())}
+                aria-label="Deseleccionar todo"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         <ProductsTable
           ref={tableRef}
           searchQuery={searchQuery}
           onEdit={canCreateProduct ? handleOpenEditModal : undefined}
           showActions={canCreateProduct}
           showInventoryValue={canCreateProduct}
+          selectable={canCreateProduct}
+          selectedKeys={selectedKeys}
+          onSelectionChange={setSelectedKeys}
         />
       </main>
 
@@ -121,6 +207,32 @@ export function ProductsSection({ initialRefData }: Props) {
         presentations={referenceData.presentations}
         onRefreshEntities={handleRefreshEntities}
       />
+
+      <BulkPriceSheet
+        isOpen={isBulkPriceOpen}
+        onClose={() => setIsBulkPriceOpen(false)}
+        variants={selectedVariants}
+        onSuccess={handleBulkPriceSuccess}
+      />
+
+      <AlertDialog open={bulkToggleTarget !== null} onOpenChange={(open) => !open && setBulkToggleTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{bulkToggleTarget ? '¿Activar productos?' : '¿Pausar productos?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkToggleTarget
+                ? `Se van a activar ${uniqueProductIds.length} producto${uniqueProductIds.length !== 1 ? 's' : ''} (de ${selectedKeys.size} variante${selectedKeys.size !== 1 ? 's' : ''} seleccionada${selectedKeys.size !== 1 ? 's' : ''}).`
+                : `Se van a pausar ${uniqueProductIds.length} producto${uniqueProductIds.length !== 1 ? 's' : ''} (de ${selectedKeys.size} variante${selectedKeys.size !== 1 ? 's' : ''} seleccionada${selectedKeys.size !== 1 ? 's' : ''}). No aparecerán en las ventas.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkToggleConfirm} disabled={isToggling}>
+              {isToggling ? 'Procesando...' : bulkToggleTarget ? 'Activar' : 'Pausar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

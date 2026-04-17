@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from 'luci
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,6 +27,9 @@ interface DataTableProps<T> {
   emptyMessage?: string;
   defaultItemsPerPage?: number;
   onItemsPerPageChange?: (itemsPerPage: number) => void;
+  selectable?: boolean;
+  selectedKeys?: Set<string | number>;
+  onSelectionChange?: (keys: Set<string | number>) => void;
 }
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
@@ -39,6 +43,9 @@ export function DataTable<T>({
   emptyMessage = 'No hay datos',
   defaultItemsPerPage = 10,
   onItemsPerPageChange,
+  selectable = false,
+  selectedKeys,
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
@@ -90,12 +97,47 @@ export function DataTable<T>({
   const safePage = Math.min(page, totalPages);
   const pageData = sortedData.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
+  const pageKeys = pageData.map((item) => keyExtractor(item));
+  const allPageSelected = selectable && pageKeys.length > 0 && pageKeys.every((k) => selectedKeys?.has(k));
+  const somePageSelected = selectable && !allPageSelected && pageKeys.some((k) => selectedKeys?.has(k));
+
+  const handleSelectAll = (checked: boolean) => {
+    if (!onSelectionChange || !selectedKeys) return;
+    const next = new Set(selectedKeys);
+    if (checked) {
+      pageKeys.forEach((k) => next.add(k));
+    } else {
+      pageKeys.forEach((k) => next.delete(k));
+    }
+    onSelectionChange(next);
+  };
+
+  const handleSelectRow = (key: string | number, checked: boolean) => {
+    if (!onSelectionChange || !selectedKeys) return;
+    const next = new Set(selectedKeys);
+    if (checked) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+    onSelectionChange(next);
+  };
+
   return (
     <div className="space-y-3">
       <div className="rounded-md bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
+              {selectable && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allPageSelected ? true : somePageSelected ? 'indeterminate' : false}
+                    onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                    aria-label="Seleccionar todos"
+                  />
+                </TableHead>
+              )}
               {columns.map((column) => (
                 <TableHead key={column.key} className={column.className}>
                   {column.sortable ? (
@@ -129,6 +171,11 @@ export function DataTable<T>({
             {isLoading ? (
               Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={i}>
+                  {selectable && (
+                    <TableCell className="w-10">
+                      <Skeleton className="h-4 w-4" />
+                    </TableCell>
+                  )}
                   {columns.map((column) => (
                     <TableCell key={column.key} className={column.className}>
                       <Skeleton className="h-5 w-full" />
@@ -138,20 +185,40 @@ export function DataTable<T>({
               ))
             ) : pageData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-10 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={selectable ? columns.length + 1 : columns.length}
+                  className="py-10 text-center text-muted-foreground"
+                >
                   {emptyMessage}
                 </TableCell>
               </TableRow>
             ) : (
-              pageData.map((item) => (
-                <TableRow key={keyExtractor(item)}>
-                  {columns.map((column) => (
-                    <TableCell key={column.key} className={cn(column.className)}>
-                      {column.cell(item)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              pageData.map((item) => {
+                const itemKey = keyExtractor(item);
+                const isSelected = selectable && (selectedKeys?.has(itemKey) ?? false);
+                return (
+                  <TableRow
+                    key={itemKey}
+                    data-selected={isSelected || undefined}
+                    className={cn(isSelected && 'bg-muted/50')}
+                  >
+                    {selectable && (
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => handleSelectRow(itemKey, checked === true)}
+                          aria-label="Seleccionar fila"
+                        />
+                      </TableCell>
+                    )}
+                    {columns.map((column) => (
+                      <TableCell key={column.key} className={cn(column.className)}>
+                        {column.cell(item)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
