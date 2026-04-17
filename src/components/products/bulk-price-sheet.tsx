@@ -1,7 +1,7 @@
 'use client';
 
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -25,23 +25,16 @@ interface PriceRow {
 }
 
 export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPriceSheetProps) {
-  const [rows, setRows] = useState<PriceRow[]>([]);
+  const [rows, setRows] = useState<PriceRow[]>(() =>
+    variants.map((v) => ({
+      variantId: v.id,
+      costPrice: v.costPrice,
+      profitMargin: v.profitMargin ?? 0,
+    })),
+  );
   const [percentage, setPercentage] = useState('');
 
   const { executeAsync, isExecuting } = useAction(bulkUpdateVariantPricesAction);
-
-  useEffect(() => {
-    if (isOpen) {
-      setRows(
-        variants.map((v) => ({
-          variantId: v.id,
-          costPrice: v.costPrice,
-          profitMargin: v.profitMargin ?? 0,
-        })),
-      );
-      setPercentage('');
-    }
-  }, [isOpen, variants]);
 
   const applyPercentage = () => {
     const pct = parseFloat(percentage);

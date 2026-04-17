@@ -48,12 +48,12 @@ interface ProductsTableProps {
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
+  onVariantsChange?: (variants: PopulatedProductVariant[]) => void;
 }
 
 export interface ProductsTableRef {
   refresh: () => Promise<void>;
   silentRefresh: () => Promise<void>;
-  getVariants: () => PopulatedProductVariant[];
 }
 
 export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
@@ -66,6 +66,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
       selectable = false,
       selectedKeys,
       onSelectionChange,
+      onVariantsChange,
     },
     ref,
   ) => {
@@ -152,6 +153,10 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
       }
     }, [loadVariants]);
 
+    useEffect(() => {
+      onVariantsChange?.(allVariants);
+    }, [allVariants, onVariantsChange]);
+
     const handleDelete = async () => {
       if (!productToDelete) return;
 
@@ -184,7 +189,6 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     useImperativeHandle(ref, () => ({
       refresh: () => loadVariants(false),
       silentRefresh: () => loadVariants(true),
-      getVariants: () => allVariants,
     }));
 
     const updateVariantStock = useCallback((variantId: number, newStock: number) => {

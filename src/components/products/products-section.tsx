@@ -2,9 +2,10 @@
 
 import { DollarSign, EyeOff, Eye, Plus, Search, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import type { PopulatedProductVariant } from '@/app/services/products';
 import { PageHeader } from '@/components/layout/page-header';
 import { useUserOptional } from '@/components/providers/user-provider';
 import {
@@ -48,19 +49,20 @@ export function ProductsSection({ initialRefData }: Props) {
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
   const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
 
+  const [allVariants, setAllVariants] = useState<PopulatedProductVariant[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
+  const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
 
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
-  const selectedVariants = (() => {
-    if (selectedKeys.size === 0) return [];
-    const allVariants = tableRef.current?.getVariants() ?? [];
-    return allVariants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`));
-  })();
+  const selectedVariants = useMemo(
+    () => allVariants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
+    [allVariants, selectedKeys],
+  );
 
-  const uniqueProductIds = [...new Set(selectedVariants.map((v) => v.product.id))];
+  const uniqueProductIds = useMemo(() => [...new Set(selectedVariants.map((v) => v.product.id))], [selectedVariants]);
 
   const handleRefreshEntities = useCallback(async () => {
     const result = await getReferenceDataAction();
@@ -160,7 +162,14 @@ export function ProductsSection({ initialRefData }: Props) {
           <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
             <span className="text-sm font-medium text-foreground">{selectedKeys.size} seleccionadas</span>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsBulkPriceOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setBulkPriceKey((k) => k + 1);
+                  setIsBulkPriceOpen(true);
+                }}
+              >
                 <DollarSign className="h-4 w-4" />
                 Editar precios
               </Button>
@@ -193,6 +202,7 @@ export function ProductsSection({ initialRefData }: Props) {
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
+          onVariantsChange={setAllVariants}
         />
       </main>
 
@@ -209,6 +219,7 @@ export function ProductsSection({ initialRefData }: Props) {
       />
 
       <BulkPriceSheet
+        key={bulkPriceKey}
         isOpen={isBulkPriceOpen}
         onClose={() => setIsBulkPriceOpen(false)}
         variants={selectedVariants}
