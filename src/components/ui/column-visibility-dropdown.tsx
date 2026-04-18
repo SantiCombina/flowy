@@ -33,7 +33,7 @@ export function ColumnVisibilityDropdown({ tableName, excludeColumns = [] }: Col
       title="Columnas visibles"
       align="end"
       trigger={
-        <Button variant="outline" size="sm" className="h-9 gap-1.5">
+        <Button variant="outline">
           <SlidersHorizontal className="h-4 w-4" />
           Columnas
         </Button>

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { convertToWebP } from '@/lib/image-utils';
 import type { ProductVariant } from '@/payload-types';
+import { productSchema, type ProductFormData } from '@/schemas/products/product-schema';
 
 import {
   createProductAction,
@@ -15,7 +16,6 @@ import {
   getProductByIdAction,
 } from '../../actions';
 import { deleteMediaAction } from '../../media-actions';
-import { productSchema, type ProductFormData } from '@/schemas/products/product-schema';
 
 interface PayloadMediaResponse {
   doc: { id: number; url?: string | null };

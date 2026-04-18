@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, EyeOff, Eye, Plus, Search, X } from 'lucide-react';
+import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -54,6 +54,7 @@ export function ProductsSection({ initialRefData }: Props) {
   const [totalDocs, setTotalDocs] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [inventoryValue, setInventoryValue] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
@@ -86,8 +87,37 @@ export function ProductsSection({ initialRefData }: Props) {
   );
 
   useEffect(() => {
-    void fetchVariants(page, searchQuery);
-  }, [page, searchQuery, fetchVariants]);
+    let cancelled = false;
+
+    async function load() {
+      const result = await executeFetchVariants({
+        filters: searchQuery ? { search: searchQuery } : undefined,
+        options: { limit: 50, page, sort: 'product' },
+      });
+      if (cancelled) return;
+
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+
+      if (result?.data?.success) {
+        setVariants(result.data.docs);
+        setTotalDocs(result.data.totalDocs);
+        setTotalPages(result.data.totalPages);
+        const value = result.data.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
+        setInventoryValue(value);
+      }
+
+      setIsInitialLoading(false);
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, searchQuery, executeFetchVariants]);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -171,12 +201,23 @@ export function ProductsSection({ initialRefData }: Props) {
         title="Productos"
         description="Gestión del catálogo de productos"
         actions={
-          canCreateProduct ? (
-            <Button onClick={handleOpenCreateModal} size="sm">
-              <Plus className="h-4 w-4" />
-              Nuevo producto
-            </Button>
-          ) : undefined
+          <div className="flex items-center gap-2">
+            {canCreateProduct && !isInitialLoading && totalDocs > 0 && (
+              <div
+                className="flex h-9 items-center gap-1 text-sm text-muted-foreground sm:gap-1.5 sm:rounded-md sm:border sm:bg-muted/60 sm:px-2.5"
+                title="Valor del inventario (página actual)"
+              >
+                <Warehouse className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
+              </div>
+            )}
+            {canCreateProduct && (
+              <Button onClick={handleOpenCreateModal}>
+                <Plus className="h-4 w-4" />
+                Nuevo producto
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -195,53 +236,6 @@ export function ProductsSection({ initialRefData }: Props) {
           <ColumnVisibilityDropdown tableName="products" />
         </div>
 
-        {selectedKeys.size > 0 && canCreateProduct && (
-          <div className="flex flex-col gap-2 rounded-lg border bg-muted/50 px-3 py-2 sm:flex-row sm:items-center">
-            <div className="flex items-center justify-between sm:justify-start">
-              <span className="text-sm font-medium text-foreground">{selectedKeys.size} seleccionadas</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedKeys(new Set())}
-                aria-label="Deseleccionar todo"
-                className="sm:hidden"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 sm:ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setBulkPriceKey((k) => k + 1);
-                  setIsBulkPriceOpen(true);
-                }}
-              >
-                <DollarSign className="h-4 w-4" />
-                Editar precios
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setBulkToggleTarget(false)}>
-                <EyeOff className="h-4 w-4" />
-                Pausar
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setBulkToggleTarget(true)}>
-                <Eye className="h-4 w-4" />
-                Activar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedKeys(new Set())}
-                aria-label="Deseleccionar todo"
-                className="hidden sm:inline-flex"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
         <ProductsTable
           ref={tableRef}
           variants={variants}
@@ -249,16 +243,62 @@ export function ProductsSection({ initialRefData }: Props) {
           totalPages={totalPages}
           currentPage={page}
           onPageChange={setPage}
-          inventoryValue={inventoryValue}
           onEdit={canCreateProduct ? handleOpenEditModal : undefined}
           showActions={canCreateProduct}
-          showInventoryValue={canCreateProduct}
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
-          isLoading={isFetchingVariants}
+          isLoading={isInitialLoading || isFetchingVariants}
         />
       </main>
+
+      {canCreateProduct && (
+        <div
+          className={[
+            'fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-md px-4 py-3',
+            'sm:left-1/2 sm:-translate-x-1/2 sm:bottom-6 sm:right-auto sm:border sm:rounded-full sm:border-border/50 sm:px-2 sm:py-2 sm:bg-background/90 sm:shadow-2xl',
+            'transition-all duration-200 ease-out',
+            selectedKeys.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none',
+          ].join(' ')}
+        >
+          <div className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+              {selectedKeys.size} seleccionadas
+            </span>
+            <div className="h-5 w-px bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={() => {
+                setBulkPriceKey((k) => k + 1);
+                setIsBulkPriceOpen(true);
+              }}
+            >
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Editar precios</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setBulkToggleTarget(false)}>
+              <EyeOff className="h-4 w-4" />
+              <span className="hidden sm:inline">Pausar</span>
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setBulkToggleTarget(true)}>
+              <Eye className="h-4 w-4" />
+              <span className="hidden sm:inline">Activar</span>
+            </Button>
+            <div className="h-5 w-px bg-border mx-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={() => setSelectedKeys(new Set())}
+              aria-label="Deseleccionar todo"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <ProductModal
         isOpen={isModalOpen}

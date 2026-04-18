@@ -30,6 +30,7 @@ interface DataTableProps<T> {
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
+  hasSelection?: boolean;
 }
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
@@ -46,6 +47,7 @@ export function DataTable<T>({
   selectable = false,
   selectedKeys,
   onSelectionChange,
+  hasSelection = false,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
@@ -130,11 +132,12 @@ export function DataTable<T>({
           <TableHeader>
             <TableRow>
               {selectable && (
-                <TableHead className="w-10">
+                <TableHead className="w-6 px-2">
                   <Checkbox
                     checked={allPageSelected ? true : somePageSelected ? 'indeterminate' : false}
                     onCheckedChange={(checked) => handleSelectAll(checked === true)}
                     aria-label="Seleccionar todos"
+                    className={cn('transition-opacity duration-150', hasSelection ? 'opacity-100' : 'opacity-0')}
                   />
                 </TableHead>
               )}
@@ -172,7 +175,7 @@ export function DataTable<T>({
               Array.from({ length: SKELETON_ROWS }).map((_, i) => (
                 <TableRow key={i}>
                   {selectable && (
-                    <TableCell className="w-10">
+                    <TableCell className="w-6 px-2">
                       <Skeleton className="h-4 w-4" />
                     </TableCell>
                   )}
@@ -200,14 +203,18 @@ export function DataTable<T>({
                   <TableRow
                     key={itemKey}
                     data-selected={isSelected || undefined}
-                    className={cn(isSelected && 'bg-muted/50')}
+                    className={cn('group', isSelected && 'bg-muted/50')}
                   >
                     {selectable && (
-                      <TableCell className="w-10">
+                      <TableCell className="w-6 px-2">
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => handleSelectRow(itemKey, checked === true)}
                           aria-label="Seleccionar fila"
+                          className={cn(
+                            'transition-opacity duration-150',
+                            hasSelection || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                          )}
                         />
                       </TableCell>
                     )}
@@ -230,7 +237,7 @@ export function DataTable<T>({
             <>
               <span>Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-8 w-17.5">
+                <SelectTrigger className="h-9 w-17.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,8 +261,7 @@ export function DataTable<T>({
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
               onClick={() => setPage((p) => p - 1)}
               disabled={safePage <= 1 || isLoading}
               aria-label="Página anterior"
@@ -264,8 +270,7 @@ export function DataTable<T>({
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
               onClick={() => setPage((p) => p + 1)}
               disabled={safePage >= totalPages || isLoading}
               aria-label="Página siguiente"

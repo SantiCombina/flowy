@@ -617,7 +617,7 @@ export function SalesSection({
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-8 w-17.5">
+                <SelectTrigger className="h-9 w-17.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -639,8 +639,7 @@ export function SalesSection({
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  className="h-9 w-9 p-0"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={safePage <= 1}
                   aria-label="Página anterior"
@@ -649,8 +648,7 @@ export function SalesSection({
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  className="h-9 w-9 p-0"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={safePage >= totalPages}
                   aria-label="Página siguiente"

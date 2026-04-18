@@ -1,6 +1,6 @@
 # Skill Registry — flowy
 
-Generated: 2026-04-10
+Generated: 2026-04-17
 
 ## Convention Files
 - `CLAUDE.md` (project-level) — architecture, conventions, 3-layer pattern, Payload CMS rules
@@ -12,8 +12,9 @@ Generated: 2026-04-10
 |-------|---------|
 | `branch-pr` | Creating a PR, opening a pull request, preparing changes for review |
 | `frontend-design` | Building web components, pages, dashboards, or styling/beautifying UI |
+| `go-testing` | Writing Go tests, using teatest, or adding test coverage |
 | `issue-creation` | Creating a GitHub issue, reporting a bug, requesting a feature |
-| `judgment-day` | Adversarial review of code, parallel judge review protocol |
+| `judgment-day` | "judgment day", "judgment-day", "review adversarial", "dual review", "juzgar", "que lo juzguen" |
 | `next-best-practices` | Next.js 15 App Router patterns — loaded automatically for frontend tasks |
 | `payload` | Working with Payload collections, hooks, access control, debugging Payload |
 | `seo-audit` | SEO audit, technical SEO, why am I not ranking, SEO issues |
@@ -32,6 +33,7 @@ Generated: 2026-04-10
 | `sdd-apply` | Implementation |
 | `sdd-verify` | Validation against specs |
 | `sdd-archive` | Archiving completed change |
+| `sdd-onboard` | Guided walkthrough of the full SDD cycle |
 
 ## Compact Rules (injected into sub-agents)
 

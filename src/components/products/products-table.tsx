@@ -1,9 +1,9 @@
 'use client';
 
-import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
+import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -36,10 +36,8 @@ interface ProductsTableProps {
   totalPages: number;
   currentPage: number;
   onPageChange: (page: number) => void;
-  inventoryValue: number;
   onEdit?: (productId: number) => void;
   showActions?: boolean;
-  showInventoryValue?: boolean;
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
@@ -58,10 +56,8 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
       totalPages,
       currentPage,
       onPageChange,
-      inventoryValue,
       onEdit,
       showActions = true,
-      showInventoryValue = true,
       selectable = false,
       selectedKeys,
       onSelectionChange,
@@ -72,17 +68,14 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
     const router = useRouter();
     const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
 
-    const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+    const visibleColumns = useMemo(
+      () => (isSettingsLoading ? [] : getVisibleColumns('products')),
+      [isSettingsLoading, getVisibleColumns],
+    );
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
     const [variantForDemand, setVariantForDemand] = useState<PopulatedProductVariant | null>(null);
     const [demandMap, setDemandMap] = useState<Record<number, VariantDemandSummary>>({});
-
-    useEffect(() => {
-      if (!isSettingsLoading) {
-        setVisibleColumns(getVisibleColumns('products'));
-      }
-    }, [isSettingsLoading, getVisibleColumns]);
 
     useEffect(() => {
       void getProductDemandSummaryAction().then((result) => {
@@ -321,16 +314,6 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
 
     return (
       <>
-        {!isLoading && totalDocs > 0 && showInventoryValue && (
-          <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Warehouse className="h-4 w-4" />
-              <span>Valor del inventario (página actual)</span>
-            </div>
-            <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
-          </div>
-        )}
-
         <DataTable
           columns={columns}
           data={variants}
@@ -342,6 +325,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           selectable={selectable}
           selectedKeys={selectedKeys}
           onSelectionChange={onSelectionChange}
+          hasSelection={selectedKeys ? selectedKeys.size > 0 : false}
         />
 
         {totalPages > 1 && (
@@ -352,8 +336,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage <= 1 || isLoading}
                 aria-label="Página anterior"
@@ -362,8 +345,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage >= totalPages || isLoading}
                 aria-label="Página siguiente"

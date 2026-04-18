@@ -12,7 +12,7 @@ export function AppTopbar() {
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
-      <SidebarTrigger />
+      <SidebarTrigger className="-ml-1" />
       <div className="flex items-center gap-2">
         {(user?.role === 'seller' || user?.role === 'owner') && <NewSaleButton />}
         <NotificationBell />

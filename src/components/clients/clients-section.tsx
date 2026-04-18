@@ -48,7 +48,7 @@ export function ClientsSection({ clients, currentUser }: ClientsSectionProps) {
         title="Clientes"
         description="Gestión de clientes del negocio"
         actions={
-          <Button onClick={() => setIsModalOpen(true)} size="sm">
+          <Button onClick={() => setIsModalOpen(true)}>
             <Plus className="h-4 w-4" />
             Agregar cliente
           </Button>

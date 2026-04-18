@@ -107,12 +107,12 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
       )}
       {...props}
     >
+      {hasExplicitItemText ? children : <SelectItemText>{children}</SelectItemText>}
       <span data-slot="select-item-indicator" className="absolute right-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <CheckIcon className="size-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      {hasExplicitItemText ? children : <SelectItemText>{children}</SelectItemText>}
     </SelectPrimitive.Item>
   );
 }

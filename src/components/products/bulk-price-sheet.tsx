@@ -94,7 +94,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
               />
               <span className="absolute right-2.5 top-2 text-sm text-muted-foreground">%</span>
             </div>
-            <Button variant="secondary" size="sm" onClick={applyPercentage} disabled={!percentage || isExecuting}>
+            <Button variant="secondary" onClick={applyPercentage} disabled={!percentage || isExecuting}>
               Aplicar a todas
             </Button>
           </div>

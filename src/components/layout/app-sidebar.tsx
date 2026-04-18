@@ -82,7 +82,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="h-14 p-2 transition-all duration-300 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="h-14 p-2 transition-all duration-300 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-start">
         <Link
           href="/"
           className="flex h-full w-full items-center gap-2 rounded-md p-2 transition-all duration-300 hover:bg-sidebar-accent group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:hover:bg-transparent"

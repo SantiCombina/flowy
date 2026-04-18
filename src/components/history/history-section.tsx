@@ -216,7 +216,6 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
           {(hasActiveFilters || !isDefaultRange) && (
             <Button
               variant="ghost"
-              size="sm"
               className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
               onClick={clearFilters}
             >
@@ -230,7 +229,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
               title="Tipo de movimiento"
               align="start"
               trigger={
-                <Button variant="outline" size="sm" className="h-9 gap-1.5">
+                <Button variant="outline" className="gap-1.5">
                   <Filter className="h-4 w-4" />
                   Tipo
                   {selectedTypes.length > 0 && (
@@ -429,7 +428,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-8 w-17.5">
+                <SelectTrigger className="h-9 w-17.5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -451,8 +450,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  className="h-9 w-9 p-0"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={safePage <= 1 || isPending}
                 >
@@ -460,8 +458,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  className="h-9 w-9 p-0"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={safePage >= totalPages || isPending}
                 >
