@@ -39,7 +39,9 @@ export async function notifyEvent(payload: NotifyPayload): Promise<void> {
   try {
     await persistNotification({ recipientId, ownerId, type, title, body, metadata });
   } catch (err) {
-    console.error('[notify] persistNotification failed:', err);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[notify] persistNotification failed:', err);
+    }
   }
 
   const results = await Promise.allSettled([
@@ -48,7 +50,7 @@ export async function notifyEvent(payload: NotifyPayload): Promise<void> {
   ]);
 
   results.forEach((result, i) => {
-    if (result.status === 'rejected') {
+    if (result.status === 'rejected' && process.env.NODE_ENV !== 'production') {
       const names = ['triggerPusher', 'sendPush'];
       console.error(`[notify] ${names[i]} failed:`, result.reason);
     }

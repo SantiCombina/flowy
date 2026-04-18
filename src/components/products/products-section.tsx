@@ -2,7 +2,7 @@
 
 import { DollarSign, EyeOff, Eye, Plus, Search, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -23,7 +23,7 @@ import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-drop
 import { Input } from '@/components/ui/input';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
-import { getReferenceDataAction, bulkToggleProductsAction } from './actions';
+import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
 import { BulkPriceSheet } from './bulk-price-sheet';
 import { ProductModal } from './product-modal-new/index';
 import { ProductsTable, type ProductsTableRef } from './products-table';
@@ -45,21 +45,58 @@ export function ProductsSection({ initialRefData }: Props) {
   const tableRef = useRef<ProductsTableRef>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
   const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
 
-  const [allVariants, setAllVariants] = useState<PopulatedProductVariant[]>([]);
+  const [variants, setVariants] = useState<PopulatedProductVariant[]>([]);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [inventoryValue, setInventoryValue] = useState(0);
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
 
+  const { executeAsync: executeFetchVariants, isExecuting: isFetchingVariants } = useAction(getVariantsAction);
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
+  const fetchVariants = useCallback(
+    async (currentPage: number, search: string) => {
+      const result = await executeFetchVariants({
+        filters: search ? { search } : undefined,
+        options: { limit: 50, page: currentPage, sort: 'product' },
+      });
+
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+
+      if (result?.data?.success) {
+        setVariants(result.data.docs);
+        setTotalDocs(result.data.totalDocs);
+        setTotalPages(result.data.totalPages);
+        const value = result.data.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
+        setInventoryValue(value);
+      }
+    },
+    [executeFetchVariants],
+  );
+
+  useEffect(() => {
+    void fetchVariants(page, searchQuery);
+  }, [page, searchQuery, fetchVariants]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
+
   const selectedVariants = useMemo(
-    () => allVariants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
-    [allVariants, selectedKeys],
+    () => variants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
+    [variants, selectedKeys],
   );
 
   const uniqueProductIds = useMemo(() => [...new Set(selectedVariants.map((v) => v.product.id))], [selectedVariants]);
@@ -91,8 +128,8 @@ export function ProductsSection({ initialRefData }: Props) {
   };
 
   const handleSuccess = useCallback(() => {
-    void tableRef.current?.silentRefresh();
-  }, []);
+    void fetchVariants(page, searchQuery);
+  }, [fetchVariants, page, searchQuery]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -101,7 +138,7 @@ export function ProductsSection({ initialRefData }: Props) {
 
   const handleBulkPriceSuccess = () => {
     setSelectedKeys(new Set());
-    void tableRef.current?.silentRefresh();
+    void fetchVariants(page, searchQuery);
   };
 
   const handleBulkToggleConfirm = async () => {
@@ -122,7 +159,7 @@ export function ProductsSection({ initialRefData }: Props) {
       toast.success(`${result.data.updated} productos ${label}`);
       setSelectedKeys(new Set());
       setBulkToggleTarget(null);
-      void tableRef.current?.silentRefresh();
+      void fetchVariants(page, searchQuery);
     } else {
       toast.error('No se pudo actualizar el estado de los productos');
     }
@@ -152,7 +189,7 @@ export function ProductsSection({ initialRefData }: Props) {
               placeholder="Buscar por nombre, código, marca..."
               className="pl-8"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
           <ColumnVisibilityDropdown tableName="products" />
@@ -207,14 +244,19 @@ export function ProductsSection({ initialRefData }: Props) {
 
         <ProductsTable
           ref={tableRef}
-          searchQuery={searchQuery}
+          variants={variants}
+          totalDocs={totalDocs}
+          totalPages={totalPages}
+          currentPage={page}
+          onPageChange={setPage}
+          inventoryValue={inventoryValue}
           onEdit={canCreateProduct ? handleOpenEditModal : undefined}
           showActions={canCreateProduct}
           showInventoryValue={canCreateProduct}
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
-          onVariantsChange={setAllVariants}
+          isLoading={isFetchingVariants}
         />
       </main>
 

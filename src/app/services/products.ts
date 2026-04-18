@@ -40,9 +40,6 @@ export interface ProductFilters {
   isActive?: boolean;
 }
 
-/**
- * Obtiene todos los productos de un owner con filtros opcionales
- */
 export async function getProducts(
   ownerId: number,
   filters?: ProductFilters,
@@ -90,7 +87,7 @@ export async function getProducts(
     limit: options?.limit || 10,
     page: options?.page || 1,
     sort: options?.sort || 'name',
-    depth: 2, // Populate brand, category, quality, image
+    depth: 2,
     overrideAccess: true,
   });
 
@@ -102,9 +99,6 @@ export async function getProducts(
   };
 }
 
-/**
- * Obtiene un producto por ID
- */
 export async function getProductById(id: number): Promise<Product | null> {
   const payload = await getPayloadClient();
 
@@ -112,7 +106,7 @@ export async function getProductById(id: number): Promise<Product | null> {
     const product = await payload.findByID({
       collection: 'products',
       id,
-      depth: 2, // Populate brand, category, quality, image
+      depth: 2,
       overrideAccess: true,
     });
     return product;
@@ -121,9 +115,6 @@ export async function getProductById(id: number): Promise<Product | null> {
   }
 }
 
-/**
- * Crea un nuevo producto
- */
 export async function createProduct(data: CreateProductData, ownerId: number): Promise<Product> {
   const payload = await getPayloadClient();
 
@@ -139,9 +130,6 @@ export async function createProduct(data: CreateProductData, ownerId: number): P
   return product;
 }
 
-/**
- * Actualiza un producto
- */
 export async function updateProduct(id: number, data: UpdateProductData): Promise<Product> {
   const payload = await getPayloadClient();
 
@@ -155,9 +143,6 @@ export async function updateProduct(id: number, data: UpdateProductData): Promis
   return product;
 }
 
-/**
- * Elimina un producto (y sus variantes asociadas)
- */
 export async function deleteProduct(id: number): Promise<void> {
   const payload = await getPayloadClient();
 
@@ -224,9 +209,6 @@ export interface UpdateVariantData {
   profitMargin?: number;
 }
 
-/**
- * Obtiene todas las variantes de un producto
- */
 export async function getVariantsByProduct(productId: number): Promise<ProductVariant[]> {
   const payload = await getPayloadClient();
 
@@ -234,16 +216,13 @@ export async function getVariantsByProduct(productId: number): Promise<ProductVa
     collection: 'product-variants',
     where: { product: { equals: productId } },
     sort: 'presentation',
-    depth: 1, // Populate presentation
+    depth: 1,
     overrideAccess: true,
   });
 
   return result.docs;
 }
 
-/**
- * Obtiene una variante por ID
- */
 export async function getVariantById(id: number): Promise<ProductVariant | null> {
   const payload = await getPayloadClient();
 
@@ -259,9 +238,6 @@ export async function getVariantById(id: number): Promise<ProductVariant | null>
   }
 }
 
-/**
- * Crea una nueva variante
- */
 export async function createVariant(data: CreateVariantData, ownerId: number): Promise<ProductVariant> {
   const payload = await getPayloadClient();
 
@@ -274,9 +250,6 @@ export async function createVariant(data: CreateVariantData, ownerId: number): P
   return variant;
 }
 
-/**
- * Actualiza una variante
- */
 export async function updateVariant(id: number, data: UpdateVariantData): Promise<ProductVariant> {
   const payload = await getPayloadClient();
 
@@ -290,9 +263,6 @@ export async function updateVariant(id: number, data: UpdateVariantData): Promis
   return variant;
 }
 
-/**
- * Elimina una variante
- */
 export async function deleteVariant(id: number): Promise<void> {
   const payload = await getPayloadClient();
 
@@ -314,9 +284,6 @@ export async function deleteVariant(id: number): Promise<void> {
   });
 }
 
-/**
- * Obtiene todas las variantes de un owner (para listado con stock)
- */
 export async function getAllVariants(
   ownerId: number,
   options?: {
@@ -341,7 +308,7 @@ export async function getAllVariants(
     limit: options?.limit || 10,
     page: options?.page || 1,
     sort: 'product',
-    depth: 2, // Traer datos del producto y presentación
+    depth: 2,
     overrideAccess: true,
   });
 
@@ -364,10 +331,6 @@ export interface VariantFilters {
   isActive?: boolean;
 }
 
-/**
- * Obtiene todas las variantes con sus productos para el listado principal
- * Cada variante representa una fila en la tabla (Producto + Presentación)
- */
 export async function getVariantsWithProducts(
   ownerId: number,
   filters?: VariantFilters,
@@ -417,7 +380,8 @@ export async function getVariantsWithProducts(
     const productsResult = await payload.find({
       collection: 'products',
       where: productWhere,
-      limit: 1000, // Alto límite para obtener todos los productos que cumplen
+      limit: 1000,
+      select: { createdAt: true },
       overrideAccess: true,
     });
 
@@ -445,7 +409,7 @@ export async function getVariantsWithProducts(
     limit: options?.limit || 10,
     page: options?.page || 1,
     sort: options?.sort || 'product',
-    depth: 2, // Traer datos completos del producto (con brand, category, quality) y presentación
+    depth: 2,
     overrideAccess: true,
   });
 

@@ -67,21 +67,29 @@ export const productSchema = z.object({
     .string({
       invalid_type_error: 'La descripción debe ser una cadena de texto.',
     })
+    .trim()
+    .max(500, { message: 'La descripción debe tener como máximo 500 caracteres.' })
     .optional(),
   brandId: z
     .string({
       invalid_type_error: 'La marca debe ser una cadena de texto.',
     })
+    .trim()
+    .max(100, { message: 'El ID de marca debe tener como máximo 100 caracteres.' })
     .optional(),
   categoryId: z
     .string({
       invalid_type_error: 'La categoría debe ser una cadena de texto.',
     })
+    .trim()
+    .max(100, { message: 'El ID de categoría debe tener como máximo 100 caracteres.' })
     .optional(),
   qualityId: z
     .string({
       invalid_type_error: 'La calidad debe ser una cadena de texto.',
     })
+    .trim()
+    .max(100, { message: 'El ID de calidad debe tener como máximo 100 caracteres.' })
     .optional(),
   imageId: z
     .number({

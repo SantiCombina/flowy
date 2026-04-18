@@ -1,13 +1,14 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { getSettings } from '@/app/services/settings';
 import { getOwnerById } from '@/app/services/users';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PushRegistration } from '@/components/notifications/push-registration';
 import { UserProvider } from '@/components/providers/user-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { SalesRefreshProvider } from '@/contexts/sales-refresh-context';
-import { SettingsProvider } from '@/contexts/settings-context';
+import { SettingsProvider, type SettingsData } from '@/contexts/settings-context';
 import { getFeatureFlags } from '@/lib/features';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -27,6 +28,19 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const businessName = user.role === 'owner' ? (user.businessName ?? null) : (ownerForSeller?.businessName ?? null);
 
+  const rawSettings = await getSettings(user.id);
+
+  const initialSettings: SettingsData = {
+    id: rawSettings.id,
+    productsColumns: rawSettings.productsColumns?.map((c) => c.column) ?? [],
+    clientsColumns: rawSettings.clientsColumns?.map((c) => c.column) ?? [],
+    salesColumns: rawSettings.salesColumns?.map((c) => c.column) ?? [],
+    assignmentsColumns: rawSettings.assignmentsColumns?.map((c) => c.column) ?? [],
+    historyColumns: rawSettings.historyColumns?.map((c) => c.column) ?? [],
+    sellersColumns: rawSettings.sellersColumns?.map((c) => c.column) ?? [],
+    itemsPerPage: rawSettings.itemsPerPage ?? '10',
+  };
+
   return (
     <UserProvider
       user={{
@@ -37,7 +51,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         businessName,
       }}
     >
-      <SettingsProvider>
+      <SettingsProvider initialSettings={initialSettings}>
         <SalesRefreshProvider>
           <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
             {children}

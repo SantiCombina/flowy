@@ -1,10 +1,21 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { getSettingsAction, updateTableColumnsAction, updateItemsPerPageAction } from '@/components/settings/actions';
 import { TABLE_COLUMNS, type TableName, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+
+export interface SettingsData {
+  id: number;
+  productsColumns: string[];
+  clientsColumns: string[];
+  salesColumns: string[];
+  assignmentsColumns: string[];
+  historyColumns: string[];
+  sellersColumns: string[];
+  itemsPerPage: string;
+}
 
 interface SettingsState {
   id: number | null;
@@ -39,73 +50,43 @@ const DEFAULT_COLUMNS = {
   sellers: ['name', 'email'],
 };
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SettingsState>({
-    id: null,
-    productsColumns: DEFAULT_COLUMNS.products,
-    clientsColumns: DEFAULT_COLUMNS.clients,
-    salesColumns: DEFAULT_COLUMNS.sales,
-    assignmentsColumns: DEFAULT_COLUMNS.assignments,
-    historyColumns: DEFAULT_COLUMNS.history,
-    sellersColumns: DEFAULT_COLUMNS.sellers,
-    itemsPerPage: '10',
-    isLoading: true,
-    error: null,
-  });
+interface SettingsProviderProps {
+  children: ReactNode;
+  initialSettings: SettingsData | null;
+}
 
-  const hasFetchedRef = useRef(false);
+export function SettingsProvider({ children, initialSettings }: SettingsProviderProps) {
+  const sanitize = (cols: string[], table: keyof typeof TABLE_COLUMNS) =>
+    cols.filter((c) => (TABLE_COLUMNS[table] as readonly string[]).includes(c));
 
-  useEffect(() => {
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-
-    const fetchAndApplySettings = async () => {
-      try {
-        const result = await getSettingsAction();
-
-        if (result?.serverError) {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            error: result.serverError ?? null,
-          }));
-          return;
-        }
-
-        if (result?.data?.success && result.data.settings) {
-          const settings = result.data.settings;
-          const sanitize = (cols: string[], table: keyof typeof TABLE_COLUMNS) =>
-            cols.filter((c) => (TABLE_COLUMNS[table] as readonly string[]).includes(c));
-          setState((prev) => ({
-            ...prev,
-            id: settings.id,
-            productsColumns: sanitize(settings.productsColumns, 'products'),
-            clientsColumns: sanitize(settings.clientsColumns, 'clients'),
-            salesColumns: sanitize(settings.salesColumns, 'sales'),
-            assignmentsColumns: sanitize(settings.assignmentsColumns, 'assignments'),
-            historyColumns: sanitize(settings.historyColumns, 'history'),
-            sellersColumns: sanitize(settings.sellersColumns, 'sellers'),
-            itemsPerPage: settings.itemsPerPage,
-            isLoading: false,
-          }));
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            error: 'Error al cargar configuraciones',
-          }));
-        }
-      } catch {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: 'Error al cargar configuraciones',
-        }));
-      }
+  const [state, setState] = useState<SettingsState>(() => {
+    if (initialSettings) {
+      return {
+        id: initialSettings.id,
+        productsColumns: sanitize(initialSettings.productsColumns, 'products'),
+        clientsColumns: sanitize(initialSettings.clientsColumns, 'clients'),
+        salesColumns: sanitize(initialSettings.salesColumns, 'sales'),
+        assignmentsColumns: sanitize(initialSettings.assignmentsColumns, 'assignments'),
+        historyColumns: sanitize(initialSettings.historyColumns, 'history'),
+        sellersColumns: sanitize(initialSettings.sellersColumns, 'sellers'),
+        itemsPerPage: initialSettings.itemsPerPage,
+        isLoading: false,
+        error: null,
+      };
+    }
+    return {
+      id: null,
+      productsColumns: DEFAULT_COLUMNS.products,
+      clientsColumns: DEFAULT_COLUMNS.clients,
+      salesColumns: DEFAULT_COLUMNS.sales,
+      assignmentsColumns: DEFAULT_COLUMNS.assignments,
+      historyColumns: DEFAULT_COLUMNS.history,
+      sellersColumns: DEFAULT_COLUMNS.sellers,
+      itemsPerPage: '10',
+      isLoading: false,
+      error: null,
     };
-
-    void fetchAndApplySettings();
-  }, []);
+  });
 
   const getVisibleColumns = useCallback(
     (tableName: TableName): string[] => {

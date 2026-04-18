@@ -1,9 +1,9 @@
 'use client';
 
-import { BarChart2, ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
+import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Trash2, Warehouse } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback, forwardRef, useImperativeHandle, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -20,184 +20,103 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import type { Product } from '@/payload-types';
 
-import { getVariantsAction, deleteProductAction, getProductDemandSummaryAction } from './actions';
+import { deleteProductAction, getProductDemandSummaryAction } from './actions';
 import { ProductDemandSheet } from './product-demand-sheet';
 import { StockMovementModal } from './stock-movement-modal';
 
-const variantsCache: { data: PopulatedProductVariant[]; timestamp: number; isLoaded: boolean } = {
-  data: [],
-  timestamp: 0,
-  isLoaded: false,
-};
-const demandCache: { data: Record<number, VariantDemandSummary>; isLoaded: boolean } = {
-  data: {},
-  isLoaded: false,
-};
-const STALE_TIME = 2 * 60 * 1000;
-
 interface ProductsTableProps {
-  searchQuery?: string;
+  variants: PopulatedProductVariant[];
+  totalDocs: number;
+  totalPages: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  inventoryValue: number;
   onEdit?: (productId: number) => void;
   showActions?: boolean;
   showInventoryValue?: boolean;
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
-  onVariantsChange?: (variants: PopulatedProductVariant[]) => void;
+  isLoading?: boolean;
 }
 
 export interface ProductsTableRef {
-  refresh: () => Promise<void>;
-  silentRefresh: () => Promise<void>;
+  refresh: () => void;
 }
 
 export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
   (
     {
-      searchQuery = '',
+      variants,
+      totalDocs,
+      totalPages,
+      currentPage,
+      onPageChange,
+      inventoryValue,
       onEdit,
       showActions = true,
       showInventoryValue = true,
       selectable = false,
       selectedKeys,
       onSelectionChange,
-      onVariantsChange,
+      isLoading = false,
     },
     ref,
   ) => {
     const router = useRouter();
     const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
 
-    const [allVariants, setAllVariants] = useState<PopulatedProductVariant[]>(variantsCache.data);
-    const [isLoading, setIsLoading] = useState(!variantsCache.isLoaded);
     const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
     const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
     const [variantForDemand, setVariantForDemand] = useState<PopulatedProductVariant | null>(null);
-    const [demandMap, setDemandMap] = useState<Record<number, VariantDemandSummary>>(demandCache.data);
-    const itemsPerPageSyncedRef = useRef(false);
-
-    const inventoryValue = useMemo(() => allVariants.reduce((sum, v) => sum + v.stock * v.costPrice, 0), [allVariants]);
-
-    const filteredVariants = useMemo(() => {
-      if (!searchQuery.trim()) return allVariants;
-      const q = searchQuery.toLowerCase();
-      return allVariants.filter((v) => {
-        const brand = typeof v.product.brand === 'object' ? v.product.brand?.name : '';
-        return (
-          v.product.name.toLowerCase().includes(q) ||
-          (v.code && v.code.toLowerCase().includes(q)) ||
-          (brand && brand.toLowerCase().includes(q))
-        );
-      });
-    }, [allVariants, searchQuery]);
+    const [demandMap, setDemandMap] = useState<Record<number, VariantDemandSummary>>({});
 
     useEffect(() => {
       if (!isSettingsLoading) {
-        if (!itemsPerPageSyncedRef.current) {
-          itemsPerPageSyncedRef.current = true;
-        }
         setVisibleColumns(getVisibleColumns('products'));
       }
-    }, [isSettingsLoading, getItemsPerPage, getVisibleColumns]);
+    }, [isSettingsLoading, getVisibleColumns]);
 
-    const loadVariants = useCallback(async (silent = false) => {
-      if (!silent) setIsLoading(true);
-      try {
-        const [result, demandResult] = await Promise.all([
-          getVariantsAction({
-            options: {
-              limit: 10000,
-              sort: 'product',
-            },
-          }),
-          demandCache.isLoaded ? Promise.resolve(null) : getProductDemandSummaryAction(),
-        ]);
-
-        if (result?.serverError) {
-          if (!silent) toast.error(result.serverError);
-          return;
-        }
-
+    useEffect(() => {
+      void getProductDemandSummaryAction().then((result) => {
         if (result?.data?.success) {
-          variantsCache.data = result.data.docs;
-          variantsCache.timestamp = Date.now();
-          variantsCache.isLoaded = true;
-          setAllVariants(result.data.docs);
-        } else {
-          if (!silent) toast.error('Error al cargar productos');
+          setDemandMap(result.data.demand);
         }
-
-        if (demandResult?.data?.success) {
-          demandCache.data = demandResult.data.demand;
-          demandCache.isLoaded = true;
-          setDemandMap(demandResult.data.demand);
-        }
-      } catch {
-        if (!silent) toast.error('Error al cargar productos');
-      } finally {
-        if (!silent) setIsLoading(false);
-      }
+      });
     }, []);
 
-    useEffect(() => {
-      if (!variantsCache.isLoaded) {
-        void loadVariants(false);
-      } else if (Date.now() - variantsCache.timestamp > STALE_TIME) {
-        void loadVariants(true);
-      }
-    }, [loadVariants]);
-
-    useEffect(() => {
-      onVariantsChange?.(allVariants);
-    }, [allVariants, onVariantsChange]);
+    useImperativeHandle(ref, () => ({
+      refresh: () => {
+        router.refresh();
+      },
+    }));
 
     const handleDelete = async () => {
       if (!productToDelete) return;
-
       const productId = productToDelete.id;
-
-      const previousVariants = allVariants;
-      const nextVariants = allVariants.filter((v) => v.product.id !== productId);
-      variantsCache.data = nextVariants;
-      setAllVariants(nextVariants);
       setProductToDelete(null);
 
       const result = await deleteProductAction({ id: productId });
 
       if (result?.serverError) {
-        variantsCache.data = previousVariants;
-        setAllVariants(previousVariants);
         toast.error(result.serverError);
         return;
       }
 
       if (result?.data?.success) {
         toast.success('Producto eliminado correctamente');
+        router.refresh();
       } else {
-        variantsCache.data = previousVariants;
-        setAllVariants(previousVariants);
         toast.error('Error al eliminar producto');
       }
     };
-
-    useImperativeHandle(ref, () => ({
-      refresh: () => loadVariants(false),
-      silentRefresh: () => loadVariants(true),
-    }));
-
-    const updateVariantStock = useCallback((variantId: number, newStock: number) => {
-      setAllVariants((prev) => {
-        const updated = prev.map((variant) => (variant.id === variantId ? { ...variant, stock: newStock } : variant));
-        variantsCache.data = updated;
-        return updated;
-      });
-    }, []);
 
     const shouldShowColumn = useCallback(
       (columnKey: string) => {
@@ -402,11 +321,11 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
 
     return (
       <>
-        {!isLoading && allVariants.length > 0 && showInventoryValue && (
+        {!isLoading && totalDocs > 0 && showInventoryValue && (
           <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Warehouse className="h-4 w-4" />
-              <span>Valor del inventario</span>
+              <span>Valor del inventario (página actual)</span>
             </div>
             <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
           </div>
@@ -414,16 +333,46 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
 
         <DataTable
           columns={columns}
-          data={filteredVariants}
+          data={variants}
           keyExtractor={(v) => `${v.id}-${v.product.id}`}
           isLoading={isLoading || isSettingsLoading}
-          emptyMessage={searchQuery ? 'No se encontraron productos' : 'No hay productos'}
+          emptyMessage="No hay productos"
           defaultItemsPerPage={getItemsPerPage()}
           onItemsPerPageChange={(n) => void updateItemsPerPage(n as Parameters<typeof updateItemsPerPage>[0])}
           selectable={selectable}
           selectedKeys={selectedKeys}
           onSelectionChange={onSelectionChange}
         />
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
+            <span>
+              Página {currentPage} de {totalPages} ({totalDocs} total)
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || isLoading}
+                aria-label="Página anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages || isLoading}
+                aria-label="Página siguiente"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         <AlertDialog open={productToDelete !== null} onOpenChange={() => setProductToDelete(null)}>
           <AlertDialogContent>
@@ -447,9 +396,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
           isOpen={variantForMovement !== null}
           onClose={() => setVariantForMovement(null)}
           variant={variantForMovement}
-          onSuccess={(variantId, newStock) => {
-            updateVariantStock(variantId, newStock);
-          }}
+          onSuccess={() => router.refresh()}
         />
 
         <ProductDemandSheet variant={variantForDemand} onClose={() => setVariantForDemand(null)} />

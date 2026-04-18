@@ -5,6 +5,7 @@ import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
@@ -345,12 +346,12 @@ export async function getSales(filters: {
 
   return (result.docs as Sale[]).map((sale: Sale) => {
     const seller = typeof sale.seller === 'object' ? sale.seller : null;
-    const sellerId = typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? 0);
+    const sellerId = resolveId(sale.seller) ?? 0;
     const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
 
     const items: SaleItemDetail[] = sale.items.map((item) => {
       const variant = typeof item.variant === 'object' ? item.variant : null;
-      const variantId = typeof item.variant === 'number' ? item.variant : ((item.variant as { id: number })?.id ?? 0);
+      const variantId = resolveId(item.variant) ?? 0;
       const product = variant && typeof variant.product === 'object' ? variant.product : null;
       const presentation =
         variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
@@ -411,7 +412,7 @@ export async function registerPayment(
   if (!sale) throw new Error('Venta no encontrada');
 
   if ('ownerId' in context) {
-    const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+    const saleOwnerId = resolveId(sale.owner);
     if (saleOwnerId !== context.ownerId) throw new Error('No autorizado');
 
     if (sale.ownerPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
@@ -436,7 +437,7 @@ export async function registerPayment(
       overrideAccess: true,
     });
 
-    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    const saleSellerId = resolveId(sale.seller);
     if (saleSellerId) {
       await notifyEvent({
         recipientId: saleSellerId,
@@ -448,7 +449,7 @@ export async function registerPayment(
       });
     }
   } else {
-    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    const saleSellerId = resolveId(sale.seller);
     if (saleSellerId !== context.sellerId) throw new Error('No autorizado');
 
     if (sale.paymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
@@ -475,7 +476,7 @@ export async function registerPayment(
       overrideAccess: true,
     });
 
-    const saleOwnerIdForNotif = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+    const saleOwnerIdForNotif = resolveId(sale.owner);
 
     if (saleOwnerIdForNotif) {
       const sellerUser = await payload.findByID({
@@ -500,10 +501,10 @@ export async function registerPayment(
 
 function verifySaleAccess(sale: Sale, callerId: number, callerRole: 'owner' | 'seller'): void {
   if (callerRole === 'owner') {
-    const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : (sale.owner as { id: number })?.id;
+    const saleOwnerId = resolveId(sale.owner);
     if (saleOwnerId !== callerId) throw new Error('No autorizado');
   } else {
-    const saleSellerId = typeof sale.seller === 'number' ? sale.seller : (sale.seller as { id: number })?.id;
+    const saleSellerId = resolveId(sale.seller);
     if (saleSellerId !== callerId) throw new Error('No autorizado');
   }
 }
@@ -515,7 +516,7 @@ async function restoreItemStock(
   ownerId: number,
   reason: string,
 ): Promise<void> {
-  const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+  const variantId = resolveId(item.variant) ?? 0;
 
   if (item.stockSource === 'warehouse') {
     const variant = await payload.findByID({
@@ -591,9 +592,8 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
   if (!sale) throw new Error('Venta no encontrada');
   verifySaleAccess(sale as Sale, callerId, callerRole);
 
-  const saleSellerId =
-    typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? callerId);
-  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : ((sale.owner as { id: number })?.id ?? callerId);
+  const saleSellerId = resolveId(sale.seller) ?? callerId;
+  const saleOwnerId = resolveId(sale.owner) ?? callerId;
 
   for (const item of sale.items) {
     await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`);
@@ -624,9 +624,8 @@ export async function editSaleFull(
   if (!sale) throw new Error('Venta no encontrada');
   verifySaleAccess(sale as Sale, callerId, callerRole);
 
-  const saleSellerId =
-    typeof sale.seller === 'number' ? sale.seller : ((sale.seller as { id: number })?.id ?? callerId);
-  const saleOwnerId = typeof sale.owner === 'number' ? sale.owner : ((sale.owner as { id: number })?.id ?? callerId);
+  const saleSellerId = resolveId(sale.seller) ?? callerId;
+  const saleOwnerId = resolveId(sale.owner) ?? callerId;
 
   for (const item of sale.items) {
     await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Edición venta #${saleId} — reversión`);
@@ -818,7 +817,7 @@ export const getProductDemandSummary = unstable_cache(
 
     for (const sale of result.docs) {
       for (const item of sale.items) {
-        const variantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+        const variantId = resolveId(item.variant) ?? 0;
         const existing = demandMap[variantId];
         if (!existing) {
           demandMap[variantId] = { lastSoldAt: sale.date, totalUnits: item.quantity };
@@ -887,7 +886,7 @@ export const getVariantSalesHistory = unstable_cache(
       const saleMonth = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
 
       for (const item of sale.items) {
-        const itemVariantId = typeof item.variant === 'number' ? item.variant : (item.variant as { id: number }).id;
+        const itemVariantId = resolveId(item.variant) ?? 0;
         if (itemVariantId !== variantId) continue;
 
         const itemRevenue = item.quantity * item.unitPrice;

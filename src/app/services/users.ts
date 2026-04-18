@@ -68,7 +68,9 @@ export async function createUser(data: CreateUserData): Promise<CreateUserResult
       user: { id: user.id, email: user.email },
     };
   } catch (error) {
-    console.error('Error creating user:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error creating user:', error);
+    }
     return { success: false, error: 'Error al crear el usuario' };
   }
 }

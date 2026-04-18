@@ -33,7 +33,6 @@ import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
@@ -161,7 +160,6 @@ export function SalesSection({
   const [deliverConfirmId, setDeliverConfirmId] = useState<number | null>(null);
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
 
-  const { refreshCount } = useSalesRefresh();
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
   const { executeAsync: executeFetchSales, isExecuting: isFetchingSales } = useAction(getSalesAction);
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
@@ -169,15 +167,6 @@ export function SalesSection({
   useEffect(() => {
     setLocalSales(sales);
   }, [sales]);
-
-  useEffect(() => {
-    if (refreshCount === 0) return;
-    void executeFetchSales().then((result) => {
-      if (result?.data?.success) {
-        setLocalSales(result.data.sales);
-      }
-    });
-  }, [refreshCount, executeFetchSales]);
 
   const handleCollectSuccess = (
     saleId: number,

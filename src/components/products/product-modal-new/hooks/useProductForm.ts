@@ -15,7 +15,7 @@ import {
   getProductByIdAction,
 } from '../../actions';
 import { deleteMediaAction } from '../../media-actions';
-import { productSchema, type ProductFormData } from '../schemas';
+import { productSchema, type ProductFormData } from '@/schemas/products/product-schema';
 
 interface PayloadMediaResponse {
   doc: { id: number; url?: string | null };

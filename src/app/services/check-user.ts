@@ -35,7 +35,9 @@ export async function checkUserRole(email: string) {
       };
     }
   } catch (error) {
-    console.error('Error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error:', error);
+    }
     return {
       success: false,
       message: 'Error al consultar el usuario',

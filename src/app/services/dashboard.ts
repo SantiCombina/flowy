@@ -143,200 +143,215 @@ function buildChartData(period: Period, chartStart: string): DayData[] {
   return days;
 }
 
-export const getOwnerDashboardStats = unstable_cache(
-  async (ownerId: number, period: Period = 'month'): Promise<OwnerDashboardStats> => {
-    const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
-    const payload = await getPayloadClient();
+export async function getOwnerDashboardStats(ownerId: number, period: Period = 'month'): Promise<OwnerDashboardStats> {
+  return unstable_cache(
+    async (): Promise<OwnerDashboardStats> => {
+      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
+      const payload = await getPayloadClient();
 
-    const [allSales, clients, sellers, sellersInventory, variantsResult] = await Promise.all([
-      getSales({ ownerId, dateFrom: prevStart }),
-      getClients({ ownerId }),
-      getSellers(ownerId),
-      getAllSellersInventoryForOwner(ownerId),
-      payload.find({
-        collection: 'product-variants',
-        where: { owner: { equals: ownerId } },
-        depth: 2,
-        limit: 1000,
-        overrideAccess: true,
-      }),
-    ]);
+      const [allSales, clients, sellers, sellersInventory, variantsResult] = await Promise.all([
+        getSales({ ownerId, dateFrom: prevStart }),
+        getClients({ ownerId }),
+        getSellers(ownerId),
+        getAllSellersInventoryForOwner(ownerId),
+        payload.find({
+          collection: 'product-variants',
+          where: { owner: { equals: ownerId } },
+          depth: 2,
+          select: { stock: true, costPrice: true, minimumStock: true, product: true, presentation: true, code: true },
+          limit: 1000,
+          overrideAccess: true,
+        }),
+      ]);
 
-    let revCurrent = 0,
-      revPrevious = 0,
-      salesCurrent = 0,
-      salesPrevious = 0;
+      let revCurrent = 0,
+        revPrevious = 0,
+        salesCurrent = 0,
+        salesPrevious = 0;
 
-    const chartData = buildChartData(period, chartStart);
-    const chartMap = new Map<string, DayData>();
-    for (const d of chartData) chartMap.set(d.date, d);
+      const chartData = buildChartData(period, chartStart);
+      const chartMap = new Map<string, DayData>();
+      for (const d of chartData) chartMap.set(d.date, d);
 
-    const sellerMap = new Map<string, SellerPerf>();
-    const paymentMethods = { cash: 0, transfer: 0, check: 0 };
-    const productMap = new Map<string, TopProduct>();
+      const sellerMap = new Map<string, SellerPerf>();
+      const paymentMethods = { cash: 0, transfer: 0, check: 0 };
+      const productMap = new Map<string, TopProduct>();
 
-    for (const sale of allSales) {
-      const saleDate = sale.date;
+      for (const sale of allSales) {
+        const saleDate = sale.date;
 
-      if (saleDate >= currentStart) {
-        revCurrent += sale.total;
-        salesCurrent++;
-        if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
+        if (saleDate >= currentStart) {
+          revCurrent += sale.total;
+          salesCurrent++;
+          if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
 
-        const existingSeller = sellerMap.get(sale.sellerName);
-        if (existingSeller) {
-          existingSeller.total += sale.total;
-          existingSeller.count++;
-        } else {
-          sellerMap.set(sale.sellerName, { name: sale.sellerName, total: sale.total, count: 1 });
+          const existingSeller = sellerMap.get(sale.sellerName);
+          if (existingSeller) {
+            existingSeller.total += sale.total;
+            existingSeller.count++;
+          } else {
+            sellerMap.set(sale.sellerName, { name: sale.sellerName, total: sale.total, count: 1 });
+          }
+
+          for (const item of sale.items) {
+            const existingProduct = productMap.get(item.variantName);
+            if (existingProduct) {
+              existingProduct.quantity += item.quantity;
+              existingProduct.revenue += item.subtotal;
+            } else {
+              productMap.set(item.variantName, {
+                name: item.variantName,
+                quantity: item.quantity,
+                revenue: item.subtotal,
+              });
+            }
+          }
+        } else if (saleDate >= prevStart && saleDate <= prevEnd) {
+          revPrevious += sale.total;
+          salesPrevious++;
         }
 
-        for (const item of sale.items) {
-          const existingProduct = productMap.get(item.variantName);
-          if (existingProduct) {
-            existingProduct.quantity += item.quantity;
-            existingProduct.revenue += item.subtotal;
-          } else {
-            productMap.set(item.variantName, {
-              name: item.variantName,
-              quantity: item.quantity,
-              revenue: item.subtotal,
-            });
+        if (saleDate >= chartStart) {
+          const key = period === 'year' ? toMonthKey(saleDate) : toDateKey(saleDate);
+          const entry = chartMap.get(key);
+          if (entry) {
+            entry.total += sale.total;
+            entry.count++;
           }
         }
-      } else if (saleDate >= prevStart && saleDate <= prevEnd) {
-        revPrevious += sale.total;
-        salesPrevious++;
       }
 
-      if (saleDate >= chartStart) {
-        const key = period === 'year' ? toMonthKey(saleDate) : toDateKey(saleDate);
-        const entry = chartMap.get(key);
-        if (entry) {
-          entry.total += sale.total;
-          entry.count++;
+      const newClientsInPeriod = clients.filter((c) => c.createdAt >= currentStart).length;
+      const warehouseVariantsWithStock = variantsResult.docs.filter((v) => v.stock > 0).length;
+      const activeProducts = variantsResult.docs.length;
+
+      const lowStockAlerts: LowStockAlert[] = variantsResult.docs
+        .filter((v) => (v.minimumStock ?? 0) > 0 && v.stock <= (v.minimumStock ?? 0))
+        .map((v) => {
+          const product = typeof v.product === 'object' ? v.product : null;
+          const presentation = v.presentation && typeof v.presentation === 'object' ? v.presentation : null;
+          const image = product?.image && typeof product.image === 'object' ? product.image : null;
+          return {
+            name: product?.name ?? 'Producto desconocido',
+            presentation: presentation?.label ?? undefined,
+            code: v.code ?? undefined,
+            stock: v.stock,
+            minimumStock: v.minimumStock ?? 0,
+            imageUrl: image?.url ?? undefined,
+          };
+        })
+        .sort((a, b) => a.stock - b.stock)
+        .slice(0, 10);
+
+      return {
+        revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
+        salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
+        clientsTotal: clients.length,
+        newClientsInPeriod,
+        activeProducts,
+        warehouseVariantsWithStock,
+        sellersCount: sellers.length,
+        sellersWithInventory: sellersInventory.length,
+        salesByDay: chartData,
+        salesBySeller: Array.from(sellerMap.values()).sort((a, b) => b.total - a.total),
+        paymentMethods,
+        topProducts: Array.from(productMap.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5),
+        lowStockAlerts,
+        recentSales: allSales.slice(0, 5),
+      };
+    },
+    [`owner-dashboard-${ownerId}-${period}`],
+    {
+      revalidate: 60 * 5,
+      tags: ['dashboard', String(ownerId), period],
+    },
+  )();
+}
+
+export async function getSellerDashboardStats(
+  sellerId: number,
+  ownerId: number,
+  period: Period = 'month',
+): Promise<SellerDashboardStats> {
+  return unstable_cache(
+    async (): Promise<SellerDashboardStats> => {
+      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
+
+      const [mySales, clients, inventory] = await Promise.all([
+        getSales({ sellerId, dateFrom: prevStart }),
+        getClients({ ownerId, sellerId }),
+        getMobileSellerInventory(sellerId),
+      ]);
+
+      let revCurrent = 0,
+        revPrevious = 0,
+        salesCurrent = 0,
+        salesPrevious = 0;
+
+      const chartData = buildChartData(period, chartStart);
+      const chartMap = new Map<string, DayData>();
+      for (const d of chartData) chartMap.set(d.date, d);
+
+      const productMap = new Map<string, TopProduct>();
+      const paymentMethods = { cash: 0, transfer: 0, check: 0 };
+
+      for (const sale of mySales) {
+        const saleDate = sale.date;
+
+        if (saleDate >= currentStart) {
+          revCurrent += sale.total;
+          salesCurrent++;
+          if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
+
+          for (const item of sale.items) {
+            const existing = productMap.get(item.variantName);
+            if (existing) {
+              existing.quantity += item.quantity;
+              existing.revenue += item.subtotal;
+            } else {
+              productMap.set(item.variantName, {
+                name: item.variantName,
+                quantity: item.quantity,
+                revenue: item.subtotal,
+              });
+            }
+          }
+        } else if (saleDate >= prevStart && saleDate <= prevEnd) {
+          revPrevious += sale.total;
+          salesPrevious++;
         }
-      }
-    }
 
-    const newClientsInPeriod = clients.filter((c) => c.createdAt >= currentStart).length;
-    const warehouseVariantsWithStock = variantsResult.docs.filter((v) => v.stock > 0).length;
-    const activeProducts = variantsResult.docs.length;
-
-    const lowStockAlerts: LowStockAlert[] = variantsResult.docs
-      .filter((v) => (v.minimumStock ?? 0) > 0 && v.stock <= (v.minimumStock ?? 0))
-      .map((v) => {
-        const product = typeof v.product === 'object' ? v.product : null;
-        const presentation = v.presentation && typeof v.presentation === 'object' ? v.presentation : null;
-        const image = product?.image && typeof product.image === 'object' ? product.image : null;
-        return {
-          name: product?.name ?? 'Producto desconocido',
-          presentation: presentation?.label ?? undefined,
-          code: v.code ?? undefined,
-          stock: v.stock,
-          minimumStock: v.minimumStock ?? 0,
-          imageUrl: image?.url ?? undefined,
-        };
-      })
-      .sort((a, b) => a.stock - b.stock)
-      .slice(0, 10);
-
-    return {
-      revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
-      salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
-      clientsTotal: clients.length,
-      newClientsInPeriod,
-      activeProducts,
-      warehouseVariantsWithStock,
-      sellersCount: sellers.length,
-      sellersWithInventory: sellersInventory.length,
-      salesByDay: chartData,
-      salesBySeller: Array.from(sellerMap.values()).sort((a, b) => b.total - a.total),
-      paymentMethods,
-      topProducts: Array.from(productMap.values())
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5),
-      lowStockAlerts,
-      recentSales: allSales.slice(0, 5),
-    };
-  },
-  ['owner-dashboard'],
-  { revalidate: 60 * 5, tags: ['owner-dashboard'] },
-);
-
-export const getSellerDashboardStats = unstable_cache(
-  async (sellerId: number, ownerId: number, period: Period = 'month'): Promise<SellerDashboardStats> => {
-    const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
-
-    const [mySales, clients, inventory] = await Promise.all([
-      getSales({ sellerId, dateFrom: prevStart }),
-      getClients({ ownerId, sellerId }),
-      getMobileSellerInventory(sellerId),
-    ]);
-
-    let revCurrent = 0,
-      revPrevious = 0,
-      salesCurrent = 0,
-      salesPrevious = 0;
-
-    const chartData = buildChartData(period, chartStart);
-    const chartMap = new Map<string, DayData>();
-    for (const d of chartData) chartMap.set(d.date, d);
-
-    const productMap = new Map<string, TopProduct>();
-    const paymentMethods = { cash: 0, transfer: 0, check: 0 };
-
-    for (const sale of mySales) {
-      const saleDate = sale.date;
-
-      if (saleDate >= currentStart) {
-        revCurrent += sale.total;
-        salesCurrent++;
-        if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
-
-        for (const item of sale.items) {
-          const existing = productMap.get(item.variantName);
-          if (existing) {
-            existing.quantity += item.quantity;
-            existing.revenue += item.subtotal;
-          } else {
-            productMap.set(item.variantName, {
-              name: item.variantName,
-              quantity: item.quantity,
-              revenue: item.subtotal,
-            });
+        if (saleDate >= chartStart) {
+          const key = period === 'year' ? toMonthKey(saleDate) : toDateKey(saleDate);
+          const entry = chartMap.get(key);
+          if (entry) {
+            entry.total += sale.total;
+            entry.count++;
           }
         }
-      } else if (saleDate >= prevStart && saleDate <= prevEnd) {
-        revPrevious += sale.total;
-        salesPrevious++;
       }
 
-      if (saleDate >= chartStart) {
-        const key = period === 'year' ? toMonthKey(saleDate) : toDateKey(saleDate);
-        const entry = chartMap.get(key);
-        if (entry) {
-          entry.total += sale.total;
-          entry.count++;
-        }
-      }
-    }
-
-    return {
-      revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
-      salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
-      clientsCount: clients.length,
-      inventoryItems: inventory.length,
-      inventoryUnits: inventory.reduce((sum, item) => sum + item.quantity, 0),
-      salesByDay: chartData,
-      paymentMethods,
-      topProducts: Array.from(productMap.values())
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5),
-      inventory,
-      recentSales: mySales.slice(0, 5),
-    };
-  },
-  ['seller-dashboard'],
-  { revalidate: 60 * 5, tags: ['seller-dashboard'] },
-);
+      return {
+        revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
+        salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
+        clientsCount: clients.length,
+        inventoryItems: inventory.length,
+        inventoryUnits: inventory.reduce((sum, item) => sum + item.quantity, 0),
+        salesByDay: chartData,
+        paymentMethods,
+        topProducts: Array.from(productMap.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5),
+        inventory,
+        recentSales: mySales.slice(0, 5),
+      };
+    },
+    [`seller-dashboard-${sellerId}-${period}`],
+    {
+      revalidate: 60 * 5,
+      tags: ['dashboard', String(ownerId), String(sellerId), period],
+    },
+  )();
+}

@@ -61,7 +61,6 @@ export async function registerStockMovement(
   const { variantId, type, quantity, reason, createdById, ownerId } = params;
   const payload = await getPayloadClient();
 
-  // Get current variant stock
   const variant = await payload.findByID({
     collection: 'product-variants',
     id: variantId,
@@ -75,7 +74,6 @@ export async function registerStockMovement(
 
   const previousStock = variant.stock;
 
-  // Calculate new stock based on movement type
   let newStock: number;
   switch (type) {
     case 'entry':
@@ -85,18 +83,16 @@ export async function registerStockMovement(
       newStock = previousStock - quantity;
       break;
     case 'adjustment':
-      newStock = quantity; // For adjustments, quantity is the new absolute value
+      newStock = quantity;
       break;
     default:
       throw new Error('Tipo de movimiento inválido');
   }
 
-  // Validate new stock is not negative
   if (newStock < 0) {
     throw new Error('El stock no puede ser negativo');
   }
 
-  // Create stock movement record
   const movement = await payload.create({
     collection: 'stock-movements',
     data: {
@@ -112,7 +108,6 @@ export async function registerStockMovement(
     overrideAccess: true,
   });
 
-  // Update variant stock
   await payload.update({
     collection: 'product-variants',
     id: variantId,

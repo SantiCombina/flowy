@@ -1,18 +1,18 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface SalesRefreshContextValue {
-  refreshCount: number;
   triggerRefresh: () => void;
 }
 
 const SalesRefreshContext = createContext<SalesRefreshContextValue | null>(null);
 
 export function SalesRefreshProvider({ children }: { children: React.ReactNode }) {
-  const [refreshCount, setRefreshCount] = useState(0);
+  const router = useRouter();
   return (
-    <SalesRefreshContext.Provider value={{ refreshCount, triggerRefresh: () => setRefreshCount((c) => c + 1) }}>
+    <SalesRefreshContext.Provider value={{ triggerRefresh: () => router.refresh() }}>
       {children}
     </SalesRefreshContext.Provider>
   );
