@@ -20,7 +20,7 @@ export function PageHeader({ title, description, actions, isLoading, hideTitle }
           <div className="h-full w-1/3 animate-[loading_1.2s_ease-in-out_infinite] bg-primary" />
         </div>
       )}
-      <div className="flex flex-row items-center justify-between gap-3">
+      <div className="flex flex-row items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>

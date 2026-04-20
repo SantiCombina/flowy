@@ -1,6 +1,8 @@
 {
   "permissions": {
     "allow": [
+      "Edit",
+      "Write",
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills add https://github.com/vercel-labs/next-skills --skill next-best-practices --agent \"Claude Code\" --yes 2>&1)",
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills add https://github.com/vercel-labs/next-skills --skill next-best-practices --agent claude-code --yes 2>&1)",
       "Bash(cd \"C:/Users/santi/Documents/Workspace/stocker\" && npx skills list 2>&1)",
@@ -81,7 +83,9 @@
       "Bash(pnpm lint:fix:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Skill(update-config)",
+      "Bash(xargs -0 grep -l \"shadow-sm\\\\|shadow-md\\\\|shadow-lg\\\\|shadow-xl\\\\|shadow-2xl\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",
