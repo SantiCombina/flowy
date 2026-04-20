@@ -2,22 +2,13 @@ import type { SellerInventorySummary } from '@/app/services/mobile-seller';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-const AVATAR_COLORS = [
-  'bg-blue-100 text-blue-700',
-  'bg-green-100 text-green-700',
-  'bg-purple-100 text-purple-700',
-  'bg-orange-100 text-orange-700',
-  'bg-pink-100 text-pink-700',
-  'bg-teal-100 text-teal-700',
-] as const;
-
-const ACCENT_GRADIENTS = [
-  'bg-linear-to-r from-blue-400 to-blue-600',
-  'bg-linear-to-r from-green-400 to-green-600',
-  'bg-linear-to-r from-purple-400 to-purple-600',
-  'bg-linear-to-r from-orange-400 to-orange-600',
-  'bg-linear-to-r from-pink-400 to-pink-600',
-  'bg-linear-to-r from-teal-400 to-teal-600',
+const PALETTES = [
+  { avatar: 'bg-blue-500/10 text-blue-600', bar: 'from-blue-400 to-indigo-500', ring: 'ring-blue-500/20' },
+  { avatar: 'bg-emerald-500/10 text-emerald-600', bar: 'from-emerald-400 to-teal-500', ring: 'ring-emerald-500/20' },
+  { avatar: 'bg-violet-500/10 text-violet-600', bar: 'from-violet-400 to-purple-500', ring: 'ring-violet-500/20' },
+  { avatar: 'bg-orange-500/10 text-orange-600', bar: 'from-orange-400 to-amber-500', ring: 'ring-orange-500/20' },
+  { avatar: 'bg-pink-500/10 text-pink-600', bar: 'from-pink-400 to-rose-500', ring: 'ring-pink-500/20' },
+  { avatar: 'bg-cyan-500/10 text-cyan-600', bar: 'from-cyan-400 to-sky-500', ring: 'ring-cyan-500/20' },
 ] as const;
 
 function getInitials(name: string): string {
@@ -34,8 +25,7 @@ interface SellerInventoryCardProps {
 }
 
 export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCardProps) {
-  const avatarColor = AVATAR_COLORS[seller.sellerId % AVATAR_COLORS.length];
-  const accentGradient = ACCENT_GRADIENTS[seller.sellerId % ACCENT_GRADIENTS.length];
+  const palette = PALETTES[seller.sellerId % PALETTES.length];
   const initials = getInitials(seller.sellerName);
 
   const filteredItems =
@@ -44,12 +34,13 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
       : seller.items;
 
   return (
-    <Card className="flex flex-col overflow-hidden">
-      <div className={`h-1 ${accentGradient}`} />
-      <CardHeader className="pt-4 pb-3">
+    <Card className="flex flex-col overflow-hidden border shadow-sm relative p-0">
+      <div className={`h-1.5 w-full bg-linear-to-r ${palette.bar}`} />
+
+      <CardHeader className="px-5 pt-5 pb-4">
         <div className="flex items-center gap-3">
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${avatarColor}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ring-2 ${palette.avatar} ${palette.ring}`}
           >
             {initials}
           </div>
@@ -57,16 +48,17 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
             <p className="truncate font-semibold">{seller.sellerName}</p>
             <p className="truncate text-xs text-muted-foreground">{seller.sellerEmail}</p>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <Badge variant="secondary">{seller.items.length} productos</Badge>
-            <Badge variant="outline">{seller.totalQuantity} uds.</Badge>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <span className="text-xs font-semibold tabular-nums text-foreground">{seller.items.length} prod.</span>
+            <span className="text-xs tabular-nums text-muted-foreground">{seller.totalQuantity} uds.</span>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 pt-0">
-        <div className="divide-y">
+
+      <CardContent className="flex-1 px-5 pt-0 pb-5">
+        <div className="rounded-lg border bg-muted/30 divide-y divide-border/60 overflow-hidden">
           {filteredItems.map((item) => (
-            <div key={item.variantId} className="flex items-center justify-between gap-3 py-2">
+            <div key={item.variantId} className="flex items-center justify-between gap-3 px-4 py-2.5">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{item.productName}</p>
                 <div className="flex items-center gap-2">
@@ -80,8 +72,8 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
                 variant="secondary"
                 className={
                   item.quantity >= 10
-                    ? 'bg-green-100 text-green-700 hover:bg-green-100'
-                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-0'
+                    : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/10 border-0'
                 }
               >
                 {item.quantity}

@@ -14,18 +14,22 @@ export function PageHeader({ title, description, actions, isLoading, hideTitle }
   if (hideTitle) return null;
 
   return (
-    <div className="relative px-4 sm:px-6 py-5">
+    <div className="relative bg-background px-4 sm:px-6 py-5">
       {isLoading && (
         <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden">
           <div className="h-full w-1/3 animate-[loading_1.2s_ease-in-out_infinite] bg-primary" />
         </div>
       )}
-      <div className="flex flex-row items-end justify-between gap-3">
+      <div className="flex flex-row items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground/80">{description}</p>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
         </div>
-        {actions && <div className="shrink-0">{actions}</div>}
+        {actions && (
+          <div className="shrink-0 [&_[data-slot=button][data-variant=default]]:shadow-md [&_[data-slot=button][data-variant=default]]:shadow-primary/20 [&_[data-slot=button][data-variant=default]]:hover:brightness-110">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

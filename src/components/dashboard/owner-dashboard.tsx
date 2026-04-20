@@ -63,9 +63,9 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
       />
 
       <main
-        className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+        className={`flex-1 space-y-6 px-6 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title={PERIOD_REVENUE_LABEL[period]}
             value={formatCurrency(stats.revenue.current)}
@@ -106,13 +106,13 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Ventas · {PERIOD_CHART_LABEL[period]}</CardTitle>
             </CardHeader>
             <CardContent>
-              <SalesChart data={stats.salesByDay} period={period} color="#10b981" gradientId="ownerSalesGradient" />
+              <SalesChart data={stats.salesByDay} period={period} color="#6366f1" gradientId="ownerSalesGradient" />
             </CardContent>
           </Card>
 
@@ -126,7 +126,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Ranking de vendedores</CardTitle>

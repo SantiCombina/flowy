@@ -204,11 +204,13 @@ export function ProductsSection({ initialRefData }: Props) {
           <div className="flex items-center gap-2">
             {canCreateProduct && !isInitialLoading && totalDocs > 0 && (
               <div
-                className="flex h-9 items-center gap-1 text-sm text-muted-foreground sm:gap-1.5 sm:rounded-md sm:border sm:bg-muted/60 sm:px-2.5"
+                className="hidden sm:flex h-9 items-center gap-2 rounded-full border bg-background px-4 shadow-sm"
                 title="Valor del inventario (página actual)"
               >
-                <Warehouse className="h-3.5 w-3.5 shrink-0" />
-                <span className="font-semibold">$ {inventoryValue.toLocaleString('es-AR')}</span>
+                <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
+                <span className="text-sm font-semibold text-foreground">
+                  $ {inventoryValue.toLocaleString('es-AR')}
+                </span>
               </div>
             )}
             {canCreateProduct && (

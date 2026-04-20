@@ -11,12 +11,12 @@ export function AppTopbar() {
   const user = useUser();
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
-      <SidebarTrigger className="-ml-1" />
-      <div className="flex items-center gap-2">
+    <header className="flex h-14 shrink-0 items-center justify-end border-b border-border/50 bg-background/95 backdrop-blur-sm px-4 sm:px-6 shadow-sm">
+      <div className="flex items-center gap-3 [&_[data-slot=button][data-variant=default]]:shadow-md [&_[data-slot=button][data-variant=default]]:shadow-primary/20">
         {(user?.role === 'seller' || user?.role === 'owner') && <NewSaleButton />}
         <NotificationBell />
         <UserDropdown user={user} />
+        <SidebarTrigger className="md:hidden" />
       </div>
     </header>
   );

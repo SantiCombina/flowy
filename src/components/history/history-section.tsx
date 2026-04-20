@@ -253,21 +253,21 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
         <div className="space-y-3">
           <div
             className={cn(
-              'rounded-md bg-card shadow-sm transition-opacity duration-150',
+              'rounded-xl bg-card shadow-sm overflow-hidden border border-border/40 transition-opacity duration-150',
               isPending && 'opacity-50 pointer-events-none',
             )}
           >
             <Table>
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.includes('date') && sortableHead('createdAt', 'Fecha', 'w-40')}
-                  {visibleColumns.includes('type') && sortableHead('type', 'Tipo', 'w-32')}
+                  {visibleColumns.includes('date') && sortableHead('createdAt', 'Fecha', 'w-px')}
+                  {visibleColumns.includes('type') && sortableHead('type', 'Tipo', 'w-px')}
                   {visibleColumns.includes('product') && sortableHead('productName', 'Producto')}
-                  {visibleColumns.includes('quantity') && sortableHead('quantity', 'Cantidad', 'w-28 text-right')}
-                  <TableHead className="w-28 text-center">Stock</TableHead>
-                  {showReference && <TableHead className="w-36">Referencia</TableHead>}
+                  {visibleColumns.includes('quantity') && sortableHead('quantity', 'Cantidad', 'w-px text-right')}
+                  <TableHead className="w-px text-center">Stock</TableHead>
+                  {showReference && <TableHead className="w-px">Referencia</TableHead>}
                   {showReason && <TableHead>Razón</TableHead>}
-                  <TableHead className="w-10" />
+                  <TableHead className="w-px" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -318,8 +318,8 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                               <span
                                 className={cn(
                                   'inline-flex items-center gap-1 font-medium',
-                                  impact === 'positive' && 'text-emerald-600',
-                                  impact === 'negative' && 'text-red-600',
+                                  impact === 'positive' && 'text-success-muted-foreground',
+                                  impact === 'negative' && 'text-error-muted-foreground',
                                   impact === 'neutral' && 'text-muted-foreground',
                                 )}
                               >
@@ -364,7 +364,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-8 w-8"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedId((prev) => (prev === movement.id ? null : movement.id));

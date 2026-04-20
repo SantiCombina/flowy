@@ -100,6 +100,7 @@ export function ClientsTable({
       sortable: true,
       sortValue: (c) => c.cuit ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.cuit || '-'}</div>,
+      className: 'w-px',
     },
     phone: {
       key: 'phone',
@@ -107,6 +108,7 @@ export function ClientsTable({
       sortable: true,
       sortValue: (c) => c.phone ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.phone || '-'}</div>,
+      className: 'w-px',
     },
     email: {
       key: 'email',
@@ -128,6 +130,7 @@ export function ClientsTable({
       sortable: true,
       sortValue: (c) => c.localidad ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.localidad || '-'}</div>,
+      className: 'w-px',
     },
     provincia: {
       key: 'provincia',
@@ -135,6 +138,7 @@ export function ClientsTable({
       sortable: true,
       sortValue: (c) => c.provincia ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.provincia || '-'}</div>,
+      className: 'w-px',
     },
   };
 

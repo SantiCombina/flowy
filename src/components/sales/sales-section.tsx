@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -67,32 +68,14 @@ function isCheckOverdue(checkDueDate: string): boolean {
 }
 
 function PaymentStatusBadge({ status }: { status: 'pending' | 'partially_collected' | 'collected' }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-        status === 'partially_collected' && 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
-        status === 'collected' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
-      )}
-    >
-      {status === 'pending' ? 'Pendiente' : status === 'partially_collected' ? 'Parcial' : 'Cobrado'}
-    </span>
-  );
+  if (status === 'collected') return <Badge variant="success">Cobrado</Badge>;
+  if (status === 'partially_collected') return <Badge variant="warning">Parcial</Badge>;
+  return <Badge variant="pending">Pendiente</Badge>;
 }
 
 function DeliveryStatusBadge({ status }: { status: 'pending' | 'delivered' }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-        status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-        status === 'delivered' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
-      )}
-    >
-      {status === 'pending' ? 'Pendiente' : 'Entregado'}
-    </span>
-  );
+  if (status === 'delivered') return <Badge variant="success">Entregado</Badge>;
+  return <Badge variant="pending">Pendiente</Badge>;
 }
 
 function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | number {
@@ -339,7 +322,7 @@ export function SalesSection({
                 }}
                 aria-pressed={statusFilter === filter}
                 className={cn(
-                  'inline-flex items-center rounded-md px-3 py-1 text-sm font-medium transition-colors',
+                  'inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                   statusFilter === filter
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -361,20 +344,20 @@ export function SalesSection({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-md bg-card shadow-sm">
+          <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.includes('date') && sortableHead('date', 'Fecha', 'w-40')}
+                  {visibleColumns.includes('date') && sortableHead('date', 'Fecha', 'w-px')}
                   {showSeller && sortableHead('seller', 'Vendedor')}
                   {visibleColumns.includes('client') && sortableHead('client', 'Cliente')}
-                  {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-20 text-center')}
-                  {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-36 text-right')}
-                  {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-36')}
-                  {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-32')}
-                  {sortableHead('deliveryStatus', 'Entrega', 'w-28')}
-                  {hasActions && <TableHead className="w-10" />}
-                  <TableHead className="w-10" />
+                  {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-px text-center')}
+                  {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-px text-right')}
+                  {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-px')}
+                  {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-px')}
+                  {sortableHead('deliveryStatus', 'Entrega', 'w-px')}
+                  {hasActions && <TableHead className="w-px" />}
+                  <TableHead className="w-px" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -495,7 +478,7 @@ export function SalesSection({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-8 w-8"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleExpand(sale.id);

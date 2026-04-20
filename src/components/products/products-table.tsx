@@ -166,6 +166,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
             {variant.code || '-'}
           </span>
         ),
+        className: 'w-px',
       },
       brand: {
         key: 'brand',
@@ -224,6 +225,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
         cell: (variant) => (
           <Badge className="bg-white text-foreground border border-gray-200 shadow-none">{variant.stock}</Badge>
         ),
+        className: 'w-px text-right',
       },
       price: {
         key: 'price',
@@ -242,7 +244,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
             </div>
           );
         },
-        className: 'text-right',
+        className: 'w-px text-right',
       },
       lastSold: {
         key: 'lastSold',
@@ -262,6 +264,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
             </span>
           );
         },
+        className: 'w-px',
       },
     };
 
@@ -296,7 +299,7 @@ export const ProductsTable = forwardRef<ProductsTableRef, ProductsTableProps>(
         const isActive = variant.product.isActive ?? true;
         return (
           <div className="flex justify-center">
-            <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+            <div className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
           </div>
         );
       },

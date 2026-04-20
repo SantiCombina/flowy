@@ -92,6 +92,7 @@ export function SellersTable({
       sortable: true,
       sortValue: (s) => s.phone ?? '',
       cell: (seller) => <div className="text-muted-foreground">{seller.phone || '-'}</div>,
+      className: 'w-px',
     },
     createdAt: {
       key: 'createdAt',
@@ -110,7 +111,7 @@ export function SellersTable({
           </div>
         );
       },
-      className: 'w-40',
+      className: 'w-px',
     },
   };
 

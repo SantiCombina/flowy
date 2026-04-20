@@ -4,9 +4,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function SellersLoading() {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5">
         <div>
-          <Skeleton className="mb-1 h-6 w-24" />
+          <Skeleton className="mb-1 h-8 w-24" />
           <Skeleton className="h-3.5 w-56" />
         </div>
         <Skeleton className="h-9 w-32 rounded-md" />

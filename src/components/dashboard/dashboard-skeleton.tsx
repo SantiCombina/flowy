@@ -4,15 +4,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function DashboardSkeleton() {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
-      <div className="flex h-14 items-center justify-between border-b bg-card px-4 sm:px-6">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5">
         <div>
-          <Skeleton className="mb-1 h-6 w-48" />
+          <Skeleton className="mb-1 h-8 w-48" />
           <Skeleton className="h-3.5 w-64" />
         </div>
         <Skeleton className="h-9 w-40 rounded-md" />
       </div>
 
-      <main className="flex-1 space-y-6 px-4 pb-6 pt-5 sm:px-6">
+      <main className="flex-1 space-y-6 px-4 pb-6 sm:px-6">
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>

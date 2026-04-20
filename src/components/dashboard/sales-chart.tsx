@@ -36,18 +36,28 @@ interface SalesChartProps {
   gradientId: string;
 }
 
-export function SalesChart({ data, period, color = '#10b981', gradientId }: SalesChartProps) {
+export function SalesChart({ data, period, color = '#6366f1', gradientId }: SalesChartProps) {
+  const glowId = `${gradientId}Glow`;
+
   return (
     <div className="[&_svg]:outline-none [&_*:focus]:outline-none">
       <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+              <stop offset="60%" stopColor={color} stopOpacity={0.08} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
+            <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.08)" vertical={false} />
           <XAxis
             dataKey="date"
             tickFormatter={(value: string) => formatXAxisTick(value, period)}
@@ -67,19 +77,30 @@ export function SalesChart({ data, period, color = '#10b981', gradientId }: Sale
             formatter={(value) => [formatCurrency(value as number), 'Total ventas']}
             labelFormatter={(label) => formatTooltipLabel(String(label), period)}
             contentStyle={{
-              borderRadius: '8px',
-              border: '1px solid hsl(var(--border))',
-              backgroundColor: 'hsl(var(--card))',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: 'white',
+              boxShadow: '0 8px 32px rgba(99,102,241,0.18)',
               fontSize: '12px',
             }}
+            wrapperStyle={{ outline: 'none' }}
+            cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4' }}
           />
           <Area
             type="monotone"
             dataKey="total"
             stroke={color}
-            strokeWidth={2}
+            strokeWidth={2.5}
             fill={`url(#${gradientId})`}
             animationDuration={800}
+            dot={false}
+            activeDot={{
+              r: 5,
+              fill: color,
+              stroke: 'hsl(var(--card))',
+              strokeWidth: 2,
+              filter: `url(#${glowId})`,
+            }}
           />
         </AreaChart>
       </ResponsiveContainer>

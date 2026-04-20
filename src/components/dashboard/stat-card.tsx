@@ -24,45 +24,50 @@ interface StatCardProps {
 
 export function StatCard({ title, value, subtitle, change, period, icon: Icon, gradient, delay = 0 }: StatCardProps) {
   const comparisonLabel = period ? PERIOD_COMPARISON_LABEL[period] : 'vs período anterior';
+
+  const footer =
+    change !== undefined ? (
+      <div className="flex items-center gap-1 text-white/70">
+        {change >= 0 ? (
+          <>
+            <TrendingUp className="h-3 w-3 shrink-0" />
+            <span>
+              +{change}% {comparisonLabel}
+            </span>
+          </>
+        ) : (
+          <>
+            <TrendingDown className="h-3 w-3 shrink-0" />
+            <span>
+              {change}% {comparisonLabel}
+            </span>
+          </>
+        )}
+      </div>
+    ) : subtitle ? (
+      <p className="text-white/70">{subtitle}</p>
+    ) : null;
+
   return (
     <div
       className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-[both] h-full"
       style={{ animationDelay: `${delay}ms` }}
     >
       <Card
-        className={`relative h-full overflow-hidden bg-linear-to-br ${gradient} border-0 text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl`}
+        className={`relative h-full overflow-hidden bg-linear-to-br ${gradient} border-0 py-0 text-white shadow-[6px_6px_16px_rgba(0,0,0,0.25),-2px_-2px_8px_rgba(255,255,255,0.08)] hover:shadow-[6px_6px_16px_rgba(0,0,0,0.25),-2px_-2px_8px_rgba(255,255,255,0.08)]`}
       >
-        <Icon className="absolute -right-4 -bottom-3 h-28 w-28 -rotate-12 text-white/10 select-none pointer-events-none" />
-        <CardContent className="relative p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1 min-w-0">
-              <p className="text-sm font-medium text-white/80">{title}</p>
-              <p className="font-display text-2xl font-bold tracking-tight">{value}</p>
-              {subtitle && <p className="text-xs text-white/70">{subtitle}</p>}
-            </div>
+        <Icon className="absolute -right-4 -bottom-3 h-32 w-32 -rotate-12 text-white/10 select-none pointer-events-none" />
+        <CardContent className="relative flex h-full flex-col justify-between p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-white/70 uppercase tracking-wider">{title}</p>
             <div className="shrink-0 rounded-full bg-white/20 p-2">
               <Icon className="h-5 w-5" />
             </div>
           </div>
-          {change !== undefined && (
-            <div className="mt-3 flex items-center gap-1 text-xs text-white/90">
-              {change >= 0 ? (
-                <>
-                  <TrendingUp className="h-3 w-3" />
-                  <span>
-                    +{change}% {comparisonLabel}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <TrendingDown className="h-3 w-3" />
-                  <span>
-                    {change}% {comparisonLabel}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+          <div className="space-y-1">
+            <p className="font-display text-3xl font-black tracking-tight">{value}</p>
+            <div className="text-xs">{footer}</div>
+          </div>
         </CardContent>
       </Card>
     </div>

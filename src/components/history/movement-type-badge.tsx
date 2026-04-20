@@ -1,39 +1,19 @@
-import type { MovementType } from '@/app/services/stock-movements';
-import { cn } from '@/lib/utils';
+import type { VariantProps } from 'class-variance-authority';
 
-const TYPE_CONFIG: Record<MovementType, { label: string; className: string }> = {
-  entry: {
-    label: 'Ingreso',
-    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
-  },
-  exit: {
-    label: 'Egreso',
-    className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
-  },
-  adjustment: {
-    label: 'Ajuste',
-    className: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
-  },
-  sale: {
-    label: 'Venta',
-    className: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
-  },
-  dispatch_to_mobile: {
-    label: 'Asignación',
-    className: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
-  },
-  return_from_mobile: {
-    label: 'Devolución',
-    className: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400',
-  },
-  sale_cancelled: {
-    label: 'Venta cancelada',
-    className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
-  },
-  sale_edit: {
-    label: 'Edición venta',
-    className: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400',
-  },
+import type { MovementType } from '@/app/services/stock-movements';
+import { Badge, type badgeVariants } from '@/components/ui/badge';
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>;
+
+const TYPE_CONFIG: Record<MovementType, { label: string; variant: BadgeVariant }> = {
+  entry: { label: 'Ingreso', variant: 'success' },
+  exit: { label: 'Egreso', variant: 'error' },
+  adjustment: { label: 'Ajuste', variant: 'warning' },
+  sale: { label: 'Venta', variant: 'pending' },
+  dispatch_to_mobile: { label: 'Asignación', variant: 'info' },
+  return_from_mobile: { label: 'Devolución', variant: 'violet' },
+  sale_cancelled: { label: 'Venta cancelada', variant: 'error' },
+  sale_edit: { label: 'Edición venta', variant: 'sky' },
 };
 
 interface MovementTypeBadgeProps {
@@ -42,9 +22,5 @@ interface MovementTypeBadgeProps {
 
 export function MovementTypeBadge({ type }: MovementTypeBadgeProps) {
   const config = TYPE_CONFIG[type];
-  return (
-    <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', config.className)}>
-      {config.label}
-    </span>
-  );
+  return <Badge variant={config.variant}>{config.label}</Badge>;
 }

@@ -4,9 +4,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ProfileLoading() {
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex h-14 items-center border-b bg-card px-4 sm:px-6">
+      <div className="flex items-center px-4 sm:px-6 py-5">
         <div>
-          <Skeleton className="mb-1 h-6 w-20" />
+          <Skeleton className="mb-1 h-8 w-20" />
           <Skeleton className="h-3.5 w-48" />
         </div>
       </div>

@@ -11,9 +11,9 @@ const formatCurrencyCompact = (value: number) => {
 };
 
 const METHODS = [
-  { key: 'cash', label: 'Efectivo', color: '#10b981' },
-  { key: 'transfer', label: 'Transferencia', color: '#3b82f6' },
-  { key: 'check', label: 'Cheque', color: '#8b5cf6' },
+  { key: 'cash', label: 'Efectivo', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+  { key: 'transfer', label: 'Transferencia', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+  { key: 'check', label: 'Cheque', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
 ] as const;
 
 interface PaymentMethodsChartProps {
@@ -34,10 +34,11 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
   }
 
   const values = { cash, transfer, check };
-  const data = METHODS.filter(({ key }) => values[key] > 0).map(({ key, label, color }) => ({
+  const data = METHODS.filter(({ key }) => values[key] > 0).map(({ key, label, color, bg }) => ({
     name: label,
     value: values[key],
     color,
+    bg,
     pct: Math.round((values[key] / total) * 100),
   }));
 
@@ -50,10 +51,12 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={58}
-              outerRadius={82}
+              innerRadius={62}
+              outerRadius={84}
               dataKey="value"
-              strokeWidth={2}
+              strokeWidth={3}
+              paddingAngle={4}
+              cornerRadius={16}
               animationBegin={0}
               animationDuration={600}
             >
@@ -64,31 +67,43 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
             <Tooltip
               formatter={(value, name) => [formatCurrency(value as number), String(name)]}
               contentStyle={{
-                borderRadius: '8px',
-                border: '1px solid hsl(var(--border))',
-                backgroundColor: 'hsl(var(--card))',
+                borderRadius: '12px',
+                border: 'none',
+                backgroundColor: 'white',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
                 fontSize: '12px',
               }}
+              wrapperStyle={{ outline: 'none' }}
             />
           </PieChart>
         </ResponsiveContainer>
 
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-base font-bold leading-tight">{formatCurrencyCompact(total)}</span>
-          <span className="text-xs text-muted-foreground">total</span>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+          <span className="text-lg font-black tracking-tight">{formatCurrencyCompact(total)}</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">total</span>
         </div>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {data.map((entry) => (
-          <div key={entry.name} className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-              <span className="text-muted-foreground">{entry.name}</span>
+          <div key={entry.name} className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-muted-foreground">{entry.name}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium tabular-nums" style={{ color: entry.color }}>
+                  {entry.pct}%
+                </span>
+                <span className="font-semibold tabular-nums">{formatCurrency(entry.value)}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-muted-foreground">{entry.pct}%</span>
-              <span className="font-medium tabular-nums">{formatCurrency(entry.value)}</span>
+            <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ backgroundColor: entry.bg }}>
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${entry.pct}%`, backgroundColor: entry.color }}
+              />
             </div>
           </div>
         ))}
