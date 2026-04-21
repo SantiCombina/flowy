@@ -21,7 +21,7 @@ export function ResponsiveModal({ open, onOpenChange, children, className }: Res
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="flex flex-col gap-0 p-0 rounded-t-xl max-h-[90svh]">
+        <SheetContent side="bottom" className="flex flex-col gap-0 p-0 rounded-t-xl max-h-[90dvh]">
           <SheetTitle className="sr-only">Modal</SheetTitle>
           {children}
         </SheetContent>
