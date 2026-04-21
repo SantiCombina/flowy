@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useKeyboardOffset } from '@/hooks/use-keyboard-offset';
 import { cn } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -46,6 +47,7 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const isMobile = useIsMobile();
+  const keyboardOffset = useKeyboardOffset();
 
   const selected = options.find((o) => o.value === value);
   const filter = (val: string, search: string) => (normalize(val).includes(normalize(search)) ? 1 : 0);
@@ -89,7 +91,11 @@ export function Combobox({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="rounded-t-xl p-0 max-h-[60dvh] flex flex-col"
+          className="rounded-t-xl p-0 flex flex-col"
+          style={{
+            bottom: keyboardOffset,
+            maxHeight: `min(60dvh, calc(100dvh - ${keyboardOffset}px - 48px))`,
+          }}
           onOpenAutoFocus={() => undefined}
         >
           <Command filter={filter}>
