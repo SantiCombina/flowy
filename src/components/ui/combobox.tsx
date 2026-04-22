@@ -1,14 +1,12 @@
 'use client';
 
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useKeyboardOffset } from '@/hooks/use-keyboard-offset';
 import { cn } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -31,7 +29,7 @@ interface ComboboxProps {
 function normalize(str: string) {
   return str
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
 }
 
@@ -47,7 +45,6 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const isMobile = useIsMobile();
-  const keyboardOffset = useKeyboardOffset();
 
   const selected = options.find((o) => o.value === value);
   const filter = (val: string, search: string) => (normalize(val).includes(normalize(search)) ? 1 : 0);
@@ -70,43 +67,55 @@ export function Combobox({
     ));
 
   if (isMobile) {
+    if (open) {
+      return (
+        <Command filter={filter} className="border rounded-md">
+          <div className="flex items-center border-b px-1">
+            <CommandInput
+              placeholder={searchPlaceholder}
+              autoFocus
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => setOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <CommandList className="max-h-48 overflow-y-auto">
+            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandGroup>{renderItems()}</CommandGroup>
+          </CommandList>
+        </Command>
+      );
+    }
+
     return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          disabled={disabled}
-          className={cn(
-            'w-full justify-between overflow-hidden font-normal',
-            !selected && 'text-muted-foreground',
-            className,
-          )}
-          onClick={() => setOpen(true)}
-        >
-          <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="rounded-t-xl p-0 flex flex-col"
-          style={{
-            bottom: keyboardOffset,
-            maxHeight: `min(60dvh, calc(100dvh - ${keyboardOffset}px - 48px))`,
-          }}
-          onOpenAutoFocus={() => undefined}
-        >
-          <Command filter={filter}>
-            <CommandInput placeholder={searchPlaceholder} />
-            <CommandList className="flex-1 overflow-y-auto min-h-0">
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-              <CommandGroup>{renderItems()}</CommandGroup>
-            </CommandList>
-          </Command>
-        </SheetContent>
-      </Sheet>
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        disabled={disabled}
+        className={cn(
+          'w-full justify-between overflow-hidden font-normal',
+          !selected && 'text-muted-foreground',
+          className,
+        )}
+        onClick={() => setOpen(true)}
+      >
+        <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
     );
   }
 

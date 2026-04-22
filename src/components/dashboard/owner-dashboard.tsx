@@ -63,7 +63,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
       />
 
       <main
-        className={`flex-1 space-y-6 px-6 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
+        className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
         <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
           <StatCard

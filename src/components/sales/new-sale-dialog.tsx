@@ -1,7 +1,9 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { CalendarIcon, CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
@@ -10,10 +12,12 @@ import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PriceInput } from '@/components/ui/price-input';
 import {
   ResponsiveModal,
@@ -69,7 +73,7 @@ function ItemRow({
 
   const handleVariantChange = (value: string) => {
     const id = Number(value);
-    setValue(`items.${index}.variantId`, id);
+    setValue(`items.${index}.variantId`, id, { shouldValidate: true });
     setValue(`items.${index}.quantity`, 1);
 
     const variant = variants.find((v) => v.variantId === id);
@@ -321,7 +325,19 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           </ResponsiveModalBody>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              onKeyDown={(e) => {
+                if (
+                  e.key === 'Enter' &&
+                  !(e.target instanceof HTMLButtonElement) &&
+                  !(e.target instanceof HTMLTextAreaElement)
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              className="flex flex-col flex-1 min-h-0"
+            >
               <ResponsiveModalBody className="flex flex-col gap-3">
                 <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_80px_110px_140px_32px] gap-2">
                   <p className="text-xs font-medium text-muted-foreground">Producto</p>
@@ -425,16 +441,43 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Fecha de cobro del cheque</FormLabel>
-                          <FormControl>
-                            <input
-                              type="date"
-                              value={field.value ?? ''}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              min={new Date().toISOString().split('T')[0]}
-                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                          </FormControl>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    'w-full justify-start text-left font-normal',
+                                    !field.value && 'text-muted-foreground',
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {field.value
+                                    ? format(new Date(`${field.value}T12:00:00`), "d 'de' MMMM 'de' yyyy", {
+                                        locale: es,
+                                      })
+                                    : 'Seleccioná una fecha'}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value ? new Date(`${field.value}T12:00:00`) : undefined}
+                                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                locale={es}
+                                showOutsideDays={false}
+                                formatters={{
+                                  formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
+                                  formatCaption: (month, options) => {
+                                    const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
+                                    return str.charAt(0).toUpperCase() + str.slice(1);
+                                  },
+                                }}
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -478,9 +521,10 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
               </ResponsiveModalBody>
 
               <ResponsiveModalFooter className="justify-between">
-                <p className="text-base font-semibold">
-                  Total: <span className="text-primary">$ {formatTotal(total)}</span>
-                </p>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="text-base font-semibold text-primary">$ {formatTotal(total)}</span>
+                </div>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                     Cancelar

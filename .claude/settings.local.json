@@ -85,7 +85,11 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Skill(update-config)",
-      "Bash(xargs -0 grep -l \"shadow-sm\\\\|shadow-md\\\\|shadow-lg\\\\|shadow-xl\\\\|shadow-2xl\")"
+      "Bash(xargs -0 grep -l \"shadow-sm\\\\|shadow-md\\\\|shadow-lg\\\\|shadow-xl\\\\|shadow-2xl\")",
+      "Bash(node -e \"const fs = require\\('fs'\\); const c = fs.readFileSync\\('src/components/ui/combobox.tsx', 'utf8'\\); const fixed = c.replace\\(/normalize\\\\\\('NFD'\\\\\\)\\\\s*\\\\n\\\\s*\\\\.replace\\\\\\([^,]+, ''\\\\\\)/, \\\\`normalize\\('NFD'\\)\\\\\\\\n    .replace\\(/[\\\\\\\\\\\\\\\\u0300-\\\\\\\\\\\\\\\\u036f]/g, ''\\)\\\\`\\); fs.writeFileSync\\('src/components/ui/combobox.tsx', fixed\\);\")",
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "Bash(ipconfig)"
     ],
     "additionalDirectories": [
       "c:\\Users\\santi\\.claude\\projects\\c--Users-santi-Documents-Workspace-stocker\\memory",

@@ -34,13 +34,19 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
   }
 
   const values = { cash, transfer, check };
-  const data = METHODS.filter(({ key }) => values[key] > 0).map(({ key, label, color, bg }) => ({
-    name: label,
-    value: values[key],
-    color,
-    bg,
-    pct: Math.round((values[key] / total) * 100),
-  }));
+  const data = METHODS.filter(({ key }) => values[key] > 0).map(({ key, label, color, bg }) => {
+    const rawPct = (values[key] / total) * 100;
+    const pct = Math.round(rawPct);
+    return {
+      name: label,
+      value: values[key],
+      color,
+      bg,
+      pct,
+      pctLabel: pct === 0 ? '<1%' : `${pct}%`,
+      barWidth: pct === 0 ? 1 : pct,
+    };
+  });
 
   return (
     <div className="space-y-4">
@@ -94,7 +100,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium tabular-nums" style={{ color: entry.color }}>
-                  {entry.pct}%
+                  {entry.pctLabel}
                 </span>
                 <span className="font-semibold tabular-nums">{formatCurrency(entry.value)}</span>
               </div>
@@ -102,7 +108,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
             <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ backgroundColor: entry.bg }}>
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${entry.pct}%`, backgroundColor: entry.color }}
+                style={{ width: `${entry.barWidth}%`, backgroundColor: entry.color }}
               />
             </div>
           </div>

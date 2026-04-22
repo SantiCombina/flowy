@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 
 import '@/app/(frontend)/globals.css';
@@ -14,6 +14,13 @@ const manrope = Manrope({
   display: 'swap',
   variable: '--font-display',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  interactiveWidget: 'resizes-visual',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_URL ?? 'https://flowy.app'),

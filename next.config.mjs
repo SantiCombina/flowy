@@ -6,6 +6,9 @@ const nextConfig = {
     staleTimes: {
       dynamic: 30,
     },
+    serverActions: {
+      allowedOrigins: ['192.168.0.102:3000', 'localhost:3000'],
+    },
   },
   images: {
     remotePatterns: [
