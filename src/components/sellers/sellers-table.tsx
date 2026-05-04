@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import type { CommissionSummary } from '@/app/services/commissions';
 import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
@@ -19,12 +20,14 @@ import {
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { formatCurrency } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
 import { deleteSellerAction } from './actions';
 
 interface SellersTableProps {
   sellers: User[];
+  commissionBalances?: Record<number, CommissionSummary>;
   searchQuery?: string;
   onViewDetails?: (seller: User) => void;
   onEdit?: (seller: User) => void;
@@ -34,6 +37,7 @@ interface SellersTableProps {
 
 export function SellersTable({
   sellers,
+  commissionBalances,
   searchQuery = '',
   onViewDetails,
   onEdit,
@@ -92,6 +96,24 @@ export function SellersTable({
       sortable: true,
       sortValue: (s) => s.phone ?? '',
       cell: (seller) => <div className="text-muted-foreground">{seller.phone || '-'}</div>,
+      className: 'w-px',
+    },
+    commissionBalance: {
+      key: 'commissionBalance',
+      header: COLUMN_LABELS.commissionBalance,
+      sortable: true,
+      sortValue: (s) => commissionBalances?.[s.id]?.pendingBalance ?? 0,
+      cell: (seller) => {
+        const summary = commissionBalances?.[seller.id];
+        if (!summary || summary.pendingBalance === 0) {
+          return <div className="text-muted-foreground">$ 0</div>;
+        }
+        return (
+          <div className="font-medium text-orange-600 dark:text-orange-400">
+            {formatCurrency(summary.pendingBalance)}
+          </div>
+        );
+      },
       className: 'w-px',
     },
     createdAt: {

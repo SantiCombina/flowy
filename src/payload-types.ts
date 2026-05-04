@@ -79,6 +79,7 @@ export interface Config {
     'product-custom-fields': ProductCustomField;
     clients: Client;
     sales: Sale;
+    'commission-payments': CommissionPayment;
     settings: Setting;
     'stock-movements': StockMovement;
     'mobile-seller-inventory': MobileSellerInventory;
@@ -103,6 +104,7 @@ export interface Config {
     'product-custom-fields': ProductCustomFieldsSelect<false> | ProductCustomFieldsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
     sales: SalesSelect<false> | SalesSelect<true>;
+    'commission-payments': CommissionPaymentsSelect<false> | CommissionPaymentsSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'mobile-seller-inventory': MobileSellerInventorySelect<false> | MobileSellerInventorySelect<true>;
@@ -458,6 +460,10 @@ export interface Sale {
     id?: string | null;
   }[];
   total: number;
+  /**
+   * Comisión del vendedor calculada automáticamente al crear la venta
+   */
+  commissionAmount: number;
   amountPaid: number;
   notes?: string | null;
   paymentStatus: 'pending' | 'partially_collected' | 'collected';
@@ -468,6 +474,27 @@ export interface Sale {
   ownerCollectedAt?: string | null;
   deliveryStatus: 'pending' | 'delivered';
   deliveredAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Pagos de comisiones a vendedores
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-payments".
+ */
+export interface CommissionPayment {
+  id: number;
+  seller: number | User;
+  owner?: (number | null) | User;
+  amount: number;
+  date: string;
+  paymentMethod: 'transfer' | 'cash' | 'check';
+  /**
+   * Número de transferencia, comprobante, etc.
+   */
+  reference?: string | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -717,6 +744,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sales';
         value: number | Sale;
+      } | null)
+    | ({
+        relationTo: 'commission-payments';
+        value: number | CommissionPayment;
       } | null)
     | ({
         relationTo: 'settings';
@@ -975,6 +1006,7 @@ export interface SalesSelect<T extends boolean = true> {
         id?: T;
       };
   total?: T;
+  commissionAmount?: T;
   amountPaid?: T;
   notes?: T;
   paymentStatus?: T;
@@ -985,6 +1017,21 @@ export interface SalesSelect<T extends boolean = true> {
   ownerCollectedAt?: T;
   deliveryStatus?: T;
   deliveredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "commission-payments_select".
+ */
+export interface CommissionPaymentsSelect<T extends boolean = true> {
+  seller?: T;
+  owner?: T;
+  amount?: T;
+  date?: T;
+  paymentMethod?: T;
+  reference?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

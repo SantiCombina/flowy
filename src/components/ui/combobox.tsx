@@ -27,10 +27,7 @@ interface ComboboxProps {
 }
 
 function normalize(str: string) {
-  return str
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
+  return str.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 export function Combobox({

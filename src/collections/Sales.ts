@@ -121,6 +121,18 @@ export const Sales: CollectionConfig = {
       min: 0,
     },
     {
+      name: 'commissionAmount',
+      type: 'number',
+      required: true,
+      defaultValue: 0,
+      min: 0,
+      label: 'Monto de comisión',
+      admin: {
+        readOnly: true,
+        description: 'Comisión del vendedor calculada automáticamente al crear la venta',
+      },
+    },
+    {
       name: 'amountPaid',
       type: 'number',
       required: true,

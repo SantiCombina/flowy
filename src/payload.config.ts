@@ -11,6 +11,7 @@ import sharp from 'sharp';
 import { Brands } from './collections/Brands';
 import { Categories } from './collections/Categories';
 import { Clients } from './collections/Clients';
+import { CommissionPayments } from './collections/CommissionPayments';
 import { Invitations } from './collections/Invitations';
 import { Media } from './collections/Media';
 import { MobileSellerInventory } from './collections/MobileSellerInventory';
@@ -54,6 +55,7 @@ export default buildConfig({
     ProductCustomFields,
     Clients,
     Sales,
+    CommissionPayments,
     Settings,
     StockMovements,
     MobileSellerInventory,

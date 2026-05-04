@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import type { CommissionSummary } from '@/app/services/commissions';
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { PageHeader } from '@/components/layout/page-header';
 import { useUserOptional } from '@/components/providers/user-provider';
@@ -23,9 +24,10 @@ interface SellersSectionProps {
   sellers: User[];
   variants: PopulatedProductVariant[];
   ownerId: number;
+  commissionBalances: Record<number, CommissionSummary>;
 }
 
-export function SellersSection({ sellers, variants, ownerId }: SellersSectionProps) {
+export function SellersSection({ sellers, variants, ownerId, commissionBalances }: SellersSectionProps) {
   const router = useRouter();
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
@@ -91,6 +93,7 @@ export function SellersSection({ sellers, variants, ownerId }: SellersSectionPro
         </div>
         <SellersTable
           sellers={sellers}
+          commissionBalances={commissionBalances}
           searchQuery={searchQuery}
           onViewDetails={handleOpenDetails}
           onEdit={(seller) => {

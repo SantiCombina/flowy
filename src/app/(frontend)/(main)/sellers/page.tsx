@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
+import { getSellersCommissionSummaries } from '@/app/services/commissions';
 import { getVariantsWithProducts } from '@/app/services/products';
 import { getSellers } from '@/app/services/users';
 import { SellersSection } from '@/components/sellers/sellers-section';
@@ -14,12 +15,20 @@ export const metadata: Metadata = {
 };
 
 async function SellersData({ ownerId }: { ownerId: number }) {
-  const [sellers, variantsResult] = await Promise.all([
+  const [sellers, variantsResult, commissionSummaries] = await Promise.all([
     getSellers(ownerId),
     getVariantsWithProducts(ownerId, undefined, { limit: 1000 }),
+    getSellersCommissionSummaries(ownerId),
   ]);
 
-  return <SellersSection sellers={sellers} variants={variantsResult.docs} ownerId={ownerId} />;
+  return (
+    <SellersSection
+      sellers={sellers}
+      variants={variantsResult.docs}
+      ownerId={ownerId}
+      commissionBalances={Object.fromEntries(commissionSummaries)}
+    />
+  );
 }
 
 export default async function SellersPage() {
