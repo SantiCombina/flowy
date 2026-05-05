@@ -3,7 +3,7 @@
 import { Copy, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { CommissionPaymentRow, CommissionSummary } from '@/app/services/commissions';
@@ -71,12 +71,24 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
   const [commissionPayments, setCommissionPayments] = useState<CommissionPaymentRow[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isLoadingCommissions, setIsLoadingCommissions] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
+  const fetchVersionRef = useRef(0);
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
   const { executeAsync: loadCommissions } = useAction(getCommissionDetailAction);
+
+  useEffect(() => {
+    setActiveTab('info');
+    setCommissionSummary(null);
+    setCommissionPayments([]);
+    fetchVersionRef.current += 1;
+    const n = new Date();
+    setSelectedYear(n.getFullYear());
+    setSelectedMonth(n.getMonth() + 1);
+  }, [seller?.id]);
 
   const periodLabel = useMemo(() => {
     return `${MONTH_LABELS[selectedMonth - 1]} ${selectedYear}`;
@@ -100,16 +112,29 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
   const fetchCommissions = async (year: number, month: number) => {
     if (!seller) return;
+    const currentVersion = ++fetchVersionRef.current;
     setIsLoadingCommissions(true);
-    const result = await loadCommissions({ sellerId: seller.id, year, month });
-    if (result?.data?.success) {
-      setCommissionSummary(result.data.summary);
-      setCommissionPayments(result.data.payments);
+    try {
+      const result = await loadCommissions({ sellerId: seller.id, year, month });
+      if (currentVersion !== fetchVersionRef.current) return;
+      if (result?.data?.success) {
+        setCommissionSummary(result.data.summary);
+        setCommissionPayments(result.data.payments);
+      } else {
+        toast.error(result?.serverError ?? 'No se pudo cargar la información de comisiones');
+      }
+    } catch {
+      if (currentVersion !== fetchVersionRef.current) return;
+      toast.error('Error al cargar las comisiones');
+    } finally {
+      if (currentVersion === fetchVersionRef.current) {
+        setIsLoadingCommissions(false);
+      }
     }
-    setIsLoadingCommissions(false);
   };
 
-  const handleTabChange = async (value: string) => {
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
     if (value === 'commissions' && seller && !commissionSummary) {
       fetchCommissions(selectedYear, selectedMonth);
     }
@@ -150,7 +175,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
         </ResponsiveModalHeader>
 
         <ResponsiveModalBody>
-          <Tabs defaultValue="info" onValueChange={handleTabChange}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="w-full">
               <TabsTrigger value="info" className="flex-1">
                 Información

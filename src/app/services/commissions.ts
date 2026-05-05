@@ -9,6 +9,10 @@ import type { Sale } from '@/payload-types';
 
 const COMMISSION_RATE = 0.03;
 
+function getSaleCommission(sale: Sale): number {
+  return sale.commissionAmount > 0 ? sale.commissionAmount : sale.total * COMMISSION_RATE;
+}
+
 export interface CommissionSummary {
   totalCommission: number;
   totalPaid: number;
@@ -53,7 +57,7 @@ export async function getCommissionSummary(
 
   let totalCommission = 0;
   for (const sale of allSalesResult.docs as Sale[]) {
-    totalCommission += sale.total * COMMISSION_RATE;
+    totalCommission += getSaleCommission(sale);
   }
 
   const allPaymentsResult = await payload.find({
@@ -88,7 +92,7 @@ export async function getCommissionSummary(
   let periodCommission = 0;
   for (const sale of periodSalesResult.docs as Sale[]) {
     periodSales += sale.total;
-    periodCommission += sale.total * COMMISSION_RATE;
+    periodCommission += getSaleCommission(sale);
   }
 
   const periodPaymentsResult = await payload.find({
@@ -169,7 +173,7 @@ export async function getSellersCommissionSummaries(ownerId: number): Promise<Ma
     if (sellerId === 0) continue;
 
     const existing = commissionBySeller.get(sellerId) ?? { totalCommission: 0 };
-    existing.totalCommission += sale.total * COMMISSION_RATE;
+    existing.totalCommission += getSaleCommission(sale);
     commissionBySeller.set(sellerId, existing);
   }
 
