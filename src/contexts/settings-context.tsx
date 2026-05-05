@@ -43,7 +43,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 const DEFAULT_COLUMNS = {
   products: ['name', 'code', 'stock', 'price'],
-  clients: ['name', 'phone', 'email'],
+  clients: ['name', 'phone', 'email', 'debt'],
   sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod'],
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],

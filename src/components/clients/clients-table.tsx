@@ -19,12 +19,14 @@ import {
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
 
 import { deleteClientAction } from './actions';
 
 interface ClientsTableProps {
   clients: Client[];
+  clientDebts: Record<number, number>;
   searchQuery?: string;
   showSellerColumn?: boolean;
   onEdit?: (client: Client) => void;
@@ -34,6 +36,7 @@ interface ClientsTableProps {
 
 export function ClientsTable({
   clients,
+  clientDebts,
   searchQuery = '',
   showSellerColumn = false,
   onEdit,
@@ -139,6 +142,17 @@ export function ClientsTable({
       sortValue: (c) => c.provincia ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.provincia || '-'}</div>,
       className: 'w-px',
+    },
+    debt: {
+      key: 'debt',
+      header: COLUMN_LABELS.debt,
+      sortable: true,
+      sortValue: (c) => clientDebts[c.id] ?? 0,
+      cell: (c) => {
+        const debt = clientDebts[c.id];
+        if (!debt) return <div className="text-muted-foreground">-</div>;
+        return <div className="font-medium text-destructive">{formatCurrency(debt)}</div>;
+      },
     },
   };
 

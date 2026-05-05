@@ -16,10 +16,11 @@ import { ClientsTable } from './clients-table';
 
 interface ClientsSectionProps {
   clients: Client[];
+  clientDebts: Record<number, number>;
   currentUser: User;
 }
 
-export function ClientsSection({ clients, currentUser }: ClientsSectionProps) {
+export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {
   const router = useRouter();
   const isOwner = currentUser.role === 'owner';
 
@@ -72,6 +73,7 @@ export function ClientsSection({ clients, currentUser }: ClientsSectionProps) {
 
         <ClientsTable
           clients={clients}
+          clientDebts={clientDebts}
           searchQuery={searchQuery}
           showSellerColumn={isOwner}
           onEdit={handleEdit}

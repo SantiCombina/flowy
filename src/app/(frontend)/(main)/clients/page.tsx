@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { getClients } from '@/app/services/clients';
+import { getClientDebts, getClients } from '@/app/services/clients';
 import { ClientsSection } from '@/components/clients/clients-section';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -28,7 +28,10 @@ export default async function ClientsPage() {
     redirect('/');
   }
 
-  const clients = await getClients({ ownerId, sellerId });
+  const [clients, clientDebts] = await Promise.all([
+    getClients({ ownerId, sellerId }),
+    getClientDebts({ ownerId, sellerId }),
+  ]);
 
-  return <ClientsSection clients={clients} currentUser={user} />;
+  return <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={user} />;
 }

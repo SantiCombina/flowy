@@ -76,3 +76,43 @@ export async function deleteClient(clientId: number): Promise<void> {
     overrideAccess: true,
   });
 }
+
+export async function getClientDebts({
+  ownerId,
+  sellerId,
+}: {
+  ownerId: number;
+  sellerId?: number;
+}): Promise<Record<number, number>> {
+  const payload = await getPayloadClient();
+
+  const conditions: Where[] = [{ owner: { equals: ownerId } }, { paymentStatus: { not_equals: 'collected' } }];
+
+  if (sellerId) {
+    conditions.push({ seller: { equals: sellerId } });
+  }
+
+  const result = await payload.find({
+    collection: 'sales',
+    where: { and: conditions },
+    depth: 0,
+    limit: 0,
+    overrideAccess: true,
+  });
+
+  const debts: Record<number, number> = {};
+
+  for (const sale of result.docs) {
+    if (!sale.client) continue;
+    if (sale.ownerPaymentStatus === 'collected') continue;
+
+    const clientId = typeof sale.client === 'number' ? sale.client : sale.client.id;
+    const remaining = sale.total - (sale.amountPaid ?? 0);
+
+    if (remaining > 0) {
+      debts[clientId] = (debts[clientId] ?? 0) + remaining;
+    }
+  }
+
+  return debts;
+}

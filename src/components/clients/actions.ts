@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient, deleteClient, getClients, updateClient } from '@/app/services/clients';
+import { createClient, deleteClient, getClientDebts, getClients, updateClient } from '@/app/services/clients';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { clientSchema, deleteClientSchema, updateClientSchema } from '@/schemas/clients/client-schema';
@@ -52,6 +52,21 @@ export const deleteClientAction = actionClient.schema(deleteClientSchema).action
   await deleteClient(parsedInput.id);
 
   return { success: true };
+});
+
+export const getClientDebtsAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
+    throw new Error('No autorizado');
+  }
+
+  const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
+  const sellerId = user.role === 'seller' ? user.id : undefined;
+
+  const debts = await getClientDebts({ ownerId, sellerId });
+
+  return { success: true, debts };
 });
 
 export const getClientsForSaleAction = actionClient.action(async () => {
