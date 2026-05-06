@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/responsive-modal';
 
 import { DeleteConfirmationDialog } from './components/delete-confirmation-dialog';
-import { EntityDialog } from './components/entity-dialog';
 import { ProductAttributesSection } from './components/product-attributes-section';
 import { ProductInfoSection } from './components/product-info-section';
 import { ProductVariantsSection } from './components/product-variants-section';
@@ -61,16 +60,11 @@ export function ProductModal({
   });
 
   const {
-    entityDialog,
-    entityName,
-    setEntityName,
-    openCreateEntity,
     openDeleteEntity,
-    closeEntityDialog,
-    handleSaveEntity,
-    confirmDelete,
     closeConfirmDelete,
     handleDeleteEntity,
+    handleCreateEntity,
+    confirmDelete,
     getEntityLabel,
     isExecuting: isEntityExecuting,
   } = useEntityDialog({
@@ -82,9 +76,11 @@ export function ProductModal({
     onRefreshEntities,
   });
 
+  const hasEmptyPresentation = presentations.some((p) => !p.label.trim());
+
   return (
     <>
-      <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-4xl">
+      <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-3xl">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>{isEditing ? 'Editar producto' : 'Nuevo producto'}</ResponsiveModalTitle>
           <ResponsiveModalDescription>
@@ -113,7 +109,7 @@ export function ProductModal({
                 brands={brands}
                 categories={categories}
                 qualities={qualities}
-                onCreateEntity={openCreateEntity}
+                onCreateEntity={handleCreateEntity}
                 onDeleteEntity={openDeleteEntity}
               />
 
@@ -125,8 +121,9 @@ export function ProductModal({
                 onAddVariant={handleAddVariant}
                 onRemoveVariant={handleRemoveVariant}
                 presentations={presentations}
-                onCreatePresentation={() => openCreateEntity('presentation')}
+                onCreatePresentation={(name) => handleCreateEntity('presentation', name)}
                 onDeletePresentation={(id, label) => openDeleteEntity('presentation', id, label)}
+                hasEmptyPresentation={hasEmptyPresentation}
               />
             </ResponsiveModalBody>
 
@@ -141,16 +138,6 @@ export function ProductModal({
           </form>
         )}
       </ResponsiveModal>
-
-      <EntityDialog
-        entityDialog={entityDialog}
-        entityName={entityName}
-        onEntityNameChange={setEntityName}
-        onClose={closeEntityDialog}
-        onSave={handleSaveEntity}
-        getEntityLabel={getEntityLabel}
-        isExecuting={isEntityExecuting}
-      />
 
       <DeleteConfirmationDialog
         isOpen={confirmDelete.isOpen}

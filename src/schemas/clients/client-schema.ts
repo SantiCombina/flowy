@@ -41,6 +41,7 @@ export const clientSchema = z.object({
     .max(100, 'La localidad no puede superar los 100 caracteres')
     .optional()
     .or(z.literal('')),
+  zone: z.number({ invalid_type_error: 'La zona debe ser un número' }).nullable().optional(),
 });
 
 export type ClientValues = z.infer<typeof clientSchema>;

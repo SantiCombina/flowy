@@ -115,6 +115,15 @@ export const Clients: CollectionConfig = {
       },
     },
     {
+      name: 'zone',
+      type: 'relationship',
+      relationTo: 'zones',
+      required: false,
+      admin: {
+        description: 'Zona asignada al cliente',
+      },
+    },
+    {
       name: 'createdBy',
       type: 'relationship',
       relationTo: 'users',

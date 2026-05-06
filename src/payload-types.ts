@@ -78,6 +78,7 @@ export interface Config {
     'product-variants': ProductVariant;
     'product-custom-fields': ProductCustomField;
     clients: Client;
+    zones: Zone;
     sales: Sale;
     'commission-payments': CommissionPayment;
     settings: Setting;
@@ -103,6 +104,7 @@ export interface Config {
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'product-custom-fields': ProductCustomFieldsSelect<false> | ProductCustomFieldsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
+    zones: ZonesSelect<false> | ZonesSelect<true>;
     sales: SalesSelect<false> | SalesSelect<true>;
     'commission-payments': CommissionPaymentsSelect<false> | CommissionPaymentsSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
@@ -431,12 +433,30 @@ export interface Client {
    */
   localidad?: string | null;
   /**
+   * Zona asignada al cliente
+   */
+  zone?: (number | null) | Zone;
+  /**
    * Vendedor que creó este cliente
    */
   createdBy?: (number | null) | User;
   /**
    * Dueño del negocio
    */
+  owner?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "zones".
+ */
+export interface Zone {
+  id: number;
+  /**
+   * Nombre de la zona (ej: Zona Norte, Microcentro)
+   */
+  name: string;
   owner?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
@@ -742,6 +762,10 @@ export interface PayloadLockedDocument {
         value: number | Client;
       } | null)
     | ({
+        relationTo: 'zones';
+        value: number | Zone;
+      } | null)
+    | ({
         relationTo: 'sales';
         value: number | Sale;
       } | null)
@@ -981,7 +1005,18 @@ export interface ClientsSelect<T extends boolean = true> {
   address?: T;
   provincia?: T;
   localidad?: T;
+  zone?: T;
   createdBy?: T;
+  owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "zones_select".
+ */
+export interface ZonesSelect<T extends boolean = true> {
+  name?: T;
   owner?: T;
   updatedAt?: T;
   createdAt?: T;

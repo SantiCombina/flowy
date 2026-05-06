@@ -289,6 +289,78 @@ export function useEntityDialog({
     }
   };
 
+  const handleCreateEntity = async (type: EntityType, name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return null;
+
+    try {
+      const label = getEntityLabel(type);
+      let result:
+        | Awaited<
+            ReturnType<typeof createBrand | typeof createCategory | typeof createQuality | typeof createPresentation>
+          >
+        | undefined;
+
+      switch (type) {
+        case 'brand': {
+          result = await createBrand({ name: trimmedName });
+          if (result?.data?.brand) {
+            const { brand } = result.data;
+            setBrands((prev) => [...prev, brand]);
+            setValue('brandId', brand.id.toString());
+            onRefreshEntities();
+            toast.success(`${label} creada exitosamente`);
+            return { id: brand.id, name: brand.name };
+          }
+          break;
+        }
+        case 'category': {
+          result = await createCategory({ name: trimmedName });
+          if (result?.data?.category) {
+            const { category } = result.data;
+            setCategories((prev) => [...prev, category]);
+            setValue('categoryId', category.id.toString());
+            onRefreshEntities();
+            toast.success(`${label} creada exitosamente`);
+            return { id: category.id, name: category.name };
+          }
+          break;
+        }
+        case 'quality': {
+          result = await createQuality({ name: trimmedName });
+          if (result?.data?.quality) {
+            const { quality } = result.data;
+            setQualities((prev) => [...prev, quality]);
+            setValue('qualityId', quality.id.toString());
+            onRefreshEntities();
+            toast.success(`${label} creada exitosamente`);
+            return { id: quality.id, name: quality.name };
+          }
+          break;
+        }
+        case 'presentation': {
+          result = await createPresentation({ label: trimmedName });
+          if (result?.data?.presentation) {
+            const { presentation } = result.data;
+            setPresentations((prev) => [...prev, presentation]);
+            onRefreshEntities();
+            toast.success(`${label} creada exitosamente`);
+            return { id: presentation.id, name: presentation.label };
+          }
+          break;
+        }
+      }
+
+      if (result?.serverError) {
+        toast.error(result.serverError);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al crear');
+    }
+
+    return null;
+  };
+
   return {
     entityDialog,
     entityName,
@@ -298,6 +370,7 @@ export function useEntityDialog({
     openDeleteEntity,
     closeEntityDialog,
     handleSaveEntity,
+    handleCreateEntity,
     confirmDelete,
     closeConfirmDelete,
     handleDeleteEntity,

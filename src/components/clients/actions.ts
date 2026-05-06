@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient, deleteClient, getClientDebts, getClients, updateClient } from '@/app/services/clients';
+import { getZoneById } from '@/app/services/zones';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { clientSchema, deleteClientSchema, updateClientSchema } from '@/schemas/clients/client-schema';
@@ -24,6 +25,14 @@ export const createClientAction = actionClient.schema(clientSchema).action(async
     ownerId = user.id;
   }
 
+  // Validar zona si está definida
+  if (parsedInput.zone) {
+    const zone = await getZoneById(parsedInput.zone, ownerId);
+    if (!zone) {
+      throw new Error('La zona seleccionada no existe o no pertenece a tu negocio');
+    }
+  }
+
   const client = await createClient(sellerId, ownerId, parsedInput);
 
   return { success: true, client };
@@ -37,6 +46,17 @@ export const updateClientAction = actionClient.schema(updateClientSchema).action
   }
 
   const { id, ...data } = parsedInput;
+
+  // Validar zona si está definida
+  if (data.zone) {
+    const ownerId =
+      user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
+    const zone = await getZoneById(data.zone, ownerId);
+    if (!zone) {
+      throw new Error('La zona seleccionada no existe o no pertenece a tu negocio');
+    }
+  }
+
   const client = await updateClient(id, data);
 
   return { success: true, client };

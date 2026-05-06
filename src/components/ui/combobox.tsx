@@ -4,7 +4,15 @@ import { Check, ChevronsUpDown, X } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -24,6 +32,7 @@ interface ComboboxProps {
   emptyMessage?: string;
   disabled?: boolean;
   className?: string;
+  footer?: React.ReactNode;
 }
 
 function normalize(str: string) {
@@ -39,6 +48,7 @@ export function Combobox({
   emptyMessage = 'Sin resultados.',
   disabled,
   className,
+  footer,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const isMobile = useIsMobile();
@@ -90,6 +100,12 @@ export function Combobox({
           <CommandList className="max-h-48 overflow-y-auto">
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>{renderItems()}</CommandGroup>
+            {footer && (
+              <>
+                <CommandSeparator />
+                <div className="p-1">{footer}</div>
+              </>
+            )}
           </CommandList>
         </Command>
       );
@@ -140,6 +156,12 @@ export function Combobox({
           <CommandList className="max-h-[min(300px,40svh)]">
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>{renderItems()}</CommandGroup>
+            {footer && (
+              <>
+                <CommandSeparator />
+                <div className="p-1">{footer}</div>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

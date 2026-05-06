@@ -37,6 +37,7 @@ export async function createClient(sellerId: number, ownerId: number, data: Clie
       address: data.address || null,
       provincia: data.provincia || null,
       localidad: data.localidad || null,
+      zone: data.zone || null,
       createdBy: sellerId,
       owner: ownerId,
     },
@@ -60,6 +61,7 @@ export async function updateClient(clientId: number, data: ClientValues): Promis
       address: data.address || null,
       provincia: data.provincia || null,
       localidad: data.localidad || null,
+      zone: data.zone || null,
     },
     overrideAccess: true,
   });

@@ -32,12 +32,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { Combobox } from '@/components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
+import type { Zone } from '@/payload-types';
 
 import { deleteSaleAction, getSalesAction, markAsDeliveredAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
@@ -57,7 +59,16 @@ const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
   collected: 'Cobrado',
 };
 
-type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'paymentMethod' | 'paymentStatus' | 'deliveryStatus';
+type SortKey =
+  | 'date'
+  | 'seller'
+  | 'client'
+  | 'items'
+  | 'total'
+  | 'paymentMethod'
+  | 'paymentStatus'
+  | 'deliveryStatus'
+  | 'zone';
 
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -96,6 +107,8 @@ function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | 
       return isSeller ? sale.paymentStatus : sale.ownerPaymentStatus;
     case 'deliveryStatus':
       return sale.deliveryStatus;
+    case 'zone':
+      return sale.clientZoneName ?? '';
   }
 }
 
@@ -106,6 +119,7 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
 
 interface SalesSectionProps {
   sales: SaleRow[];
+  zones: Zone[];
   showSellerColumn: boolean;
   canCollect: boolean;
   canManage: boolean;
@@ -115,6 +129,7 @@ interface SalesSectionProps {
 
 export function SalesSection({
   sales,
+  zones,
   showSellerColumn,
   canCollect,
   canManage,
@@ -134,6 +149,7 @@ export function SalesSection({
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter ?? 'all');
+  const [zoneFilter, setZoneFilter] = useState<string>('');
   const [collectingModal, setCollectingModal] = useState<{
     saleId: number;
     total: number;
@@ -253,14 +269,23 @@ export function SalesSection({
   }, [localSales, sortKey, sortDir, isSeller]);
 
   const filteredSales = useMemo(() => {
-    if (statusFilter === 'all') return sortedSales;
-    if (statusFilter === 'pending')
-      return sortedSales.filter((s) => {
+    let result = sortedSales;
+    if (statusFilter === 'all') {
+      // no status filter
+    } else if (statusFilter === 'pending') {
+      result = result.filter((s) => {
         const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
         return st === 'pending' || st === 'partially_collected';
       });
-    return sortedSales.filter((s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === statusFilter);
-  }, [sortedSales, statusFilter, isSeller]);
+    } else {
+      result = result.filter((s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === statusFilter);
+    }
+    if (zoneFilter) {
+      const zoneId = Number(zoneFilter);
+      result = result.filter((s) => s.clientZoneId === zoneId);
+    }
+    return result;
+  }, [sortedSales, statusFilter, isSeller, zoneFilter]);
 
   const pendingCount = localSales.filter((s) => {
     const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
@@ -274,7 +299,7 @@ export function SalesSection({
   const showSeller = showSellerColumn && visibleColumns.includes('seller');
 
   const visibleOptionalCount =
-    (['date', 'client', 'items', 'total', 'paymentMethod', 'paymentStatus'] as const).filter((k) =>
+    (['date', 'client', 'zone', 'items', 'total', 'paymentMethod', 'paymentStatus'] as const).filter((k) =>
       visibleColumns.includes(k),
     ).length + (showSeller ? 1 : 0);
 
@@ -343,6 +368,34 @@ export function SalesSection({
           </div>
         </div>
 
+        {zones.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Combobox
+              options={zones.map((z) => ({ value: String(z.id), label: z.name }))}
+              value={zoneFilter}
+              onValueChange={(v) => {
+                setZoneFilter(v === zoneFilter ? '' : v);
+                setPage(1);
+              }}
+              placeholder="Filtrar por zona"
+              searchPlaceholder="Buscar zona..."
+              emptyMessage="No se encontró la zona."
+            />
+            {zoneFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setZoneFilter('');
+                  setPage(1);
+                }}
+              >
+                Limpiar
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
             <Table>
@@ -351,6 +404,7 @@ export function SalesSection({
                   {visibleColumns.includes('date') && sortableHead('date', 'Fecha', 'w-px')}
                   {showSeller && sortableHead('seller', 'Vendedor')}
                   {visibleColumns.includes('client') && sortableHead('client', 'Cliente')}
+                  {visibleColumns.includes('zone') && sortableHead('zone', 'Zona', 'w-px')}
                   {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-px text-center')}
                   {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-px text-right')}
                   {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-px')}
@@ -403,6 +457,9 @@ export function SalesSection({
                             <TableCell className="text-muted-foreground">
                               {sale.clientName ?? 'Sin registrar'}
                             </TableCell>
+                          )}
+                          {visibleColumns.includes('zone') && (
+                            <TableCell className="text-muted-foreground">{sale.clientZoneName ?? '-'}</TableCell>
                           )}
                           {visibleColumns.includes('items') && (
                             <TableCell className="text-center tabular-nums">{sale.itemCount}</TableCell>

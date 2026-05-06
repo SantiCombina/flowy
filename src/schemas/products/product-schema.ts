@@ -107,7 +107,21 @@ export const productSchema = z.object({
     })
     .min(1, {
       message: 'Debe agregar al menos una presentación.',
-    }),
+    })
+    .refine(
+      (variants) => {
+        const seen = new Set<string>();
+        for (const v of variants) {
+          if (!v.presentationId) continue;
+          if (seen.has(v.presentationId)) return false;
+          seen.add(v.presentationId);
+        }
+        return true;
+      },
+      {
+        message: 'No puede haber dos presentaciones iguales.',
+      },
+    ),
 });
 
 export type ProductFormData = z.infer<typeof productSchema>;

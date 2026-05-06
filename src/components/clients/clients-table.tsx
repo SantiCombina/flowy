@@ -28,6 +28,7 @@ interface ClientsTableProps {
   clients: Client[];
   clientDebts: Record<number, number>;
   searchQuery?: string;
+  zoneFilter?: string;
   showSellerColumn?: boolean;
   onEdit?: (client: Client) => void;
   itemsPerPage?: number;
@@ -38,6 +39,7 @@ export function ClientsTable({
   clients,
   clientDebts,
   searchQuery = '',
+  zoneFilter = '',
   showSellerColumn = false,
   onEdit,
   itemsPerPage = 10,
@@ -49,18 +51,29 @@ export function ClientsTable({
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   const filteredClients = useMemo(() => {
-    if (!searchQuery.trim()) return clients;
-    const q = searchQuery.toLowerCase();
-    return clients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.localidad ?? '').toLowerCase().includes(q) ||
-        (c.provincia ?? '').toLowerCase().includes(q) ||
-        (c.cuit ?? '').toLowerCase().includes(q) ||
-        (c.phone ?? '').toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q),
-    );
-  }, [clients, searchQuery]);
+    let result = clients;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.localidad ?? '').toLowerCase().includes(q) ||
+          (c.provincia ?? '').toLowerCase().includes(q) ||
+          (c.cuit ?? '').toLowerCase().includes(q) ||
+          (c.phone ?? '').toLowerCase().includes(q) ||
+          (c.email ?? '').toLowerCase().includes(q),
+      );
+    }
+    if (zoneFilter) {
+      const zoneId = Number(zoneFilter);
+      result = result.filter((c) => {
+        if (typeof c.zone === 'object' && c.zone) return c.zone.id === zoneId;
+        if (typeof c.zone === 'number') return c.zone === zoneId;
+        return false;
+      });
+    }
+    return result;
+  }, [clients, searchQuery, zoneFilter]);
 
   const handleDelete = async () => {
     if (!clientToDelete) return;
@@ -141,6 +154,16 @@ export function ClientsTable({
       sortable: true,
       sortValue: (c) => c.provincia ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.provincia || '-'}</div>,
+      className: 'w-px',
+    },
+    zone: {
+      key: 'zone',
+      header: COLUMN_LABELS.zone,
+      sortable: true,
+      sortValue: (c) => (typeof c.zone === 'object' ? (c.zone?.name ?? '') : ''),
+      cell: (c) => (
+        <div className="text-muted-foreground">{typeof c.zone === 'object' ? (c.zone?.name ?? '-') : '-'}</div>
+      ),
       className: 'w-px',
     },
     debt: {

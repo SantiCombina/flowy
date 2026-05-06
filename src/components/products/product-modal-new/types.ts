@@ -28,7 +28,7 @@ export interface EntitySelectFieldProps {
   onChange: (value: string) => void;
   options: Array<{ id: number; name: string }>;
   entityType: EntityType;
-  onCreateEntity: (type: EntityType) => void;
+  onCreate: (name: string) => Promise<{ id: number; name: string } | null>;
   onDeleteEntity: (type: EntityType, id: number, name: string) => void;
   emptyMessage?: string;
 }
@@ -38,6 +38,8 @@ export interface VariantCardProps {
   canDelete: boolean;
   onDelete: (index: number) => void;
   presentations: Presentation[];
-  onCreatePresentation: () => void;
+  onCreatePresentation: (name: string) => Promise<{ id: number; name: string } | null>;
   onDeletePresentation: (id: number, label: string) => void;
+  hasEmptyPresentation: boolean;
+  usedPresentationIds: string[];
 }

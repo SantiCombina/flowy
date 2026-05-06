@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,8 +22,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import { formatPhoneInput } from '@/lib/phone';
-import type { Client } from '@/payload-types';
+import type { Client, Zone } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
+
+import { createZoneAction, getZonesAction } from '../zones/actions';
 
 import { createClientAction, updateClientAction } from './actions';
 
@@ -46,9 +49,20 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateClientAction);
   const isExecuting = isCreating || isUpdating;
 
+  const currentUser = useUser();
+  const isOwner = currentUser.role === 'owner';
+
   const [localities, setLocalities] = useState<{ id: string; nombre: string }[]>([]);
   const [loadingLocalities, setLoadingLocalities] = useState(false);
   const localitiesCache = useRef<Record<string, { id: string; nombre: string }[]>>({});
+
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [loadingZones, setLoadingZones] = useState(false);
+  const [isCreatingZone, setIsCreatingZone] = useState(false);
+  const [newZoneName, setNewZoneName] = useState('');
+
+  const { executeAsync: execGetZones } = useAction(getZonesAction);
+  const { executeAsync: execCreateZone } = useAction(createZoneAction);
 
   const form = useForm<ClientValues>({
     resolver: zodResolver(clientSchema),
@@ -75,11 +89,24 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
         localidad: '',
       });
       setLocalities([]);
+      setZones([]);
+      setIsCreatingZone(false);
+      setNewZoneName('');
       return;
     }
 
+    setLoadingZones(true);
+    execGetZones()
+      .then((result) => {
+        if (result?.data?.success) {
+          setZones(result.data.zones as Zone[]);
+        }
+      })
+      .finally(() => setLoadingZones(false));
+
     if (isEditMode && client) {
       const provincia = client.provincia ?? '';
+      const zoneId = client.zone && typeof client.zone === 'object' ? client.zone.id : (client.zone ?? undefined);
       form.reset({
         name: client.name,
         cuit: client.cuit ?? '',
@@ -88,12 +115,13 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
         address: client.address ?? '',
         provincia,
         localidad: client.localidad ?? '',
+        zone: zoneId,
       });
       if (provincia) {
         void loadLocalities(provincia);
       }
     }
-  }, [isOpen, isEditMode, client]);
+  }, [isOpen, isEditMode]);
 
   const loadLocalities = async (provinceName: string) => {
     if (localitiesCache.current[provinceName]) {
@@ -136,6 +164,26 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     setLocalities([]);
     if (value) {
       void loadLocalities(value);
+    }
+  };
+
+  const handleCreateZone = async () => {
+    const name = newZoneName.trim();
+    if (!name) return;
+
+    const result = await execCreateZone({ name });
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success && result.data.zone) {
+      const newZone = result.data.zone as Zone;
+      setZones((prev) => [...prev, newZone]);
+      form.setValue('zone', newZone.id, { shouldDirty: true });
+      setNewZoneName('');
+      setIsCreatingZone(false);
+      toast.success(`Zona "${newZone.name}" creada`);
     }
   };
 
@@ -306,6 +354,79 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="zone"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Zona</FormLabel>
+                    {isOwner && !isCreatingZone && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingZone(true);
+                          field.onChange(undefined);
+                        }}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        + Nueva zona
+                      </button>
+                    )}
+                  </div>
+                  {loadingZones ? (
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  ) : isCreatingZone ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nombre de la nueva zona"
+                        value={newZoneName}
+                        onChange={(e) => setNewZoneName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            void handleCreateZone();
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleCreateZone()}
+                        disabled={!newZoneName.trim()}
+                      >
+                        Crear
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsCreatingZone(false);
+                          setNewZoneName('');
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <FormControl>
+                      <Combobox
+                        options={zones.map((z) => ({ value: String(z.id), label: z.name }))}
+                        value={field.value ? String(field.value) : ''}
+                        onValueChange={(v) => field.onChange(v ? (v === '' ? null : Number(v)) : null)}
+                        placeholder="Sin zona"
+                        searchPlaceholder="Buscar zona..."
+                        emptyMessage="No se encontró la zona."
+                      />
+                    </FormControl>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </ResponsiveModalBody>
 
           <ResponsiveModalFooter>

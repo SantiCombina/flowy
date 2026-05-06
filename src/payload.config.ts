@@ -26,6 +26,7 @@ import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
 import { StockMovements } from './collections/StockMovements';
 import { Users } from './collections/Users';
+import { Zones } from './collections/Zones';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -54,6 +55,7 @@ export default buildConfig({
     ProductVariants,
     ProductCustomFields,
     Clients,
+    Zones,
     Sales,
     CommissionPayments,
     Settings,

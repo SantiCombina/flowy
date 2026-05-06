@@ -32,7 +32,7 @@ interface ProductAttributesSectionProps {
   brands: Brand[];
   categories: Category[];
   qualities: Quality[];
-  onCreateEntity: (type: EntityType) => void;
+  onCreateEntity: (type: EntityType, name: string) => Promise<{ id: number; name: string } | null>;
   onDeleteEntity: (type: EntityType, id: number, name: string) => void;
 }
 
@@ -59,7 +59,7 @@ export function ProductAttributesSection({
               onChange={field.onChange}
               options={brands.map((b) => ({ id: b.id, name: b.name }))}
               entityType="brand"
-              onCreateEntity={onCreateEntity}
+              onCreate={(name) => onCreateEntity('brand', name)}
               onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin marcas"
             />
@@ -76,7 +76,7 @@ export function ProductAttributesSection({
               onChange={field.onChange}
               options={categories.map((c) => ({ id: c.id, name: c.name }))}
               entityType="category"
-              onCreateEntity={onCreateEntity}
+              onCreate={(name) => onCreateEntity('category', name)}
               onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin categorías"
             />
@@ -93,7 +93,7 @@ export function ProductAttributesSection({
               onChange={field.onChange}
               options={qualities.map((q) => ({ id: q.id, name: q.name }))}
               entityType="quality"
-              onCreateEntity={onCreateEntity}
+              onCreate={(name) => onCreateEntity('quality', name)}
               onDeleteEntity={onDeleteEntity}
               emptyMessage="Sin calidades"
             />

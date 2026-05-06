@@ -73,6 +73,8 @@ export interface SaleRow {
   sellerName: string;
   clientId?: number;
   clientName?: string;
+  clientZoneId?: number;
+  clientZoneName?: string;
   notes?: string;
   itemCount: number;
   total: number;
@@ -350,6 +352,7 @@ export async function getSales(filters: {
     const seller = typeof sale.seller === 'object' ? sale.seller : null;
     const sellerId = resolveId(sale.seller) ?? 0;
     const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
+    const clientZone = client?.zone && typeof client.zone === 'object' ? client.zone : null;
 
     const items: SaleItemDetail[] = sale.items.map((item) => {
       const variant = typeof item.variant === 'object' ? item.variant : null;
@@ -378,6 +381,8 @@ export async function getSales(filters: {
       sellerName: seller?.name ?? 'Vendedor desconocido',
       clientId: client?.id ?? undefined,
       clientName: client?.name ?? undefined,
+      clientZoneId: clientZone?.id ?? undefined,
+      clientZoneName: clientZone?.name ?? undefined,
       notes: sale.notes ?? undefined,
       itemCount: sale.items.length,
       total: sale.total,

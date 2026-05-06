@@ -1,7 +1,7 @@
 export const TABLE_COLUMNS = {
   products: ['name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price', 'lastSold'],
-  clients: ['name', 'cuit', 'phone', 'email', 'address', 'localidad', 'provincia', 'debt'],
-  sales: ['date', 'seller', 'client', 'items', 'total', 'paymentMethod', 'paymentStatus'],
+  clients: ['name', 'cuit', 'phone', 'email', 'address', 'localidad', 'provincia', 'zone', 'debt'],
+  sales: ['date', 'seller', 'client', 'zone', 'items', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status', 'items', 'notes'],
   history: ['date', 'product', 'type', 'quantity', 'reason', 'reference'],
   sellers: ['name', 'email', 'phone', 'commissionBalance', 'createdAt'],
@@ -13,7 +13,7 @@ export type TableColumns = typeof TABLE_COLUMNS;
 
 export const DEFAULT_COLUMNS: Record<TableName, string[]> = {
   products: ['name', 'brand', 'presentation', 'stock', 'price', 'lastSold'],
-  clients: ['name', 'phone', 'email', 'localidad', 'debt'],
+  clients: ['name', 'phone', 'email', 'localidad', 'zone', 'debt'],
   sales: ['date', 'seller', 'client', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],
@@ -66,6 +66,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   createdAt: 'Fecha de creación',
   lastSold: 'Última venta',
   commissionBalance: 'Saldo comisión',
+  zone: 'Zona',
   debt: 'Deuda',
 };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { Trash2, X } from 'lucide-react';
+import { useState } from 'react';
 import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
 
@@ -34,6 +35,7 @@ interface ExtendedVariantCardProps extends VariantCardProps {
   register: UseFormRegister<ProductFormData>;
   control: Control<ProductFormData>;
   errors: FieldErrors<ProductFormData>;
+  usedPresentationIds: string[];
 }
 
 export function VariantCard({
@@ -43,6 +45,8 @@ export function VariantCard({
   presentations,
   onCreatePresentation,
   onDeletePresentation,
+  hasEmptyPresentation,
+  usedPresentationIds,
   register,
   control,
   errors,
@@ -50,6 +54,29 @@ export function VariantCard({
   const costPrice = useWatch({ control, name: `variants.${index}.costPrice` }) ?? 0;
   const profitMargin = useWatch({ control, name: `variants.${index}.profitMargin` }) ?? 0;
   const suggestedPrice = costPrice > 0 ? costPrice * (1 + profitMargin / 100) : null;
+
+  const [isCreatingPresentation, setIsCreatingPresentation] = useState(false);
+  const [newPresentationName, setNewPresentationName] = useState('');
+  const [isSubmittingPresentation, setIsSubmittingPresentation] = useState(false);
+
+  const handleCreatePresentation = async () => {
+    const trimmed = newPresentationName.trim();
+    if (!trimmed) return;
+
+    setIsSubmittingPresentation(true);
+    const result = await onCreatePresentation(trimmed);
+    setIsSubmittingPresentation(false);
+
+    if (result) {
+      setIsCreatingPresentation(false);
+      setNewPresentationName('');
+    }
+  };
+
+  const handleCancelPresentation = () => {
+    setIsCreatingPresentation(false);
+    setNewPresentationName('');
+  };
 
   return (
     <div className="relative rounded-lg border border-l-4 border-l-primary/40 p-4 bg-card space-y-3">
@@ -67,16 +94,67 @@ export function VariantCard({
 
       <div className="grid grid-cols-2 gap-4 pr-10">
         <div className="space-y-2">
-          <Label>Presentación</Label>
+          <div className="flex items-center justify-between">
+            <Label>Presentación</Label>
+            {!isCreatingPresentation && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasEmptyPresentation) {
+                    setIsCreatingPresentation(true);
+                    setNewPresentationName('');
+                  }
+                }}
+                className={`text-xs hover:underline flex items-center gap-1 ${
+                  hasEmptyPresentation ? 'text-muted-foreground cursor-not-allowed' : 'text-primary'
+                }`}
+                disabled={hasEmptyPresentation}
+              >
+                + Nueva presentación
+              </button>
+            )}
+          </div>
           <Controller
             name={`variants.${index}.presentationId`}
             control={control}
             render={({ field }) => {
+              if (isCreatingPresentation) {
+                return (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nombre de la nueva presentación"
+                      value={newPresentationName}
+                      onChange={(e) => setNewPresentationName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void handleCreatePresentation();
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void handleCreatePresentation()}
+                      disabled={!newPresentationName.trim() || isSubmittingPresentation}
+                    >
+                      {isSubmittingPresentation ? 'Creando…' : 'Crear'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelPresentation}
+                      disabled={isSubmittingPresentation}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                );
+              }
+
               const handleValueChange = (newValue: string) => {
-                if (newValue === '__create__') {
-                  onCreatePresentation();
-                  return;
-                }
                 if (newValue === '__clear__') {
                   field.onChange('');
                   return;
@@ -96,9 +174,6 @@ export function VariantCard({
                     <SelectValue placeholder="Seleccionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__create__" className="text-primary font-medium cursor-pointer">
-                      + Crear nueva presentación
-                    </SelectItem>
                     {field.value && (
                       <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
                         ✕ Sin presentación
@@ -110,7 +185,12 @@ export function VariantCard({
                       </SelectItem>
                     ) : (
                       presentations.map((pres) => (
-                        <SelectItem key={pres.id} value={pres.id.toString()} className="pr-16">
+                        <SelectItem
+                          key={pres.id}
+                          value={pres.id.toString()}
+                          className="pr-16"
+                          disabled={usedPresentationIds.includes(pres.id.toString())}
+                        >
                           <SelectItemText>{pres.label}</SelectItemText>
                           <button
                             type="button"
