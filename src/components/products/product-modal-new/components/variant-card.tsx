@@ -92,7 +92,7 @@ export function VariantCard({
         </Button>
       )}
 
-      <div className="grid grid-cols-2 gap-4 pr-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-10">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Presentación</Label>
@@ -120,7 +120,7 @@ export function VariantCard({
             render={({ field }) => {
               if (isCreatingPresentation) {
                 return (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="Nombre de la nueva presentación"
                       value={newPresentationName}
@@ -133,23 +133,25 @@ export function VariantCard({
                       }}
                       autoFocus
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => void handleCreatePresentation()}
-                      disabled={!newPresentationName.trim() || isSubmittingPresentation}
-                    >
-                      {isSubmittingPresentation ? 'Creando…' : 'Crear'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCancelPresentation}
-                      disabled={isSubmittingPresentation}
-                    >
-                      Cancelar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void handleCreatePresentation()}
+                        disabled={!newPresentationName.trim() || isSubmittingPresentation}
+                      >
+                        {isSubmittingPresentation ? 'Creando…' : 'Crear'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelPresentation}
+                        disabled={isSubmittingPresentation}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
                   </div>
                 );
               }
@@ -222,7 +224,7 @@ export function VariantCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 items-end">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-end">
         <div className="space-y-2">
           <Label>Stock *</Label>
           <Input
@@ -273,7 +275,7 @@ export function VariantCard({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 items-end">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 items-end">
         <div className="space-y-2">
           <Label>Margen de ganancia (%)</Label>
           <Input

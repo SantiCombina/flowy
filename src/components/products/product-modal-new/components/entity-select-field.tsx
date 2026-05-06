@@ -76,7 +76,7 @@ export function EntitySelectField({
         )}
       </div>
       {isCreating ? (
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             placeholder={`Nombre de la nueva ${label.toLowerCase()}`}
             value={newName}
@@ -89,17 +89,19 @@ export function EntitySelectField({
             }}
             autoFocus
           />
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void handleCreate()}
-            disabled={!newName.trim() || isSubmitting}
-          >
-            {isSubmitting ? 'Creando…' : 'Crear'}
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={handleCancelCreate} disabled={isSubmitting}>
-            Cancelar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleCreate()}
+              disabled={!newName.trim() || isSubmitting}
+            >
+              {isSubmitting ? 'Creando…' : 'Crear'}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleCancelCreate} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+          </div>
         </div>
       ) : (
         <Select onValueChange={handleValueChange} value={value ?? ''}>
