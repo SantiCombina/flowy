@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ActionMenu } from '@/components/ui/action-menu';
@@ -35,6 +35,7 @@ interface ManageZonesModalProps {
   onZonesChanged: () => void;
 }
 
+// Handler para cerrar el modal y resetear el estado
 export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZonesModalProps) {
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,24 +50,38 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
   const { executeAsync: execUpdateZone } = useAction(updateZoneAction);
   const { executeAsync: execDeleteZone } = useAction(deleteZoneAction);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setEditingId(null);
-      setEditingName('');
-      setNewZoneName('');
-      setIsAdding(false);
-      return;
-    }
+  const handleClose = () => {
+    setEditingId(null);
+    setEditingName('');
+    setNewZoneName('');
+    setIsAdding(false);
+    onClose();
+  };
 
+  const loadZones = async () => {
     setLoading(true);
-    execGetZones()
-      .then((result) => {
-        if (result?.data?.success) {
-          setZones(result.data.zones as Zone[]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [isOpen]);
+    try {
+      const result = await execGetZones();
+      if (result?.data?.success) {
+        setZones(result.data.zones as Zone[]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModalClose = () => {
+    setEditingId(null);
+    setEditingName('');
+    setNewZoneName('');
+    setIsAdding(false);
+    onClose();
+  };
+
+  // Cargar zonas cuando el modal se abre
+  if (isOpen) {
+    void loadZones();
+  }
 
   const handleCreate = async () => {
     const name = newZoneName.trim();
@@ -123,7 +138,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
   };
 
   return (
-    <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-md">
+    <ResponsiveModal open={isOpen} onOpenChange={handleModalClose} className="sm:max-w-md">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Gestionar zonas</ResponsiveModalTitle>
       </ResponsiveModalHeader>
