@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ActionMenu } from '@/components/ui/action-menu';
@@ -78,10 +78,17 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     onClose();
   };
 
-  // Cargar zonas cuando el modal se abre
-  if (isOpen) {
-    void loadZones();
-  }
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      void loadZones();
+    }
+    if (!isOpen) {
+      hasLoadedRef.current = false;
+    }
+  }, [isOpen]);
 
   const handleCreate = async () => {
     const name = newZoneName.trim();
