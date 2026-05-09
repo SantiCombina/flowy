@@ -1,5 +1,6 @@
 'use client';
 
+import { endOfDay, startOfDay } from 'date-fns';
 import {
   ArrowDown,
   ArrowUp,
@@ -31,8 +32,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
+import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
-import { Combobox } from '@/components/ui/combobox';
+import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
@@ -52,12 +55,6 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 };
 
 type StatusFilter = 'all' | 'pending' | 'collected';
-
-const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
-  all: 'Todos',
-  pending: 'Pendiente',
-  collected: 'Cobrado',
-};
 
 type SortKey =
   | 'date'
@@ -148,8 +145,14 @@ export function SalesSection({
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:sales:limit', 10);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter ?? 'all');
-  const [zoneFilter, setZoneFilter] = useState<string>('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    if (initialStatusFilter && initialStatusFilter !== 'all') {
+      initial.paymentStatus = initialStatusFilter;
+    }
+    return initial;
+  });
+  const [dateRange, setDateRange] = useState<DateRangeValue | undefined>(undefined);
   const [collectingModal, setCollectingModal] = useState<{
     saleId: number;
     total: number;
@@ -242,13 +245,25 @@ export function SalesSection({
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleSort = (key: SortKey) => {
+  const handleSort = (key: string) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
-      setSortKey(key);
+      setSortKey(key as SortKey);
       setSortDir('asc');
     }
+    setPage(1);
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    setColumnFilters((prev) => {
+      if (!value) {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      return { ...prev, [key]: value };
+    });
     setPage(1);
   };
 
@@ -270,27 +285,48 @@ export function SalesSection({
 
   const filteredSales = useMemo(() => {
     let result = sortedSales;
-    if (statusFilter === 'all') {
-      // no status filter
-    } else if (statusFilter === 'pending') {
-      result = result.filter((s) => {
-        const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
-        return st === 'pending' || st === 'partially_collected';
-      });
-    } else {
-      result = result.filter((s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === statusFilter);
+
+    if (columnFilters.paymentStatus) {
+      if (columnFilters.paymentStatus === 'pending') {
+        result = result.filter((s) => {
+          const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
+          return st === 'pending' || st === 'partially_collected';
+        });
+      } else {
+        result = result.filter(
+          (s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === columnFilters.paymentStatus,
+        );
+      }
     }
-    if (zoneFilter) {
-      const zoneId = Number(zoneFilter);
+
+    if (columnFilters.zone) {
+      const zoneId = Number(columnFilters.zone);
       result = result.filter((s) => s.clientZoneId === zoneId);
     }
-    return result;
-  }, [sortedSales, statusFilter, isSeller, zoneFilter]);
 
-  const pendingCount = localSales.filter((s) => {
-    const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
-    return st === 'pending' || st === 'partially_collected';
-  }).length;
+    if (columnFilters.paymentMethod) {
+      if (columnFilters.paymentMethod === '__credit__') {
+        result = result.filter((s) => !s.paymentMethod);
+      } else {
+        result = result.filter((s) => s.paymentMethod === columnFilters.paymentMethod);
+      }
+    }
+
+    if (columnFilters.deliveryStatus) {
+      result = result.filter((s) => s.deliveryStatus === columnFilters.deliveryStatus);
+    }
+
+    if (dateRange) {
+      const from = startOfDay(dateRange.from);
+      const to = endOfDay(dateRange.to);
+      result = result.filter((s) => {
+        const d = new Date(s.date);
+        return d >= from && d <= to;
+      });
+    }
+
+    return result;
+  }, [sortedSales, columnFilters, isSeller, dateRange]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
   const safePage = Math.min(page, totalPages);
@@ -328,88 +364,105 @@ export function SalesSection({
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Ventas" description="Registro y seguimiento de ventas" isLoading={isFetchingSales} />
+      <PageHeader
+        title="Ventas"
+        description="Registro y seguimiento de ventas"
+        isLoading={isFetchingSales}
+        actions={<ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />}
+      />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            className="flex items-center rounded-lg border bg-muted/40 p-1 gap-0.5"
-            role="group"
-            aria-label="Filtrar por estado"
-          >
-            {(['all', 'pending', 'collected'] as StatusFilter[]).map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(filter);
-                  setPage(1);
-                }}
-                aria-pressed={statusFilter === filter}
-                className={cn(
-                  'inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  statusFilter === filter
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {STATUS_FILTER_LABELS[filter]}
-                {filter === 'pending' && pendingCount > 0 && (
-                  <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="ml-auto">
-            <ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />
-          </div>
-        </div>
-
-        {zones.length > 0 && (
-          <div className="flex items-center gap-2">
-            <Combobox
-              options={zones.map((z) => ({ value: String(z.id), label: z.name }))}
-              value={zoneFilter}
-              onValueChange={(v) => {
-                setZoneFilter(v === zoneFilter ? '' : v);
-                setPage(1);
-              }}
-              placeholder="Filtrar por zona"
-              searchPlaceholder="Buscar zona..."
-              emptyMessage="No se encontró la zona."
-            />
-            {zoneFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setZoneFilter('');
-                  setPage(1);
-                }}
-              >
-                Limpiar
-              </Button>
-            )}
-          </div>
-        )}
-
         <div className="space-y-3">
           <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
             <Table>
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.includes('date') && sortableHead('date', 'Fecha', 'w-px')}
+                  {visibleColumns.includes('date') && (
+                    <ColumnHeaderDateFilter
+                      title="Fecha"
+                      sortKey="date"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      value={dateRange}
+                      onChange={(range) => {
+                        setDateRange(range);
+                        setPage(1);
+                      }}
+                      className="w-px"
+                    />
+                  )}
                   {showSeller && sortableHead('seller', 'Vendedor')}
                   {visibleColumns.includes('client') && sortableHead('client', 'Cliente')}
-                  {visibleColumns.includes('zone') && sortableHead('zone', 'Zona', 'w-px')}
+                  {visibleColumns.includes('zone') && (
+                    <ColumnHeaderFilter
+                      title="Zona"
+                      sortKey="zone"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      filterOptions={[
+                        { value: '', label: 'Todas' },
+                        ...zones.map((z) => ({ value: String(z.id), label: z.name })),
+                      ]}
+                      filterValue={columnFilters.zone ?? ''}
+                      onFilterChange={(v) => handleFilterChange('zone', v)}
+                      className="w-px"
+                    />
+                  )}
                   {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-px text-center')}
                   {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-px text-right')}
-                  {visibleColumns.includes('paymentMethod') && sortableHead('paymentMethod', 'Pago', 'w-px')}
-                  {visibleColumns.includes('paymentStatus') && sortableHead('paymentStatus', 'Estado', 'w-px')}
-                  {sortableHead('deliveryStatus', 'Entrega', 'w-px')}
+                  {visibleColumns.includes('paymentMethod') && (
+                    <ColumnHeaderFilter
+                      title="Pago"
+                      sortKey="paymentMethod"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      filterOptions={[
+                        { value: '', label: 'Todos' },
+                        { value: 'cash', label: 'Efectivo' },
+                        { value: 'transfer', label: 'Transferencia' },
+                        { value: 'check', label: 'Cheque' },
+                        { value: '__credit__', label: 'A crédito' },
+                      ]}
+                      filterValue={columnFilters.paymentMethod ?? ''}
+                      onFilterChange={(v) => handleFilterChange('paymentMethod', v)}
+                      className="w-px"
+                    />
+                  )}
+                  {visibleColumns.includes('paymentStatus') && (
+                    <ColumnHeaderFilter
+                      title="Estado"
+                      sortKey="paymentStatus"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      filterOptions={[
+                        { value: '', label: 'Todos' },
+                        { value: 'pending', label: 'Pendiente' },
+                        { value: 'collected', label: 'Cobrado' },
+                      ]}
+                      filterValue={columnFilters.paymentStatus ?? ''}
+                      onFilterChange={(v) => handleFilterChange('paymentStatus', v)}
+                      className="w-px"
+                    />
+                  )}
+                  <ColumnHeaderFilter
+                    title="Entrega"
+                    sortKey="deliveryStatus"
+                    currentSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    filterOptions={[
+                      { value: '', label: 'Todas' },
+                      { value: 'pending', label: 'Pendiente' },
+                      { value: 'delivered', label: 'Entregado' },
+                    ]}
+                    filterValue={columnFilters.deliveryStatus ?? ''}
+                    onFilterChange={(v) => handleFilterChange('deliveryStatus', v)}
+                    className="w-px"
+                  />
                   {hasActions && <TableHead className="w-px" />}
                   <TableHead className="w-px" />
                 </TableRow>
