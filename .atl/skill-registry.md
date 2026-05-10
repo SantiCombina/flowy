@@ -4,23 +4,29 @@
 
 ## Project-Level Skills
 
-*None found.*
+| Skill | Trigger | Path |
+|-------|---------|------|
+| **frontend-design** | Build web components, pages, dashboards, styling, beautifying UI | `.agents/skills/frontend-design/SKILL.md` |
+| **web-design-guidelines** | Review UI, check accessibility, audit design, review UX | `.agents/skills/web-design-guidelines/SKILL.md` |
+| **next-best-practices** | Next.js code (RSC boundaries, async APIs, metadata, route handlers) | `.agents/skills/next-best-practices/SKILL.md` |
+| **shadcn** | shadcn/ui components, styling, CLI usage | `.agents/skills/shadcn/SKILL.md` |
+| **vercel-react-best-practices** | React/Next.js performance, data fetching, bundle optimization, re-renders | `.agents/skills/vercel-react-best-practices/SKILL.md` |
 
 ## User-Level Skills
 
-| Skill | Trigger | Source |
-|-------|---------|--------|
-| **next-best-practices** | Next.js code (RSC boundaries, async APIs, metadata, route handlers) | `.claude/skills/next-best-practices` |
-| **payload** | Payload CMS work (collections, fields, hooks, access control, API) | `.claude/skills/payload` |
-| **shadcn** | shadcn/ui components, styling, CLI usage | `.agents/skills/shadcn` |
-| **frontend-design** | Building UI components, pages, dashboards, layouts | `.claude/skills/frontend-design` |
-| **web-design-guidelines** | Review UI, accessibility, UX audits | `.claude/skills/web-design-guidelines` |
-| **seo-audit** | SEO audits, meta tags, ranking issues | `.claude/skills/seo-audit` |
-| **issue-creation** | Creating GitHub issues | `.config/opencode/skills/issue-creation` |
-| **branch-pr** | Creating pull requests | `.config/opencode/skills/branch-pr` |
-| **go-testing** | Writing Go tests | `.config/opencode/skills/go-testing` |
-| **skill-creator** | Creating new AI skills | `.config/opencode/skills/skill-creator` |
-| **judgment-day** | Adversarial code review | `.config/opencode/skills/judgment-day` |
+| Skill | Trigger | Path |
+|-------|---------|------|
+| **work-unit-commits** | Implementation, commit splitting, chained PRs, keeping tests/docs with code | `.config/opencode/skills/work-unit-commits/SKILL.md` |
+| **comment-writer** | PR feedback, issue replies, reviews, Slack messages, GitHub comments | `.config/opencode/skills/comment-writer/SKILL.md` |
+| **cognitive-doc-design** | Writing guides, READMEs, RFCs, onboarding, architecture, review-facing docs | `.config/opencode/skills/cognitive-doc-design/SKILL.md` |
+| **chained-pr** | PRs over 400 lines, stacked PRs, review slices | `.config/opencode/skills/chained-pr/SKILL.md` |
+| **issue-creation** | Creating GitHub issues, bug reports, feature requests | `.config/opencode/skills/issue-creation/SKILL.md` |
+| **branch-pr** | Creating, opening, or preparing PRs for review | `.config/opencode/skills/branch-pr/SKILL.md` |
+| **skill-creator** | New skills, agent instructions, documenting AI usage patterns | `.config/opencode/skills/skill-creator/SKILL.md` |
+| **go-testing** | Go tests, go test coverage, Bubbletea teatest, golden files | `.config/opencode/skills/go-testing/SKILL.md` |
+| **judgment-day** | Judgment day, dual review, adversarial review, juzgar | `.config/opencode/skills/judgment-day/SKILL.md` |
+| **seo-audit** | SEO audit, technical SEO, meta tags review, ranking issues | `.claude/skills/seo-audit/SKILL.md` |
+| **payload** | Payload CMS work (collections, fields, hooks, access control, API) | `.claude/skills/payload/SKILL.md` |
 
 ## SDD Skills (Internal)
 
@@ -28,5 +34,130 @@
 
 ## Project Conventions
 
-- `CLAUDE.md` — Project-specific instructions (stack, roles, architecture)
-- `AGENTS.md` — Global agent rules (conventional commits, no build after changes)
+- `CLAUDE.md` — Project-specific instructions (stack, roles, architecture, 3-layer pattern, Zod schemas, shadcn/ui rules)
+- `AGENTS.md` — Not present at root; project skills registered in `.agents/skills/`
+
+## Compact Rules
+
+### frontend-design
+- Pick a BOLD aesthetic direction before coding (minimal, maximalist, retro-futuristic, etc.).
+- Use distinctive typography; avoid generic fonts (Inter, Arial, Roboto).
+- Commit to a cohesive color theme with CSS variables and sharp accents.
+- Use CSS/Motion for high-impact animations (staggered reveals, scroll-triggered).
+- Leverage asymmetry, overlap, and grid-breaking for spatial composition.
+- Add atmospheric backgrounds (gradients, noise, textures) instead of solid colors.
+- Never use generic AI aesthetics (purple gradients, predictable layouts).
+- Match implementation complexity to the aesthetic vision.
+
+### web-design-guidelines
+- Fetch latest guidelines from `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` before each review.
+- Review files against all fetched rules.
+- Output findings in terse `file:line` format.
+
+### next-best-practices
+- Follow Next.js 15+ file conventions and async APIs (async params, cookies, headers).
+- Enforce RSC boundaries: no async client components, no non-serializable props across boundary.
+- Use `'use server'` for server actions; authenticate inside each action.
+- Use `next/image` always; configure remotePatterns for external images.
+- Use `next/font` for font loading; preload subsets.
+- Place metadata in `metadata` export or `generateMetadata`.
+- Handle errors with `error.tsx`, `not-found.tsx`, `global-error.tsx`.
+- Use Suspense boundaries to prevent waterfalls; start promises early.
+- Prefer Server Components; `'use client'` only when state/events/browser APIs needed.
+
+### shadcn
+- Use `npx shadcn@latest info` to get project context before advising.
+- Compose existing components before creating custom markup.
+- Use built-in variants (`variant`, `size`) before custom styles.
+- Use semantic colors (`bg-primary`, `text-muted-foreground`); never raw values.
+- Form layout uses `FieldGroup` + `Field`, not raw `div` with `space-y`.
+- Use `ToggleGroup` for 2–7 choices; `TabsTrigger` must be inside `TabsList`.
+- Dialog/Sheet/Drawer always needs a `Title` (visually hidden with `sr-only` if needed).
+- Full `Card` composition (`CardHeader`, `CardTitle`, etc.).
+- Use `cn()` for conditional classes; no manual ternaries.
+- Run `npx shadcn@latest docs <component>` before creating/fixing/debugging.
+
+### vercel-react-best-practices
+- Eliminate waterfalls: defer await until needed, use `Promise.all()`, `better-all` for dependencies.
+- Authenticate server actions like public API routes; never rely on middleware alone.
+- Avoid shared module-level state for request data in RSC/SSR.
+- Minimize serialization at RSC boundaries; only pass fields client needs.
+- Use `React.cache()` for per-request deduplication; avoid inline objects as args.
+- Use `next/dynamic` with `ssr: false` for heavy non-critical components.
+- Prefer direct imports over barrel files where Next.js `optimizePackageImports` unavailable.
+- Derive state during render; avoid `useEffect` solely for prop-derived state.
+- Use functional `setState` to prevent stale closures and unnecessary recreations.
+- Use `useTransition` for non-urgent updates; `useDeferredValue` for expensive derived renders.
+
+### work-unit-commits
+- A commit represents a deliverable behavior/fix/migration/docs unit.
+- Keep tests with the code they verify; keep docs with the user-visible change.
+- Do not split commits by file type (models, then services, then tests).
+- Each commit should tell a story and be a candidate for a chained PR.
+- If SDD forecasts >400-line change, group into chained PR slices before implementation.
+
+### comment-writer
+- Start with the actionable point; keep it to 1–3 short paragraphs or bullets.
+- Be warm and direct; explain the technical reason for requested changes.
+- Match thread language (Rioplatense Spanish/voseo when appropriate).
+- Avoid em dashes; use commas or parentheses instead.
+
+### cognitive-doc-design
+- Lead with the answer/decision; context comes after.
+- Use progressive disclosure (happy path first, then edge cases).
+- Prefer tables, checklists, and templates over dense prose.
+- Design docs so reviewers can verify intent without reconstructing the whole story.
+- For PR docs, state what to review first and what is out of scope.
+
+### chained-pr
+- Split PRs over 400 changed lines unless `size:exception` is accepted.
+- Each PR must be reviewable in ≤60 minutes with one deliverable work unit.
+- State start, end, dependencies, follow-ups, and out-of-scope items.
+- Every child PR must include a dependency diagram marking current PR with `📍`.
+- Do not mix chain strategies after the user chooses one.
+
+### issue-creation
+- Blank issues are disabled; MUST use a template (bug report or feature request).
+- Every issue gets `status:needs-review` automatically.
+- A maintainer MUST add `status:approved` before any PR can be opened.
+- Questions go to Discussions, not issues.
+
+### branch-pr
+- Every PR MUST link an approved issue and have exactly one `type:*` label.
+- Branch names must match `^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\/[a-z0-9._-]+$`.
+- Commit messages must match conventional commits regex.
+- PR body must contain linked issue, PR type, summary, changes table, test plan, contributor checklist.
+
+### skill-creator
+- A skill is a runtime instruction contract, not human documentation.
+- Keep skill body concise: target 180–450 tokens, hard max 1000.
+- Put examples/schemas in `assets/`; conceptual detail in `references/`.
+- `description` must be one physical line, quoted, trigger-first, ≤250 chars.
+- Required sections: Activation Contract, Hard Rules, Decision Gates, Execution Steps, Output Contract, References.
+
+### go-testing
+- Prefer table-driven tests with `t.Run(tt.name, ...)`.
+- Test behavior and state transitions, not implementation trivia.
+- Use `t.TempDir()` for filesystem tests; never real home directories.
+- Integration tests must be skippable with `testing.Short()`.
+- Golden files must be deterministic; update only through `-update` flag.
+
+### judgment-day
+- Resolve project skills and inject the same `Project Standards` into both judge prompts.
+- Launch two blind judges in parallel with identical target and criteria.
+- Classify warnings as `WARNING (real)` only if normal use can trigger them.
+- Ask before fixing Round 1 confirmed issues; re-judge immediately after fixes.
+- Terminal states are only `JUDGMENT: APPROVED` or `JUDGMENT: ESCALATED`.
+
+### seo-audit
+- Check `.claude/product-marketing-context.md` before auditing if it exists.
+- Priority order: Crawlability → Technical Foundations → On-Page → Content → Authority.
+- `web_fetch` cannot reliably detect schema markup; use browser tool or Rich Results Test.
+- Never report "no schema found" based solely on `web_fetch` or `curl`.
+
+### payload
+- Local API bypasses access control by default; use `overrideAccess: false` to enforce permissions.
+- Always pass `req` to nested operations in hooks to maintain transaction atomicity.
+- Use `req.context` flags to prevent infinite hook loops.
+- Use `depth` parameter consciously: default 2 populates relationships; 0 returns IDs only.
+- Auto-generate types after modifying collections: `pnpm generate:types`.

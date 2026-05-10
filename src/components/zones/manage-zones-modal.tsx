@@ -50,14 +50,6 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
   const { executeAsync: execUpdateZone } = useAction(updateZoneAction);
   const { executeAsync: execDeleteZone } = useAction(deleteZoneAction);
 
-  const handleClose = () => {
-    setEditingId(null);
-    setEditingName('');
-    setNewZoneName('');
-    setIsAdding(false);
-    onClose();
-  };
-
   const loadZones = async () => {
     setLoading(true);
     try {

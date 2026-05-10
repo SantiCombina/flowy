@@ -4,6 +4,7 @@ import { MoreVertical } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -40,15 +40,12 @@ export function ActionMenu({ items }: ActionMenuProps) {
 
   if (isMobile) {
     return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
-          <SheetTitle className="sr-only">Acciones</SheetTitle>
-          <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
+      <Drawer open={open} onOpenChange={setOpen}>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+        <DrawerContent className="p-0 gap-0">
+          <DrawerTitle className="sr-only">Acciones</DrawerTitle>
           <div className="py-2 pb-6">
             {filtered.map((item, index) => (
               <React.Fragment key={item.label}>
@@ -69,8 +66,8 @@ export function ActionMenu({ items }: ActionMenuProps) {
               </React.Fragment>
             ))}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
     );
   }
 

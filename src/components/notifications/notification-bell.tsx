@@ -2,7 +2,7 @@
 
 import { Bell, BellRing, CheckCheck } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 
 import type { NotificationRow } from '@/app/services/notifications';
@@ -16,6 +16,8 @@ import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { getPusherClient } from '@/lib/pusher-client';
 
 import { NotificationItem } from './notification-item';
@@ -29,6 +31,23 @@ const NOTIFICATION_EVENTS = [
   'stock_adjusted',
 ] as const;
 
+const pushPermissionStore = {
+  listeners: new Set<() => void>(),
+  subscribe(callback: () => void) {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
+  },
+  getSnapshot(): NotificationPermission | null {
+    if (typeof window === 'undefined' || !('Notification' in window)) return null;
+    return Notification.permission;
+  },
+  notify() {
+    this.listeners.forEach((l) => l());
+  },
+};
+
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -40,10 +59,15 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 export function NotificationBell() {
   const { id: userId, role } = useUser();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
+  const pushPermission = useSyncExternalStore(
+    (cb) => pushPermissionStore.subscribe(cb),
+    () => pushPermissionStore.getSnapshot(),
+    () => null,
+  );
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
 
@@ -79,7 +103,6 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!isPushSupported || !('Notification' in window)) return;
-    setPushPermission(Notification.permission);
     if (Notification.permission === 'granted') {
       navigator.serviceWorker.ready
         .then((reg) => reg.pushManager.getSubscription())
@@ -98,7 +121,7 @@ export function NotificationBell() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
-      setPushPermission('granted');
+      pushPermissionStore.notify();
       const json = sub.toJSON();
       if (json.endpoint && json.keys) {
         const result = await subscribePushAction({
@@ -114,7 +137,7 @@ export function NotificationBell() {
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
       if (name === 'NotAllowedError') {
-        setPushPermission(Notification.permission);
+        pushPermissionStore.notify();
         toast.error('Permiso denegado. Habilitá las notificaciones en la configuración del sistema.');
       } else {
         toast.error(`Error al activar: ${err instanceof Error ? err.message : 'desconocido'}`);
@@ -123,10 +146,6 @@ export function NotificationBell() {
       setIsSubscribing(false);
     }
   };
-
-  useEffect(() => {
-    void loadNotifications();
-  }, [loadNotifications]);
 
   const handleOpenChange = (value: boolean) => {
     setOpen(value);
@@ -145,76 +164,149 @@ export function NotificationBell() {
     setUnreadCount(0);
   };
 
+  const notificationList = (
+    <>
+      {notifications.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Bell className="mb-2 h-8 w-8 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">Sin notificaciones</p>
+        </div>
+      ) : (
+        <div className="divide-y">
+          {notifications.map((notification) => (
+            <NotificationItem key={notification.id} notification={notification} onMarkRead={handleMarkRead} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between px-4 py-3">
+        <p className="text-sm font-semibold">Notificaciones</p>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+            onClick={handleMarkAllRead}
+            disabled={isMarkingAll}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            Marcar todo como leído
+          </Button>
+        )}
+      </div>
+      <Separator />
+      <div className="max-h-90 overflow-y-auto flex-1">{notificationList}</div>
+      {isPushSupported && !(pushPermission === 'granted' && isSubscribed) && (
+        <>
+          <Separator />
+          <div className="px-4 py-3">
+            {pushPermission === 'denied' ? (
+              <p className="text-xs text-muted-foreground">
+                Notificaciones bloqueadas. Habilitálas desde la configuración del navegador.
+              </p>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-xs"
+                onClick={handleEnablePush}
+                disabled={isSubscribing}
+              >
+                <BellRing className="h-3.5 w-3.5" />
+                {isSubscribing
+                  ? 'Activando...'
+                  : pushPermission === 'granted'
+                    ? 'Reactivar notificaciones push'
+                    : 'Activar notificaciones push'}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  const sheetContent = (
+    <>
+      <div className="flex items-center justify-between px-4 py-3">
+        <p className="text-sm font-semibold">Notificaciones</p>
+        {unreadCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+            onClick={handleMarkAllRead}
+            disabled={isMarkingAll}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            Marcar todo como leído
+          </Button>
+        )}
+      </div>
+      <Separator />
+      <div className="flex-1 overflow-y-auto">{notificationList}</div>
+      {isPushSupported && !(pushPermission === 'granted' && isSubscribed) && (
+        <>
+          <Separator />
+          <div className="px-4 py-3">
+            {pushPermission === 'denied' ? (
+              <p className="text-xs text-muted-foreground">
+                Notificaciones bloqueadas. Habilitálas desde la configuración del navegador.
+              </p>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-xs"
+                onClick={handleEnablePush}
+                disabled={isSubscribing}
+              >
+                <BellRing className="h-3.5 w-3.5" />
+                {isSubscribing
+                  ? 'Activando...'
+                  : pushPermission === 'granted'
+                    ? 'Reactivar notificaciones push'
+                    : 'Activar notificaciones push'}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  const trigger = (
+    <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Notificaciones">
+      <Bell className="h-5 w-5" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </Button>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetTrigger asChild>{trigger}</SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-sm p-0 flex flex-col">
+          <SheetTitle className="sr-only">Notificaciones</SheetTitle>
+          {sheetContent}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full" aria-label="Notificaciones">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0" sideOffset={8}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <p className="text-sm font-semibold">Notificaciones</p>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
-              onClick={handleMarkAllRead}
-              disabled={isMarkingAll}
-            >
-              <CheckCheck className="h-3.5 w-3.5" />
-              Marcar todo como leído
-            </Button>
-          )}
-        </div>
-        <Separator />
-        <div className="max-h-90 overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <Bell className="mb-2 h-8 w-8 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Sin notificaciones</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {notifications.map((notification) => (
-                <NotificationItem key={notification.id} notification={notification} onMarkRead={handleMarkRead} />
-              ))}
-            </div>
-          )}
-        </div>
-        {isPushSupported && !(pushPermission === 'granted' && isSubscribed) && (
-          <>
-            <Separator />
-            <div className="px-4 py-3">
-              {pushPermission === 'denied' ? (
-                <p className="text-xs text-muted-foreground">
-                  Notificaciones bloqueadas. Habilitálas desde la configuración del navegador.
-                </p>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 text-xs"
-                  onClick={handleEnablePush}
-                  disabled={isSubscribing}
-                >
-                  <BellRing className="h-3.5 w-3.5" />
-                  {isSubscribing
-                    ? 'Activando...'
-                    : pushPermission === 'granted'
-                      ? 'Reactivar notificaciones push'
-                      : 'Activar notificaciones push'}
-                </Button>
-              )}
-            </div>
-          </>
-        )}
+        {content}
       </PopoverContent>
     </Popover>
   );

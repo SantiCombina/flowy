@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,10 +16,6 @@ interface TableColumnsConfigProps {
 export function TableColumnsConfig({ tableName, initialColumns, onSave }: TableColumnsConfigProps) {
   const [columns, setColumns] = useState<string[]>(initialColumns);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    setColumns(initialColumns);
-  }, [initialColumns]);
 
   const availableColumns = TABLE_COLUMNS[tableName];
 

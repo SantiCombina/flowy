@@ -14,7 +14,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
@@ -165,10 +165,6 @@ export function SalesSection({
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
   const { executeAsync: executeFetchSales, isExecuting: isFetchingSales } = useAction(getSalesAction);
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
-
-  useEffect(() => {
-    setLocalSales(sales);
-  }, [sales]);
 
   const handleCollectSuccess = (
     saleId: number,

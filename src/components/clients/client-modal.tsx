@@ -1,9 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Check, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { useUser } from '@/components/providers/user-provider';
@@ -22,6 +23,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import { formatPhoneInput } from '@/lib/phone';
+import { cn } from '@/lib/utils';
 import type { Client, Zone } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
 
@@ -57,73 +59,52 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   const localitiesCache = useRef<Record<string, { id: string; nombre: string }[]>>({});
 
   const [zones, setZones] = useState<Zone[]>([]);
-  const [loadingZones, setLoadingZones] = useState(false);
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
+
+  const isDuplicateZone = zones.some((z) => z.name.toLowerCase() === newZoneName.trim().toLowerCase());
 
   const { executeAsync: execGetZones } = useAction(getZonesAction);
   const { executeAsync: execCreateZone } = useAction(createZoneAction);
 
+  const defaultValues = useMemo(
+    () => ({
+      name: isEditMode && client ? client.name : '',
+      cuit: isEditMode && client ? (client.cuit ?? '') : '',
+      phone: isEditMode && client ? (client.phone ?? '') : '',
+      email: isEditMode && client ? (client.email ?? '') : '',
+      address: isEditMode && client ? (client.address ?? '') : '',
+      provincia: isEditMode && client ? (client.provincia ?? '') : '',
+      localidad: isEditMode && client ? (client.localidad ?? '') : '',
+      zone:
+        isEditMode && client
+          ? client.zone && typeof client.zone === 'object'
+            ? client.zone.id
+            : (client.zone ?? undefined)
+          : undefined,
+    }),
+    [isEditMode, client],
+  );
+
   const form = useForm<ClientValues>({
     resolver: zodResolver(clientSchema),
-    defaultValues: {
-      name: '',
-      cuit: '',
-      phone: '',
-      email: '',
-      address: '',
-      provincia: '',
-      localidad: '',
-    },
+    values: defaultValues,
   });
 
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset({
-        name: '',
-        cuit: '',
-        phone: '',
-        email: '',
-        address: '',
-        provincia: '',
-        localidad: '',
-      });
-      setLocalities([]);
-      setZones([]);
-      setIsCreatingZone(false);
-      setNewZoneName('');
-      return;
-    }
+  const provinciaValue = useWatch({ control: form.control, name: 'provincia' });
 
-    setLoadingZones(true);
+  useEffect(() => {
+    if (!isOpen) return;
     execGetZones()
       .then((result) => {
         if (result?.data?.success) {
           setZones(result.data.zones as Zone[]);
         }
       })
-      .finally(() => setLoadingZones(false));
+      .catch(() => undefined);
+  }, [isOpen, execGetZones]);
 
-    if (isEditMode && client) {
-      const provincia = client.provincia ?? '';
-      const zoneId = client.zone && typeof client.zone === 'object' ? client.zone.id : (client.zone ?? undefined);
-      form.reset({
-        name: client.name,
-        cuit: client.cuit ?? '',
-        phone: client.phone ?? '',
-        email: client.email ?? '',
-        address: client.address ?? '',
-        provincia,
-        localidad: client.localidad ?? '',
-        zone: zoneId,
-      });
-      if (provincia) {
-        void loadLocalities(provincia);
-      }
-    }
-  }, [isOpen, isEditMode]);
-
-  const loadLocalities = async (provinceName: string) => {
+  const loadLocalities = useCallback(async (provinceName: string) => {
     if (localitiesCache.current[provinceName]) {
       setLocalities(localitiesCache.current[provinceName]);
       return;
@@ -156,7 +137,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     } finally {
       setLoadingLocalities(false);
     }
-  };
+  }, []);
 
   const handleProvinciaChange = (value: string, fieldOnChange: (v: string) => void) => {
     fieldOnChange(value);
@@ -342,7 +323,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                           options={localities.map((l) => ({ value: l.nombre, label: l.nombre }))}
                           value={field.value ?? ''}
                           onValueChange={field.onChange}
-                          placeholder={form.watch('provincia') ? 'Seleccionar...' : 'Elegí una provincia'}
+                          placeholder={provinciaValue ? 'Seleccionar...' : 'Elegí una provincia'}
                           searchPlaceholder="Buscar localidad..."
                           emptyMessage="No se encontró la localidad."
                           disabled={localities.length === 0}
@@ -375,41 +356,52 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                       </button>
                     )}
                   </div>
-                  {loadingZones ? (
-                    <Skeleton className="h-9 w-full rounded-md" />
-                  ) : isCreatingZone ? (
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Nombre de la nueva zona"
-                        value={newZoneName}
-                        onChange={(e) => setNewZoneName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            void handleCreateZone();
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => void handleCreateZone()}
-                        disabled={!newZoneName.trim()}
-                      >
-                        Crear
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setIsCreatingZone(false);
-                          setNewZoneName('');
-                        }}
-                      >
-                        Cancelar
-                      </Button>
+                  {isCreatingZone ? (
+                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="relative">
+                        <Input
+                          placeholder="Nombre de la zona"
+                          value={newZoneName}
+                          onChange={(e) => setNewZoneName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (!isDuplicateZone) void handleCreateZone();
+                            }
+                            if (e.key === 'Escape') {
+                              setIsCreatingZone(false);
+                              setNewZoneName('');
+                            }
+                          }}
+                          autoFocus
+                          className={cn('pr-20', isDuplicateZone && 'border-destructive')}
+                        />
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleCreateZone()}
+                            disabled={!newZoneName.trim() || isDuplicateZone}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emerald-600 transition-colors"
+                            title="Crear zona"
+                          >
+                            <Check className="h-4 w-4" strokeWidth={2.5} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingZone(false);
+                              setNewZoneName('');
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            title="Cancelar"
+                          >
+                            <X className="h-4 w-4" strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      </div>
+                      {isDuplicateZone && (
+                        <p className="text-xs text-destructive mt-1">Ya existe una zona con ese nombre</p>
+                      )}
                     </div>
                   ) : (
                     <FormControl>

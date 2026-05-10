@@ -4,13 +4,13 @@ import { Check } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -38,10 +38,9 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
         <div onClick={() => setOpen(true)} className="cursor-pointer">
           {trigger}
         </div>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
-            <SheetTitle className="sr-only">{title}</SheetTitle>
-            <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerContent className="p-0 gap-0">
+            <DrawerTitle className="sr-only">{title}</DrawerTitle>
             <div className="px-4 pt-4 pb-2">
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
             </div>
@@ -65,8 +64,8 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
                 </Button>
               ))}
             </div>
-          </SheetContent>
-        </Sheet>
+          </DrawerContent>
+        </Drawer>
       </>
     );
   }

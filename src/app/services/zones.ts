@@ -1,7 +1,5 @@
 'use server';
 
-import type { Where } from 'payload';
-
 import { getPayloadClient } from '@/lib/payload';
 import type { Zone } from '@/payload-types';
 import type { CreateZoneValues } from '@/schemas/zones/zone-schema';
@@ -23,10 +21,24 @@ export async function getZones(ownerId: number): Promise<Zone[]> {
 export async function createZone(ownerId: number, data: CreateZoneValues): Promise<Zone> {
   const payload = await getPayloadClient();
 
+  const existing = await payload.find({
+    collection: 'zones',
+    where: {
+      owner: { equals: ownerId },
+      name: { equals: data.name.trim() },
+    },
+    limit: 1,
+    overrideAccess: true,
+  });
+
+  if (existing.totalDocs > 0) {
+    throw new Error('Ya existe una zona con ese nombre');
+  }
+
   const zone = await payload.create({
     collection: 'zones',
     data: {
-      name: data.name,
+      name: data.name.trim(),
       owner: ownerId,
     },
     overrideAccess: true,

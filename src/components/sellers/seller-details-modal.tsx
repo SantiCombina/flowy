@@ -3,7 +3,7 @@
 import { Copy, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, Fragment } from 'react';
 import { toast } from 'sonner';
 
 import type { CommissionPaymentRow, CommissionSummary } from '@/app/services/commissions';
@@ -80,16 +80,6 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
   const { executeAsync: loadCommissions } = useAction(getCommissionDetailAction);
 
-  useEffect(() => {
-    setActiveTab('info');
-    setCommissionSummary(null);
-    setCommissionPayments([]);
-    fetchVersionRef.current += 1;
-    const n = new Date();
-    setSelectedYear(n.getFullYear());
-    setSelectedMonth(n.getMonth() + 1);
-  }, [seller?.id]);
-
   const periodLabel = useMemo(() => {
     return `${MONTH_LABELS[selectedMonth - 1]} ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
@@ -162,7 +152,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
   };
 
   return (
-    <>
+    <Fragment key={seller?.id}>
       <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-lg">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle className="pr-8">{seller?.name ?? 'Detalles del vendedor'}</ResponsiveModalTitle>
@@ -339,6 +329,6 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
           pendingBalance={commissionSummary.pendingBalance}
         />
       )}
-    </>
+    </Fragment>
   );
 }

@@ -54,7 +54,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
       <main
         className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isPending ? 'opacity-50' : 'opacity-100'}`}
       >
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 xl:grid-cols-4">
           <StatCard
             title={PERIOD_REVENUE_LABEL[period]}
             value={formatCurrency(stats.revenue.current)}

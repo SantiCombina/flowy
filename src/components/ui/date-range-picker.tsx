@@ -8,8 +8,8 @@ import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -182,14 +182,9 @@ export function DateRangePicker({
     return (
       <>
         <div onClick={() => setOpen(true)}>{trigger}</div>
-        <Sheet open={open} onOpenChange={handleOpenChange}>
-          <SheetContent
-            side="bottom"
-            className="rounded-t-xl p-0 gap-0 max-h-[90svh] overflow-y-auto"
-            showCloseButton={false}
-          >
-            <SheetTitle className="sr-only">Seleccionar período</SheetTitle>
-            <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted" />
+        <Drawer open={open} onOpenChange={handleOpenChange}>
+          <DrawerContent className="p-0 gap-0 max-h-[90svh] overflow-y-auto">
+            <DrawerTitle className="sr-only">Seleccionar período</DrawerTitle>
             <div className="px-4 pt-1 pb-2">
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
             </div>
@@ -206,8 +201,8 @@ export function DateRangePicker({
               ))}
             </div>
             <div className="border-t pt-2 pb-8">{calendarContent}</div>
-          </SheetContent>
-        </Sheet>
+          </DrawerContent>
+        </Drawer>
       </>
     );
   }

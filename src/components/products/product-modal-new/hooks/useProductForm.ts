@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAction } from 'next-safe-action/hooks';
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -47,7 +48,7 @@ async function uploadImage(file: File, altText: string): Promise<number> {
 export function useProductForm({ productId, isOpen, onSuccess, onClose }: UseProductFormProps) {
   const isEditing = !!productId;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(isEditing);
+  const { executeAsync: getProductById, isExecuting: isLoading } = useAction(getProductByIdAction);
   const [variantsToDelete, setVariantsToDelete] = useState<number[]>([]);
   const [currentImageId, setCurrentImageId] = useState<number | undefined>(undefined);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
@@ -98,8 +99,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
 
   useEffect(() => {
     if (isEditing && productId && isOpen) {
-      setIsLoading(true);
-      getProductByIdAction({ id: productId })
+      getProductById({ id: productId })
         .then((result) => {
           if (result?.serverError) {
             toast.error(result.serverError);
@@ -142,30 +142,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             }
           }
         })
-        .finally(() => setIsLoading(false));
-    } else if (!isEditing && isOpen) {
-      reset({
-        name: '',
-        description: '',
-        brandId: '',
-        categoryId: '',
-        qualityId: '',
-        isActive: true,
-        variants: [
-          {
-            presentationId: '',
-            code: '',
-            stock: 0,
-            minimumStock: 0,
-            costPrice: 0,
-            profitMargin: 0,
-          },
-        ],
-      });
-      setVariantsToDelete([]);
-      resetImageState();
+        .catch(() => undefined);
     }
-  }, [isEditing, productId, isOpen, reset]);
+  }, [isEditing, productId, isOpen, reset, getProductById]);
 
   const handleClose = () => {
     reset();
