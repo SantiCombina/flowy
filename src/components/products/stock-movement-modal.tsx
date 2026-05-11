@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 
 import { registerStockMovementAction } from './stock-actions';
 
@@ -51,6 +52,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
   const [type, setType] = useState<'entry' | 'exit' | 'adjustment' | ''>('');
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
+  const { invalidateQueries } = useInvalidateQueries();
 
   const { executeAsync, isExecuting } = useAction(registerStockMovementAction);
 
@@ -101,6 +103,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
 
     if (result?.data?.success) {
       toast.success('Movimiento registrado correctamente');
+      invalidateQueries([['products'], ['history']]);
       onSuccess?.(variant.id, result.data.newStock);
       handleClose();
     }

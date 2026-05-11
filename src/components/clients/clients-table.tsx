@@ -1,7 +1,6 @@
 'use client';
 
 import { Pencil, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -62,7 +61,6 @@ export function ClientsTable({
   itemsPerPage = 10,
   onItemsPerPageChange,
 }: ClientsTableProps) {
-  const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('clients');
   const { invalidateQueries } = useInvalidateQueries();
@@ -113,7 +111,6 @@ export function ClientsTable({
     if (result?.data?.success) {
       toast.success('Cliente eliminado correctamente');
       invalidateQueries([['clients']]);
-      router.refresh();
     } else {
       toast.error('Error al eliminar el cliente');
     }

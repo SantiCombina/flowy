@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { endOfDay, startOfDay } from 'date-fns';
 import {
   ArrowDown,
@@ -14,7 +15,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
@@ -138,6 +139,13 @@ export function SalesSection({
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
   const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (initialSales.sales.length > 0) {
+      queryClient.setQueryData(['sales'], initialSales);
+    }
+  }, [queryClient, initialSales]);
 
   const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);

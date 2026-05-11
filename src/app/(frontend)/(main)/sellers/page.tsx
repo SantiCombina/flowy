@@ -25,7 +25,6 @@ async function SellersData({ ownerId }: { ownerId: number }) {
     <SellersSection
       initialSellers={{ success: true, sellers }}
       variants={variantsResult.docs}
-      ownerId={ownerId}
       commissionBalances={Object.fromEntries(commissionSummaries)}
     />
   );

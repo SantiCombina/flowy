@@ -12,7 +12,9 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error(error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(error);
+    }
   }, [error]);
 
   return (

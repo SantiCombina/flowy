@@ -1,7 +1,6 @@
 'use client';
 
 import { Copy, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState, useMemo, Fragment } from 'react';
 import { toast } from 'sonner';
 
@@ -66,7 +65,6 @@ interface SellerDetailsModalProps {
 }
 
 export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsModalProps) {
-  const router = useRouter();
   const { invalidateQueries } = useInvalidateQueries();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
@@ -111,7 +109,6 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
     if (!seller) return;
     invalidateQueries([['commissions', 'detail', seller.id, selectedYear, selectedMonth]]);
     invalidateQueries([['sellers']]);
-    router.refresh();
   };
 
   const handleClose = () => {

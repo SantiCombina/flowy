@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   ClipboardList,
@@ -15,7 +16,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { getHistoryAction } from '@/components/history/actions';
+import { getVariantsAction } from '@/components/products/actions';
 import { useUserOptional } from '@/components/providers/user-provider';
+import { getSalesAction } from '@/components/sales/actions';
+import { getSellersAction } from '@/components/sellers/actions';
 import {
   Sidebar,
   SidebarContent,
@@ -61,9 +66,43 @@ export function AppSidebar({ features }: AppSidebarProps) {
   const { isMobile, setOpenMobile, toggleSidebar, state } = useSidebar();
   const user = useUserOptional();
   const isCollapsed = state === 'collapsed';
+  const queryClient = useQueryClient();
 
   const handleNavClick = () => {
     if (isMobile) setOpenMobile(false);
+  };
+
+  const handlePrefetch = (href: string) => {
+    switch (href) {
+      case '/products':
+        void queryClient.prefetchQuery({
+          queryKey: ['products', { search: '', page: 1 }],
+          queryFn: () => getVariantsAction({ options: { limit: 50, page: 1, sort: 'product' } }),
+          staleTime: 30_000,
+        });
+        break;
+      case '/sales':
+        void queryClient.prefetchQuery({
+          queryKey: ['sales'],
+          queryFn: () => getSalesAction(),
+          staleTime: 10_000,
+        });
+        break;
+      case '/sellers':
+        void queryClient.prefetchQuery({
+          queryKey: ['sellers'],
+          queryFn: () => getSellersAction(),
+          staleTime: 30_000,
+        });
+        break;
+      case '/history':
+        void queryClient.prefetchQuery({
+          queryKey: ['history'],
+          queryFn: () => getHistoryAction({ limit: 500 }),
+          staleTime: 60_000,
+        });
+        break;
+    }
   };
 
   const filteredMainNav = useMemo(
@@ -122,7 +161,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
                         'group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!h-8',
                       )}
                     >
-                      <Link href={item.href} onClick={handleNavClick}>
+                      <Link href={item.href} onClick={handleNavClick} onMouseEnter={() => handlePrefetch(item.href)}>
                         <item.icon className="h-[18px] w-[18px] shrink-0" />
                         <span className="font-medium group-data-[collapsible=icon]:hidden">{item.title}</span>
                       </Link>

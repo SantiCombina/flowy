@@ -1,7 +1,6 @@
 'use client';
 
 import { ArrowDownToLine, ArrowUpFromLine, Eye, Pencil, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -45,7 +44,6 @@ export function SellersTable({
   onDispatch,
   onReturn,
 }: SellersTableProps) {
-  const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sellers');
   const { invalidateQueries } = useInvalidateQueries();
@@ -70,7 +68,6 @@ export function SellersTable({
     if (result?.data?.success) {
       toast.success('Vendedor eliminado correctamente');
       invalidateQueries([['sellers']]);
-      router.refresh();
     } else {
       toast.error('Error al eliminar vendedor');
     }

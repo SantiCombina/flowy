@@ -1,9 +1,10 @@
 'use client';
 
 import { keepPreviousData } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -29,7 +30,7 @@ import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
 import { BulkPriceSheet } from './bulk-price-sheet';
 import { ProductModal } from './product-modal-new/index';
-import { ProductsTable, type ProductsTableRef } from './products-table';
+import { ProductsTable } from './products-table';
 
 interface RefData {
   brands: Brand[];
@@ -51,8 +52,8 @@ interface Props {
 export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const user = useUserOptional();
   const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
-  const tableRef = useRef<ProductsTableRef>(null);
   const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -64,6 +65,12 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (initialVariants.docs.length > 0) {
+      queryClient.setQueryData(['products', { search: '', page: 1 }], { success: true, ...initialVariants });
+    }
+  }, [queryClient, initialVariants]);
 
   const { data, isPending } = useServerActionQuery({
     queryKey: ['products', { search: searchQuery, page }],
@@ -206,7 +213,6 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
         </div>
 
         <ProductsTable
-          ref={tableRef}
           variants={variants}
           totalDocs={totalDocs}
           totalPages={totalPages}

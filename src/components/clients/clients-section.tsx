@@ -1,7 +1,6 @@
 'use client';
 
 import { Plus, Search, Users } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
@@ -25,7 +24,6 @@ interface ClientsSectionProps {
 }
 
 export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {
-  const router = useRouter();
   const isOwner = currentUser.role === 'owner';
   const { invalidateQueries } = useInvalidateQueries();
 
@@ -49,12 +47,10 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
 
   const handleZonesChanged = () => {
     invalidateQueries([['zones']]);
-    router.refresh();
   };
 
   const handleSuccess = () => {
     invalidateQueries([['clients']]);
-    router.refresh();
   };
 
   const handleEdit = (client: Client) => {

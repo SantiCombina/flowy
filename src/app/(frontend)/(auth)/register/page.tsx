@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
-import { getPayload } from 'payload';
 
 export const metadata: Metadata = {
   title: 'Crear cuenta',
   description: 'Creá tu cuenta en Flowy y empezá a gestionar tu negocio.',
 };
 
+import { validateInvitation } from '@/app/services/invitations';
 import { RegisterForm } from '@/components/auth/register-form';
-
-import config from '@payload-config';
 
 interface RegisterPageProps {
   searchParams: Promise<{ token?: string }>;
@@ -25,23 +23,9 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
     );
   }
 
-  const payload = await getPayload({ config });
+  const result = await validateInvitation(token);
 
-  const { docs: invitations } = await payload.find({
-    collection: 'invitations',
-    where: {
-      and: [
-        { token: { equals: token } },
-        { usedAt: { exists: false } },
-        { expiresAt: { greater_than: new Date().toISOString() } },
-      ],
-    },
-    limit: 1,
-  });
-
-  const invitation = invitations[0];
-
-  if (!invitation) {
+  if (!result.valid || !result.invitation) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <RegisterForm />
@@ -51,7 +35,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <RegisterForm email={invitation.email} token={token} role={invitation.role} />
+      <RegisterForm email={result.invitation.email} token={token} role={result.invitation.role} />
     </div>
   );
 }

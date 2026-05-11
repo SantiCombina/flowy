@@ -65,7 +65,7 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
     if (result?.data?.success) {
       toast.success('Stock despachado correctamente');
       setQuantities({});
-      invalidateQueries([['sellers']]);
+      invalidateQueries([['sellers'], ['products'], ['mobileInventory', seller.id]]);
       onSuccess();
       onClose();
     }

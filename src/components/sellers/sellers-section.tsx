@@ -1,7 +1,8 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { CommissionSummary } from '@/app/services/commissions';
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -25,14 +26,20 @@ import { SellersTable } from './sellers-table';
 interface SellersSectionProps {
   initialSellers: { success: true; sellers: User[] };
   variants: PopulatedProductVariant[];
-  ownerId: number;
   commissionBalances: Record<number, CommissionSummary>;
 }
 
-export function SellersSection({ initialSellers, variants, ownerId, commissionBalances }: SellersSectionProps) {
+export function SellersSection({ initialSellers, variants, commissionBalances }: SellersSectionProps) {
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
   const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (initialSellers.sellers.length > 0) {
+      queryClient.setQueryData(['sellers'], initialSellers);
+    }
+  }, [queryClient, initialSellers]);
 
   const { data } = useServerActionQuery({
     queryKey: ['sellers'],
@@ -158,7 +165,6 @@ export function SellersSection({ initialSellers, variants, ownerId, commissionBa
         }}
         onSuccess={handleSuccess}
         seller={sellerForReturn}
-        ownerId={ownerId}
       />
     </div>
   );

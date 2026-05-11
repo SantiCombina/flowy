@@ -26,7 +26,7 @@ export function PushRegistration() {
       }
     };
 
-    void resync().catch(console.error);
+    void resync().catch(() => undefined);
   }, []);
 
   return null;

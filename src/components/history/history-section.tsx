@@ -1,8 +1,9 @@
 'use client';
 
 import { keepPreviousData } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
 import { getHistoryAction } from '@/components/history/actions';
@@ -83,6 +84,13 @@ interface HistorySectionProps {
 export function HistorySection({ initialData }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (initialData.docs.length > 0) {
+      queryClient.setQueryData(['history'], initialData);
+    }
+  }, [queryClient, initialData]);
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);

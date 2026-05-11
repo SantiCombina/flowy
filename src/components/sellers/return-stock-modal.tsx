@@ -2,10 +2,9 @@
 
 import { ArrowUpFromLine, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { getMobileSellerInventoryForOwner, type MobileInventoryItem } from '@/app/services/mobile-seller';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,48 +17,34 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import type { User } from '@/payload-types';
 
-import { returnStockAction } from './actions';
+import { getMobileSellerInventoryAction, returnStockAction } from './actions';
 
 interface ReturnStockModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   seller: User | null;
-  ownerId: number;
 }
 
-export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, ownerId }: ReturnStockModalProps) {
+export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnStockModalProps) {
   const { executeAsync, isExecuting } = useAction(returnStockAction);
   const { invalidateQueries } = useInvalidateQueries();
-  const [inventory, setInventory] = useState<MobileInventoryItem[]>([]);
   const [quantities, setQuantities] = useState<Record<number, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!isOpen || !seller) return;
+  const { data, isLoading } = useServerActionQuery({
+    queryKey: ['mobileInventory', seller?.id],
+    queryFn: () => getMobileSellerInventoryAction({ sellerId: seller!.id }),
+    enabled: isOpen && !!seller,
+    staleTime: 10_000,
+  });
 
-    let cancelled = false;
-    getMobileSellerInventoryForOwner(seller.id, ownerId)
-      .then((items) => {
-        if (!cancelled) setInventory(items);
-      })
-      .catch(() => {
-        if (!cancelled) toast.error('Error al cargar el inventario del vendedor');
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, seller, ownerId]);
+  const inventory = data?.items ?? [];
 
   const resetState = () => {
-    setInventory([]);
     setQuantities({});
-    setIsLoading(true);
   };
 
   const handleClose = () => {
@@ -97,7 +82,7 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, ownerId }
     if (result?.data?.success) {
       toast.success('Devolución registrada correctamente');
       resetState();
-      invalidateQueries([['sellers']]);
+      invalidateQueries([['sellers'], ['products'], ['mobileInventory', seller.id]]);
       onSuccess();
       onClose();
     }
