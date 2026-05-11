@@ -28,7 +28,15 @@ interface ClientsTableProps {
   clients: Client[];
   clientDebts: Record<number, number>;
   searchQuery?: string;
+  zones: { id: number; name: string }[];
   zoneFilter?: string;
+  onZoneFilterChange?: (value: string) => void;
+  localidades: string[];
+  localidadFilter?: string;
+  onLocalidadFilterChange?: (value: string) => void;
+  provincias: string[];
+  provinciaFilter?: string;
+  onProvinciaFilterChange?: (value: string) => void;
   showSellerColumn?: boolean;
   onEdit?: (client: Client) => void;
   itemsPerPage?: number;
@@ -39,7 +47,15 @@ export function ClientsTable({
   clients,
   clientDebts,
   searchQuery = '',
+  zones,
   zoneFilter = '',
+  onZoneFilterChange,
+  localidades,
+  localidadFilter = '',
+  onLocalidadFilterChange,
+  provincias,
+  provinciaFilter = '',
+  onProvinciaFilterChange,
   showSellerColumn = false,
   onEdit,
   itemsPerPage = 10,
@@ -72,8 +88,14 @@ export function ClientsTable({
         return false;
       });
     }
+    if (localidadFilter) {
+      result = result.filter((c) => c.localidad === localidadFilter);
+    }
+    if (provinciaFilter) {
+      result = result.filter((c) => c.provincia === provinciaFilter);
+    }
     return result;
-  }, [clients, searchQuery, zoneFilter]);
+  }, [clients, searchQuery, zoneFilter, localidadFilter, provinciaFilter]);
 
   const handleDelete = async () => {
     if (!clientToDelete) return;
@@ -147,6 +169,9 @@ export function ClientsTable({
       sortValue: (c) => c.localidad ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.localidad || '-'}</div>,
       className: 'w-px',
+      filterOptions: [{ value: '', label: 'Todas' }, ...localidades.map((l) => ({ value: l, label: l }))],
+      filterValue: localidadFilter,
+      onFilterChange: onLocalidadFilterChange,
     },
     provincia: {
       key: 'provincia',
@@ -155,6 +180,9 @@ export function ClientsTable({
       sortValue: (c) => c.provincia ?? '',
       cell: (c) => <div className="text-muted-foreground">{c.provincia || '-'}</div>,
       className: 'w-px',
+      filterOptions: [{ value: '', label: 'Todas' }, ...provincias.map((p) => ({ value: p, label: p }))],
+      filterValue: provinciaFilter,
+      onFilterChange: onProvinciaFilterChange,
     },
     zone: {
       key: 'zone',
@@ -165,6 +193,9 @@ export function ClientsTable({
         <div className="text-muted-foreground">{typeof c.zone === 'object' ? (c.zone?.name ?? '-') : '-'}</div>
       ),
       className: 'w-px',
+      filterOptions: [{ value: '', label: 'Todas' }, ...zones.map((z) => ({ value: String(z.id), label: z.name }))],
+      filterValue: zoneFilter,
+      onFilterChange: onZoneFilterChange,
     },
     debt: {
       key: 'debt',

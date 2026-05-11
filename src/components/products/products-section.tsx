@@ -235,7 +235,9 @@ export function ProductsSection({ initialRefData }: Props) {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <ColumnVisibilityDropdown tableName="products" />
+          <div className="ml-auto">
+            <ColumnVisibilityDropdown tableName="products" />
+          </div>
         </div>
 
         <ProductsTable

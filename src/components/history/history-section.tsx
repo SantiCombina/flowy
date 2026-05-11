@@ -1,17 +1,6 @@
 'use client';
 
-import { subDays } from 'date-fns';
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronDown,
-  Filter,
-  TrendingDown,
-  TrendingUp,
-  X,
-} from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
 import { Fragment, useState, useTransition } from 'react';
 
 import { getHistoryMovements } from '@/app/services/stock-movements';
@@ -19,9 +8,9 @@ import type { HistoryMovement, HistoryResult, MovementType } from '@/app/service
 import { MovementTypeBadge } from '@/components/history/movement-type-badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
+import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
+import { ColumnHeaderMultiFilter } from '@/components/ui/column-header-multi-filter';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { FilterSheet } from '@/components/ui/filter-sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -29,11 +18,6 @@ import { useSettings } from '@/contexts/settings-context';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDate, formatDateParts } from '@/lib/utils';
-
-const DEFAULT_DATE_RANGE = {
-  from: subDays(new Date(), 29),
-  to: new Date(),
-};
 
 const ALL_TYPES: MovementType[] = [
   'entry',
@@ -102,7 +86,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
   const [data, setData] = useState<HistoryResult>(initialData);
   const [isPending, startTransition] = useTransition();
 
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(DEFAULT_DATE_RANGE);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', 25);
@@ -111,12 +95,11 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  function fetchData(filters: { dateRange: { from: Date; to: Date }; types: MovementType[] }) {
+  function fetchData(filters: { dateRange?: { from: Date; to: Date }; types: MovementType[] }) {
     startTransition(async () => {
       setPage(1);
       const result = await getHistoryMovements(ownerId, {
-        from: filters.dateRange.from,
-        to: filters.dateRange.to,
+        ...(filters.dateRange ? { from: filters.dateRange.from, to: filters.dateRange.to } : {}),
         types: filters.types.length > 0 ? filters.types : undefined,
         limit: 500,
       });
@@ -125,24 +108,9 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
   }
 
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
-    const newRange = range ?? DEFAULT_DATE_RANGE;
-    setDateRange(newRange);
+    setDateRange(range);
     setPage(1);
-    fetchData({ dateRange: newRange, types: selectedTypes });
-  }
-
-  function toggleType(type: MovementType) {
-    const newTypes = selectedTypes.includes(type) ? selectedTypes.filter((t) => t !== type) : [...selectedTypes, type];
-    setSelectedTypes(newTypes);
-    setPage(1);
-    fetchData({ dateRange, types: newTypes });
-  }
-
-  function clearFilters() {
-    setDateRange(DEFAULT_DATE_RANGE);
-    setSelectedTypes([]);
-    setPage(1);
-    fetchData({ dateRange: DEFAULT_DATE_RANGE, types: [] });
+    fetchData({ dateRange: range, types: selectedTypes });
   }
 
   function handleSort(key: SortKey) {
@@ -184,11 +152,6 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
   const safePage = Math.min(page, totalPages);
   const paginatedDocs = sortedDocs.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
-  const hasActiveFilters = selectedTypes.length > 0;
-  const isDefaultRange =
-    dateRange.from.toDateString() === DEFAULT_DATE_RANGE.from.toDateString() &&
-    dateRange.to.toDateString() === DEFAULT_DATE_RANGE.to.toDateString();
-
   const showReference = visibleColumns.includes('reference');
   const showReason = visibleColumns.includes('reason');
 
@@ -207,49 +170,13 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Historial" description="Registro de movimientos de inventario" />
+      <PageHeader
+        title="Historial"
+        description="Registro de movimientos de inventario"
+        actions={<ColumnVisibilityDropdown tableName="history" />}
+      />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <DateRangePicker value={dateRange} onChange={handleDateRangeChange} />
-
-          {(hasActiveFilters || !isDefaultRange) && (
-            <Button
-              variant="ghost"
-              className="text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
-              onClick={clearFilters}
-            >
-              <X className="h-4 w-4" />
-              Limpiar filtros
-            </Button>
-          )}
-
-          <div className="flex items-center gap-2 ml-auto">
-            <FilterSheet
-              title="Tipo de movimiento"
-              align="start"
-              trigger={
-                <Button variant="outline" className="gap-1.5">
-                  <Filter className="h-4 w-4" />
-                  Tipo
-                  {selectedTypes.length > 0 && (
-                    <span className="ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-                      {selectedTypes.length}
-                    </span>
-                  )}
-                </Button>
-              }
-              items={ALL_TYPES.map((type) => ({
-                key: type,
-                label: TYPE_LABELS[type],
-                checked: selectedTypes.includes(type),
-                onToggle: () => toggleType(type),
-              }))}
-            />
-
-            <ColumnVisibilityDropdown tableName="history" />
-          </div>
-        </div>
         <div className="space-y-3">
           <div
             className={cn(
@@ -260,8 +187,36 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.includes('date') && sortableHead('createdAt', 'Fecha', 'w-px')}
-                  {visibleColumns.includes('type') && sortableHead('type', 'Tipo', 'w-px')}
+                  {visibleColumns.includes('date') && (
+                    <ColumnHeaderDateFilter
+                      title="Fecha"
+                      sortKey="createdAt"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(key) => handleSort(key as SortKey)}
+                      value={dateRange}
+                      onChange={handleDateRangeChange}
+                      className="w-px"
+                    />
+                  )}
+                  {visibleColumns.includes('type') && (
+                    <ColumnHeaderMultiFilter
+                      title="Tipo"
+                      sortKey="type"
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={(key) => handleSort(key as SortKey)}
+                      filterOptions={ALL_TYPES.map((type) => ({ value: type, label: TYPE_LABELS[type] }))}
+                      filterValue={selectedTypes}
+                      onFilterChange={(types) => {
+                        const movementTypes = types as MovementType[];
+                        setSelectedTypes(movementTypes);
+                        setPage(1);
+                        fetchData({ dateRange, types: movementTypes });
+                      }}
+                      className="w-px"
+                    />
+                  )}
                   {visibleColumns.includes('product') && sortableHead('productName', 'Producto')}
                   {visibleColumns.includes('quantity') && sortableHead('quantity', 'Cantidad', 'w-px text-right')}
                   <TableHead className="w-px text-center">Stock</TableHead>

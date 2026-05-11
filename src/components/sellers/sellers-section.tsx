@@ -89,7 +89,9 @@ export function SellersSection({ sellers, variants, ownerId, commissionBalances 
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <ColumnVisibilityDropdown tableName="sellers" />
+          <div className="ml-auto">
+            <ColumnVisibilityDropdown tableName="sellers" />
+          </div>
         </div>
         <SellersTable
           sellers={sellers}

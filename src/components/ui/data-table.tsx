@@ -5,10 +5,16 @@ import { useMemo, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+
+export interface FilterOption {
+  value: string;
+  label: string;
+}
 
 export interface Column<T> {
   key: string;
@@ -17,6 +23,9 @@ export interface Column<T> {
   className?: string;
   sortable?: boolean;
   sortValue?: (item: T) => string | number | null | undefined;
+  filterOptions?: FilterOption[];
+  filterValue?: string;
+  onFilterChange?: (value: string) => void;
 }
 
 interface DataTableProps<T> {
@@ -141,33 +150,56 @@ export function DataTable<T>({
                   />
                 </TableHead>
               )}
-              {columns.map((column) => (
-                <TableHead key={column.key} className={column.className}>
-                  {column.sortable ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSort(column.key)}
-                      className={cn(
-                        'flex items-center gap-1 hover:text-foreground transition-colors',
-                        column.className?.includes('text-right') && 'w-full justify-end',
-                      )}
-                    >
-                      {column.header}
-                      {sortKey === column.key ? (
-                        sortDir === 'asc' ? (
-                          <ArrowUp className="h-3.5 w-3.5" />
+              {columns.map((column) => {
+                if (column.filterOptions) {
+                  return (
+                    <ColumnHeaderFilter
+                      key={column.key}
+                      title={typeof column.header === 'string' ? column.header : column.key}
+                      sortKey={column.key}
+                      currentSortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                      filterOptions={column.filterOptions}
+                      filterValue={column.filterValue ?? ''}
+                      onFilterChange={
+                        column.onFilterChange ??
+                        (() => {
+                          /* no-op */
+                        })
+                      }
+                      className={column.className}
+                    />
+                  );
+                }
+                return (
+                  <TableHead key={column.key} className={column.className}>
+                    {column.sortable ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSort(column.key)}
+                        className={cn(
+                          'flex items-center gap-1 hover:text-foreground transition-colors',
+                          column.className?.includes('text-right') && 'w-full justify-end',
+                        )}
+                      >
+                        {column.header}
+                        {sortKey === column.key ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          ) : (
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          )
                         ) : (
-                          <ArrowDown className="h-3.5 w-3.5" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
-                      )}
-                    </button>
-                  ) : (
-                    column.header
-                  )}
-                </TableHead>
-              ))}
+                          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        )}
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>

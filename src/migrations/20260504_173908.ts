@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres';
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "public"."enum_commission_payments_payment_method" AS ENUM('transfer', 'cash', 'check');
   CREATE TABLE "commission_payments" (
@@ -28,7 +28,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_commission_payments_id_idx" ON "payload_locked_documents_rels" USING btree ("commission_payments_id");`);
 }
 
-export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
    ALTER TABLE "commission_payments" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "commission_payments" CASCADE;

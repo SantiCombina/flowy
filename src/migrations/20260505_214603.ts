@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres';
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TABLE "zones" (
   	"id" serial PRIMARY KEY NOT NULL,
@@ -22,7 +22,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_zones_id_idx" ON "payload_locked_documents_rels" USING btree ("zones_id");`);
 }
 
-export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+export async function down({ db }: MigrateDownArgs): Promise<void> {
   // ⚠️ ADVERTENCIA: Esta migración ELIMINA la tabla "zones" y TODOS sus datos.
   // Los clientes con zonas asignadas perderán la referencia (zone_id se setea a null).
   // Si necesitas conservar los datos, haz un backup antes de ejecutar esta migración.

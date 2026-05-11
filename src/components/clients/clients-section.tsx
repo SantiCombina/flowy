@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
@@ -9,7 +9,6 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
-import { ZoneFilter } from '@/components/ui/zone-filter';
 import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
@@ -34,6 +33,8 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
   const [isManageZonesOpen, setIsManageZonesOpen] = useState(false);
   const [zones, setZones] = useState<Zone[]>([]);
   const [zoneFilter, setZoneFilter] = useState<string>('');
+  const [localidadFilter, setLocalidadFilter] = useState<string>('');
+  const [provinciaFilter, setProvinciaFilter] = useState<string>('');
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', 10);
 
   const { executeAsync: execGetZones } = useAction(getZonesAction);
@@ -76,10 +77,16 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
         title="Clientes"
         description="Gestión de clientes del negocio"
         actions={
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Agregar cliente
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex h-9 items-center gap-2 rounded-full border bg-background px-4 shadow-sm">
+              <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="text-sm font-semibold text-foreground">{clients.length} clientes</span>
+            </div>
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Agregar cliente
+            </Button>
+          </div>
         }
       />
 
@@ -95,22 +102,24 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          {isOwner && (
-            <ZoneFilter
-              zones={zones.map((z) => ({ id: z.id, name: z.name }))}
-              value={zoneFilter}
-              onChange={(v) => setZoneFilter(v === zoneFilter ? '' : v)}
-              onManageZones={() => setIsManageZonesOpen(true)}
-            />
-          )}
-          <ColumnVisibilityDropdown tableName="clients" />
+          <div className="ml-auto">
+            <ColumnVisibilityDropdown tableName="clients" />
+          </div>
         </div>
 
         <ClientsTable
           clients={clients}
           clientDebts={clientDebts}
           searchQuery={searchQuery}
+          zones={zones.map((z) => ({ id: z.id, name: z.name }))}
           zoneFilter={zoneFilter}
+          onZoneFilterChange={(v) => setZoneFilter(v === zoneFilter ? '' : v)}
+          localidades={[...new Set(clients.map((c) => c.localidad).filter(Boolean) as string[])].sort()}
+          localidadFilter={localidadFilter}
+          onLocalidadFilterChange={(v) => setLocalidadFilter(v === localidadFilter ? '' : v)}
+          provincias={[...new Set(clients.map((c) => c.provincia).filter(Boolean) as string[])].sort()}
+          provinciaFilter={provinciaFilter}
+          onProvinciaFilterChange={(v) => setProvinciaFilter(v === provinciaFilter ? '' : v)}
           showSellerColumn={isOwner}
           onEdit={handleEdit}
           itemsPerPage={itemsPerPage}
