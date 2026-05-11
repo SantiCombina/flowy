@@ -17,6 +17,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import type { User } from '@/payload-types';
 
 import { returnStockAction } from './actions';
@@ -31,6 +32,7 @@ interface ReturnStockModalProps {
 
 export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, ownerId }: ReturnStockModalProps) {
   const { executeAsync, isExecuting } = useAction(returnStockAction);
+  const { invalidateQueries } = useInvalidateQueries();
   const [inventory, setInventory] = useState<MobileInventoryItem[]>([]);
   const [quantities, setQuantities] = useState<Record<number, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +97,7 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, ownerId }
     if (result?.data?.success) {
       toast.success('Devolución registrada correctamente');
       resetState();
+      invalidateQueries([['sellers']]);
       onSuccess();
       onClose();
     }

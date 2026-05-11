@@ -2,10 +2,9 @@
 
 import { Bell, BellRing, CheckCheck } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
 
-import type { NotificationRow } from '@/app/services/notifications';
 import {
   getNotificationsAction,
   markAllReadAction,
@@ -17,7 +16,9 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { getPusherClient } from '@/lib/pusher-client';
 
 import { NotificationItem } from './notification-item';
@@ -60,9 +61,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 export function NotificationBell() {
   const { id: userId, role } = useUser();
   const isMobile = useIsMobile();
+  const { invalidateQueries } = useInvalidateQueries();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const pushPermission = useSyncExternalStore(
     (cb) => pushPermissionStore.subscribe(cb),
     () => pushPermissionStore.getSnapshot(),
@@ -73,24 +73,25 @@ export function NotificationBell() {
 
   const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
 
-  const { executeAsync: fetchNotifications } = useAction(getNotificationsAction);
+  const { data } = useServerActionQuery({
+    queryKey: ['notifications'],
+    queryFn: getNotificationsAction,
+    enabled: open,
+    staleTime: 5_000,
+  });
+
+  const notifications = data?.notifications ?? [];
+  const unreadCount = data?.unreadCount ?? 0;
+
   const { executeAsync: markRead } = useAction(markReadAction);
   const { executeAsync: markAllRead, isExecuting: isMarkingAll } = useAction(markAllReadAction);
-
-  const loadNotifications = useCallback(async () => {
-    const result = await fetchNotifications();
-    if (result?.data) {
-      setNotifications(result.data.notifications);
-      setUnreadCount(result.data.unreadCount);
-    }
-  }, [fetchNotifications]);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return;
     const channel = role === 'seller' ? `private-seller-${userId}` : `private-owner-${userId}`;
     const pusher = getPusherClient();
     const subscription = pusher.subscribe(channel);
-    const handleEvent = () => void loadNotifications();
+    const handleEvent = () => invalidateQueries([['notifications']]);
     for (const event of NOTIFICATION_EVENTS) {
       subscription.bind(event, handleEvent);
     }
@@ -99,7 +100,7 @@ export function NotificationBell() {
         subscription.unbind(event, handleEvent);
       }
     };
-  }, [userId, role, loadNotifications]);
+  }, [userId, role, invalidateQueries]);
 
   useEffect(() => {
     if (!isPushSupported || !('Notification' in window)) return;
@@ -149,19 +150,16 @@ export function NotificationBell() {
 
   const handleOpenChange = (value: boolean) => {
     setOpen(value);
-    if (value) void loadNotifications();
   };
 
   const handleMarkRead = async (id: number) => {
     await markRead({ id });
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    invalidateQueries([['notifications']]);
   };
 
   const handleMarkAllRead = async () => {
     await markAllRead();
-    setNotifications([]);
-    setUnreadCount(0);
+    invalidateQueries([['notifications']]);
   };
 
   const notificationList = (

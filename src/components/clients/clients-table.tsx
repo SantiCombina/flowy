@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
@@ -64,6 +65,7 @@ export function ClientsTable({
   const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('clients');
+  const { invalidateQueries } = useInvalidateQueries();
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   const filteredClients = useMemo(() => {
@@ -110,6 +112,7 @@ export function ClientsTable({
 
     if (result?.data?.success) {
       toast.success('Cliente eliminado correctamente');
+      invalidateQueries([['clients']]);
       router.refresh();
     } else {
       toast.error('Error al eliminar el cliente');

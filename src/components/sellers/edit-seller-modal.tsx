@@ -18,6 +18,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { formatPhoneInput } from '@/lib/phone';
 import type { User } from '@/payload-types';
 import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
@@ -33,6 +34,7 @@ interface EditSellerModalProps {
 
 export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSellerModalProps) {
   const { executeAsync, isExecuting } = useAction(updateSellerAction);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const form = useForm<EditSellerValues>({
     resolver: zodResolver(editSellerSchema),
@@ -76,6 +78,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
 
     if (result?.data?.success) {
       toast.success('Vendedor actualizado correctamente');
+      invalidateQueries([['sellers']]);
       onSuccess();
       onClose();
     }

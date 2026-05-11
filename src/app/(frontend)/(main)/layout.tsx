@@ -5,9 +5,9 @@ import { getSettings } from '@/app/services/settings';
 import { getOwnerById } from '@/app/services/users';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PushRegistration } from '@/components/notifications/push-registration';
+import { QueryProvider } from '@/components/providers/query-provider';
 import { UserProvider } from '@/components/providers/user-provider';
 import { Toaster } from '@/components/ui/sonner';
-import { SalesRefreshProvider } from '@/contexts/sales-refresh-context';
 import { SettingsProvider, type SettingsData } from '@/contexts/settings-context';
 import { getFeatureFlags } from '@/lib/features';
 import { getCurrentUser } from '@/lib/payload';
@@ -52,11 +52,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       }}
     >
       <SettingsProvider initialSettings={initialSettings}>
-        <SalesRefreshProvider>
+        <QueryProvider>
           <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
             {children}
           </AppLayout>
-        </SalesRefreshProvider>
+        </QueryProvider>
         <PushRegistration />
         <Toaster />
       </SettingsProvider>

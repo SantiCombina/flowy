@@ -1,8 +1,9 @@
 'use client';
 
+import { keepPreviousData } from '@tanstack/react-query';
 import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -21,6 +22,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
@@ -37,12 +40,19 @@ interface RefData {
 
 interface Props {
   initialRefData: RefData;
+  initialVariants: {
+    docs: PopulatedProductVariant[];
+    totalDocs: number;
+    totalPages: number;
+    page: number;
+  };
 }
 
-export function ProductsSection({ initialRefData }: Props) {
+export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const user = useUserOptional();
   const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
   const tableRef = useRef<ProductsTableRef>(null);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -50,74 +60,29 @@ export function ProductsSection({ initialRefData }: Props) {
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
   const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
 
-  const [variants, setVariants] = useState<PopulatedProductVariant[]>([]);
-  const [totalDocs, setTotalDocs] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [inventoryValue, setInventoryValue] = useState(0);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
 
-  const { executeAsync: executeFetchVariants, isExecuting: isFetchingVariants } = useAction(getVariantsAction);
-  const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
-
-  const fetchVariants = useCallback(
-    async (currentPage: number, search: string) => {
-      const result = await executeFetchVariants({
-        filters: search ? { search } : undefined,
-        options: { limit: 50, page: currentPage, sort: 'product' },
-      });
-
-      if (result?.serverError) {
-        toast.error(result.serverError);
-        return;
-      }
-
-      if (result?.data?.success) {
-        setVariants(result.data.docs);
-        setTotalDocs(result.data.totalDocs);
-        setTotalPages(result.data.totalPages);
-        const value = result.data.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
-        setInventoryValue(value);
-      }
-    },
-    [executeFetchVariants],
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      const result = await executeFetchVariants({
+  const { data, isPending } = useServerActionQuery({
+    queryKey: ['products', { search: searchQuery, page }],
+    queryFn: () =>
+      getVariantsAction({
         filters: searchQuery ? { search: searchQuery } : undefined,
         options: { limit: 50, page, sort: 'product' },
-      });
-      if (cancelled) return;
+      }),
+    initialData: page === 1 && !searchQuery ? { success: true, ...initialVariants } : undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
 
-      if (result?.serverError) {
-        toast.error(result.serverError);
-        return;
-      }
+  const variants = data?.docs ?? [];
+  const totalDocs = data?.totalDocs ?? 0;
+  const totalPages = data?.totalPages ?? 1;
+  const inventoryValue = variants.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
 
-      if (result?.data?.success) {
-        setVariants(result.data.docs);
-        setTotalDocs(result.data.totalDocs);
-        setTotalPages(result.data.totalPages);
-        const value = result.data.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
-        setInventoryValue(value);
-      }
-
-      setIsInitialLoading(false);
-    }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [page, searchQuery, executeFetchVariants]);
+  const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -158,18 +123,18 @@ export function ProductsSection({ initialRefData }: Props) {
   };
 
   const handleSuccess = useCallback(() => {
-    void fetchVariants(page, searchQuery);
-  }, [fetchVariants, page, searchQuery]);
+    invalidateQueries([['products']]);
+  }, [invalidateQueries]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProductId(undefined);
   };
 
-  const handleBulkPriceSuccess = () => {
+  const handleBulkPriceSuccess = useCallback(() => {
     setSelectedKeys(new Set());
-    void fetchVariants(page, searchQuery);
-  };
+    invalidateQueries([['products']]);
+  }, [invalidateQueries]);
 
   const handleBulkToggleConfirm = async () => {
     if (bulkToggleTarget === null || uniqueProductIds.length === 0) return;
@@ -189,7 +154,7 @@ export function ProductsSection({ initialRefData }: Props) {
       toast.success(`${result.data.updated} productos ${label}`);
       setSelectedKeys(new Set());
       setBulkToggleTarget(null);
-      void fetchVariants(page, searchQuery);
+      invalidateQueries([['products']]);
     } else {
       toast.error('No se pudo actualizar el estado de los productos');
     }
@@ -202,7 +167,7 @@ export function ProductsSection({ initialRefData }: Props) {
         description="Gestión del catálogo de productos"
         actions={
           <div className="flex items-center gap-2">
-            {canCreateProduct && !isInitialLoading && totalDocs > 0 && (
+            {canCreateProduct && !isPending && totalDocs > 0 && (
               <div
                 className="hidden sm:flex h-9 items-center gap-2 rounded-full border bg-background px-4 shadow-sm"
                 title="Valor del inventario (página actual)"
@@ -252,7 +217,7 @@ export function ProductsSection({ initialRefData }: Props) {
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
-          isLoading={isInitialLoading || isFetchingVariants}
+          isLoading={isPending}
         />
       </main>
 

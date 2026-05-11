@@ -30,7 +30,7 @@ export default async function HistoryPage() {
         channel={`private-owner-${user.id}`}
         events={['stock_adjusted', 'stock_dispatched', 'stock_returned', 'sale_created']}
       />
-      <HistorySection initialData={initialData} ownerId={user.id} />
+      <HistorySection initialData={{ success: true, ...initialData }} />
     </>
   );
 }

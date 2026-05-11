@@ -14,7 +14,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
@@ -39,6 +39,8 @@ import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
@@ -115,7 +117,7 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
 }
 
 interface SalesSectionProps {
-  sales: SaleRow[];
+  initialSales: { success: true; sales: SaleRow[] };
   zones: Zone[];
   showSellerColumn: boolean;
   canCollect: boolean;
@@ -125,7 +127,7 @@ interface SalesSectionProps {
 }
 
 export function SalesSection({
-  sales,
+  initialSales,
   zones,
   showSellerColumn,
   canCollect,
@@ -135,11 +137,20 @@ export function SalesSection({
 }: SalesSectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
+  const { invalidateQueries } = useInvalidateQueries();
 
   const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
 
-  const [localSales, setLocalSales] = useState<SaleRow[]>(sales);
+  const { data, isFetching } = useServerActionQuery({
+    queryKey: ['sales'],
+    queryFn: () => getSalesAction(),
+    initialData: initialSales,
+    staleTime: 10_000,
+  });
+
+  const salesData = data?.sales ?? initialSales.sales;
+
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:sales:limit', 10);
@@ -163,37 +174,12 @@ export function SalesSection({
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
 
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
-  const { executeAsync: executeFetchSales, isExecuting: isFetchingSales } = useAction(getSalesAction);
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
-  const handleCollectSuccess = (
-    saleId: number,
-    newAmountPaid: number,
-    newStatus: 'partially_collected' | 'collected',
-    paymentMethod: 'cash' | 'transfer' | 'check' | null,
-  ) => {
-    setLocalSales((prev) =>
-      prev.map((s) => {
-        if (s.id !== saleId) return s;
-        if (isSeller) {
-          return {
-            ...s,
-            amountPaid: newAmountPaid,
-            paymentStatus: newStatus,
-            collectedAt: newStatus === 'collected' ? new Date().toISOString() : s.collectedAt,
-            ...(paymentMethod ? { paymentMethod } : {}),
-          };
-        }
-        return {
-          ...s,
-          ownerAmountPaid: newAmountPaid,
-          ownerPaymentStatus: newStatus,
-          ownerCollectedAt: newStatus === 'collected' ? new Date().toISOString() : s.ownerCollectedAt,
-        };
-      }),
-    );
+  const handleCollectSuccess = useCallback(() => {
+    invalidateQueries([['sales']]);
     setCollectingModal(null);
-  };
+  }, [invalidateQueries, setCollectingModal]);
 
   const handleMarkDelivered = async (saleId: number) => {
     const result = await executeMarkDelivered({ saleId });
@@ -205,21 +191,13 @@ export function SalesSection({
 
     if (result?.data?.success) {
       toast.success('Venta marcada como entregada.');
-      setLocalSales((prev) =>
-        prev.map((s) =>
-          s.id === saleId ? { ...s, deliveryStatus: 'delivered' as const, deliveredAt: new Date().toISOString() } : s,
-        ),
-      );
+      invalidateQueries([['sales']]);
     }
   };
 
   const handleEditSuccess = () => {
     setEditingSale(null);
-    void executeFetchSales().then((result) => {
-      if (result?.data?.success) {
-        setLocalSales(result.data.sales);
-      }
-    });
+    invalidateQueries([['sales']]);
   };
 
   const handleDelete = async (saleId: number) => {
@@ -233,7 +211,7 @@ export function SalesSection({
 
     if (result?.data?.success) {
       toast.success('Venta eliminada correctamente');
-      setLocalSales((prev) => prev.filter((s) => s.id !== saleId));
+      invalidateQueries([['sales']]);
     }
   };
 
@@ -264,8 +242,8 @@ export function SalesSection({
   };
 
   const sortedSales = useMemo(() => {
-    if (!sortKey) return localSales;
-    return [...localSales].sort((a, b) => {
+    if (!sortKey) return salesData;
+    return [...salesData].sort((a, b) => {
       const va = getSortValue(a, sortKey, isSeller);
       const vb = getSortValue(b, sortKey, isSeller);
       if (typeof va === 'number' && typeof vb === 'number') {
@@ -277,7 +255,7 @@ export function SalesSection({
       if (sa > sb) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [localSales, sortKey, sortDir, isSeller]);
+  }, [salesData, sortKey, sortDir, isSeller]);
 
   const filteredSales = useMemo(() => {
     let result = sortedSales;
@@ -363,7 +341,7 @@ export function SalesSection({
       <PageHeader
         title="Ventas"
         description="Registro y seguimiento de ventas"
-        isLoading={isFetchingSales}
+        isLoading={isFetching}
         actions={<ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />}
       />
 

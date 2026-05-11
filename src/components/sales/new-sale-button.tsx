@@ -1,21 +1,26 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { useSalesRefresh } from '@/contexts/sales-refresh-context';
 
 import { NewSaleDialog } from './new-sale-dialog';
 
 export function NewSaleButton() {
-  const { triggerRefresh } = useSalesRefresh();
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
 
   const handleOpen = () => {
     setDialogKey((k) => k + 1);
     setIsOpen(true);
+  };
+
+  const handleSuccess = () => {
+    void queryClient.invalidateQueries({ queryKey: ['sales'] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   };
 
   return (
@@ -25,7 +30,7 @@ export function NewSaleButton() {
         Nueva venta
       </Button>
 
-      <NewSaleDialog key={dialogKey} isOpen={isOpen} onClose={() => setIsOpen(false)} onSuccess={triggerRefresh} />
+      <NewSaleDialog key={dialogKey} isOpen={isOpen} onClose={() => setIsOpen(false)} onSuccess={handleSuccess} />
     </>
   );
 }

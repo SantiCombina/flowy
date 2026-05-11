@@ -43,12 +43,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 interface CollectSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (
-    saleId: number,
-    newAmountPaid: number,
-    newStatus: 'partially_collected' | 'collected',
-    paymentMethod: 'cash' | 'transfer' | 'check' | null,
-  ) => void;
+  onSuccess: () => void;
   saleId: number;
   total: number;
   amountPaid: number;
@@ -105,7 +100,7 @@ export function CollectSaleModal({
       const newAmountPaid = amountPaid + data.amount;
       const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
       toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess(saleId, newAmountPaid, newStatus, null);
+      onSuccess();
     }
   };
 
@@ -121,7 +116,7 @@ export function CollectSaleModal({
       const newAmountPaid = amountPaid + data.amount;
       const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
       toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess(saleId, newAmountPaid, newStatus, data.paymentMethod);
+      onSuccess();
     }
   };
 

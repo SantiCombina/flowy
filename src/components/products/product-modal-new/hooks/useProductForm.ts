@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAction } from 'next-safe-action/hooks';
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { convertToWebP } from '@/lib/image-utils';
 import type { ProductVariant } from '@/payload-types';
 import { productSchema, type ProductFormData } from '@/schemas/products/product-schema';
@@ -48,7 +49,13 @@ async function uploadImage(file: File, altText: string): Promise<number> {
 export function useProductForm({ productId, isOpen, onSuccess, onClose }: UseProductFormProps) {
   const isEditing = !!productId;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { executeAsync: getProductById, isExecuting: isLoading } = useAction(getProductByIdAction);
+  const { invalidateQueries } = useInvalidateQueries();
+  const { data, isLoading } = useServerActionQuery({
+    queryKey: ['products', 'detail', productId],
+    queryFn: () => getProductByIdAction({ id: productId! }),
+    enabled: isEditing && !!productId && isOpen,
+    staleTime: 30_000,
+  });
   const [variantsToDelete, setVariantsToDelete] = useState<number[]>([]);
   const [currentImageId, setCurrentImageId] = useState<number | undefined>(undefined);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
@@ -98,53 +105,42 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   };
 
   useEffect(() => {
-    if (isEditing && productId && isOpen) {
-      getProductById({ id: productId })
-        .then((result) => {
-          if (result?.serverError) {
-            toast.error(result.serverError);
-            return;
-          }
+    if (!isEditing || !productId || !isOpen || !data?.success) return;
 
-          if (result?.data?.product) {
-            const product = result.data.product;
-            const variants = result.data.variants || [];
+    queueMicrotask(() => {
+      const product = data.product;
+      const variants = data.variants || [];
 
-            reset({
-              name: product.name,
-              description: product.description || '',
-              brandId: typeof product.brand === 'object' && product.brand ? product.brand.id.toString() : '',
-              categoryId:
-                typeof product.category === 'object' && product.category ? product.category.id.toString() : '',
-              qualityId: typeof product.quality === 'object' && product.quality ? product.quality.id.toString() : '',
-              isActive: product.isActive ?? true,
-              variants: variants.map((v: ProductVariant) => ({
-                id: v.id,
-                presentationId:
-                  typeof v.presentation === 'object' && v.presentation ? v.presentation.id.toString() : '',
-                code: v.code || '',
-                stock: v.stock || 0,
-                minimumStock: v.minimumStock ?? 0,
-                costPrice: v.costPrice || 0,
-                profitMargin: v.profitMargin ?? 0,
-              })),
-            });
+      reset({
+        name: product.name,
+        description: product.description || '',
+        brandId: typeof product.brand === 'object' && product.brand ? product.brand.id.toString() : '',
+        categoryId: typeof product.category === 'object' && product.category ? product.category.id.toString() : '',
+        qualityId: typeof product.quality === 'object' && product.quality ? product.quality.id.toString() : '',
+        isActive: product.isActive ?? true,
+        variants: variants.map((v: ProductVariant) => ({
+          id: v.id,
+          presentationId: typeof v.presentation === 'object' && v.presentation ? v.presentation.id.toString() : '',
+          code: v.code || '',
+          stock: v.stock || 0,
+          minimumStock: v.minimumStock ?? 0,
+          costPrice: v.costPrice || 0,
+          profitMargin: v.profitMargin ?? 0,
+        })),
+      });
 
-            if (typeof product.image === 'object' && product.image) {
-              setCurrentImageId(product.image.id);
-              setCurrentImageUrl(product.image.url ?? undefined);
-              setPreviousImageId(product.image.id);
-            } else if (typeof product.image === 'number') {
-              setCurrentImageId(product.image);
-              setPreviousImageId(product.image);
-            } else {
-              resetImageState();
-            }
-          }
-        })
-        .catch(() => undefined);
-    }
-  }, [isEditing, productId, isOpen, reset, getProductById]);
+      if (typeof product.image === 'object' && product.image) {
+        setCurrentImageId(product.image.id);
+        setCurrentImageUrl(product.image.url ?? undefined);
+        setPreviousImageId(product.image.id);
+      } else if (typeof product.image === 'number') {
+        setCurrentImageId(product.image);
+        setPreviousImageId(product.image);
+      } else {
+        resetImageState();
+      }
+    });
+  }, [isEditing, productId, isOpen, data, reset]);
 
   const handleClose = () => {
     reset();
@@ -299,6 +295,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
         toast.success('Producto creado exitosamente');
       }
 
+      invalidateQueries([['products']]);
       handleClose();
       onSuccess();
     } catch (error) {

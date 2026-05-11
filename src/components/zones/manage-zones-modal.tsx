@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ActionMenu } from '@/components/ui/action-menu';
@@ -25,6 +25,8 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import type { Zone } from '@/payload-types';
 
 import { createZoneAction, deleteZoneAction, getZonesAction, updateZoneAction } from './actions';
@@ -35,32 +37,26 @@ interface ManageZonesModalProps {
   onZonesChanged: () => void;
 }
 
-// Handler para cerrar el modal y resetear el estado
 export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZonesModalProps) {
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { invalidateQueries } = useInvalidateQueries();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [newZoneName, setNewZoneName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [zoneToDelete, setZoneToDelete] = useState<Zone | null>(null);
 
-  const { executeAsync: execGetZones } = useAction(getZonesAction);
+  const { data, isPending: loading } = useServerActionQuery({
+    queryKey: ['zones'],
+    queryFn: getZonesAction,
+    enabled: isOpen,
+    staleTime: 30_000,
+  });
+
+  const zones = (data?.zones ?? []) as Zone[];
+
   const { executeAsync: execCreateZone } = useAction(createZoneAction);
   const { executeAsync: execUpdateZone } = useAction(updateZoneAction);
   const { executeAsync: execDeleteZone } = useAction(deleteZoneAction);
-
-  const loadZones = async () => {
-    setLoading(true);
-    try {
-      const result = await execGetZones();
-      if (result?.data?.success) {
-        setZones(result.data.zones as Zone[]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleModalClose = () => {
     setEditingId(null);
@@ -69,18 +65,6 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     setIsAdding(false);
     onClose();
   };
-
-  const hasLoadedRef = useRef(false);
-
-  useEffect(() => {
-    if (isOpen && !hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      void loadZones();
-    }
-    if (!isOpen) {
-      hasLoadedRef.current = false;
-    }
-  }, [isOpen]);
 
   const handleCreate = async () => {
     const name = newZoneName.trim();
@@ -93,10 +77,9 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     }
 
     if (result?.data?.success && result.data.zone) {
-      const newZone = result.data.zone as Zone;
-      setZones((prev) => [...prev, newZone]);
       setNewZoneName('');
       setIsAdding(false);
+      invalidateQueries([['zones']]);
       onZonesChanged();
       toast.success(`Zona "${name}" creada`);
     }
@@ -113,10 +96,9 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     }
 
     if (result?.data?.success && result.data.zone) {
-      const updated = result.data.zone as Zone;
-      setZones((prev) => prev.map((z) => (z.id === id ? updated : z)));
       setEditingId(null);
       setEditingName('');
+      invalidateQueries([['zones']]);
       onZonesChanged();
       toast.success('Zona actualizada');
     }
@@ -130,7 +112,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     }
 
     if (result?.data?.success) {
-      setZones((prev) => prev.filter((z) => z.id !== id));
+      invalidateQueries([['zones']]);
       onZonesChanged();
       toast.success('Zona eliminada');
     }

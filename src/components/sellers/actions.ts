@@ -2,7 +2,7 @@
 
 import { createInvitation } from '@/app/services/invitations';
 import { dispatchStockToMobileSeller, returnStockFromMobileSeller } from '@/app/services/mobile-seller';
-import { deleteSeller, updateSeller } from '@/app/services/users';
+import { deleteSeller, getSellers, updateSeller } from '@/app/services/users';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { dispatchStockSchema } from '@/schemas/sellers/dispatch-stock-schema';
@@ -70,4 +70,16 @@ export const returnStockAction = actionClient.schema(dispatchStockSchema).action
   await returnStockFromMobileSeller(parsedInput.sellerId, user.id, parsedInput.items);
 
   return { success: true };
+});
+
+export const getSellersAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+
+  if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
+    throw new Error('No autorizado');
+  }
+
+  const sellers = await getSellers(user.id);
+
+  return { success: true, sellers };
 });

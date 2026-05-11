@@ -6,7 +6,7 @@ import { useAction } from 'next-safe-action/hooks';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
-import type { SaleClientOption, SaleRow, SaleVariantOption } from '@/app/services/sales';
+import type { SaleRow, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { editSaleFullSchema, type EditSaleFullValues } from '@/schemas/sales/edit-sale-full-schema';
@@ -212,21 +213,29 @@ function ItemRow({
 }
 
 export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
-  const { executeAsync: fetchSellerOptions, isExecuting: isLoadingSellerOptions } = useAction(getSaleOptionsAction);
-  const { executeAsync: fetchOwnerOptions, isExecuting: isLoadingOwnerOptions } =
-    useAction(getSaleOptionsForOwnerAction);
-  const { executeAsync: fetchClientsForSeller } = useAction(getClientsForSaleAction);
-  const { executeAsync: fetchClientsForOwner } = useAction(getClientsForOwnerAction);
+  const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
+    queryKey: ['saleOptions', { role: 'seller' }],
+    queryFn: () => getSaleOptionsAction(),
+    enabled: isOpen && isSeller,
+    staleTime: 60_000,
+  });
+  const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
+    queryKey: ['saleOptions', { role: 'owner', sellerId: sale.sellerId }],
+    queryFn: () => getSaleOptionsForOwnerAction({ sellerId: sale.sellerId }),
+    enabled: isOpen && !isSeller,
+    staleTime: 60_000,
+  });
   const { executeAsync: submitEdit, isExecuting: isSubmitting } = useAction(editSaleFullAction);
 
   const isLoadingOptions = isLoadingSellerOptions || isLoadingOwnerOptions;
 
-  const [variants, setVariants] = useState<SaleVariantOption[]>([]);
-  const [clients, setClients] = useState<SaleClientOption[]>([]);
+  const variants = isSeller ? (sellerOptions?.variants ?? []) : (ownerOptions?.variants ?? []);
+  const clients = isSeller ? (sellerOptions?.clients ?? []) : (ownerOptions?.clients ?? []);
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-  const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
+  const [clientsOverride, setClientsOverride] = useState<{ id: number; name: string }[] | null>(null);
 
   const localClients = clientsOverride ?? clients;
 
@@ -271,25 +280,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
       notes: sale.notes ?? '',
       checkDueDate: sale.checkDueDate ?? undefined,
     });
-
-    const loadOptions = async () => {
-      if (isSeller) {
-        const result = await fetchSellerOptions();
-        if (result?.data) {
-          setVariants(result.data.variants ?? []);
-          setClients(result.data.clients ?? []);
-        }
-      } else {
-        const result = await fetchOwnerOptions({ sellerId: sale.sellerId });
-        if (result?.data) {
-          setVariants(result.data.variants ?? []);
-          setClients(result.data.clients ?? []);
-        }
-      }
-    };
-
-    void loadOptions();
-  }, [isOpen, sale.id]);
+  }, [isOpen, sale.id, form]);
 
   const handleClose = () => {
     setClientsOverride(null);
@@ -300,15 +291,15 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
 
   const handleNewClientSuccess = async (newClient: Client) => {
     if (isSeller) {
-      const result = await fetchClientsForSeller();
-      if (result?.data?.clients) {
+      const result = await getClientsForSaleAction();
+      if (result?.data?.success && result.data.clients) {
         setClientsOverride(result.data.clients);
       } else {
         setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
       }
     } else {
-      const result = await fetchClientsForOwner();
-      if (result?.data?.clients) {
+      const result = await getClientsForOwnerAction();
+      if (result?.data?.success && result.data.clients) {
         setClientsOverride(result.data.clients);
       } else {
         setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);

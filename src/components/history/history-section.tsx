@@ -1,10 +1,11 @@
 'use client';
 
+import { keepPreviousData } from '@tanstack/react-query';
 import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
-import { Fragment, useState, useTransition } from 'react';
+import { Fragment, useState } from 'react';
 
-import { getHistoryMovements } from '@/app/services/stock-movements';
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
+import { getHistoryAction } from '@/components/history/actions';
 import { MovementTypeBadge } from '@/components/history/movement-type-badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/settings-context';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { cn, formatDate, formatDateParts } from '@/lib/utils';
@@ -75,16 +77,12 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
 }
 
 interface HistorySectionProps {
-  initialData: HistoryResult;
-  ownerId: number;
+  initialData: { success: true } & HistoryResult;
 }
 
-export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
+export function HistorySection({ initialData }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
-
-  const [data, setData] = useState<HistoryResult>(initialData);
-  const [isPending, startTransition] = useTransition();
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
@@ -95,22 +93,25 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  function fetchData(filters: { dateRange?: { from: Date; to: Date }; types: MovementType[] }) {
-    startTransition(async () => {
-      setPage(1);
-      const result = await getHistoryMovements(ownerId, {
-        ...(filters.dateRange ? { from: filters.dateRange.from, to: filters.dateRange.to } : {}),
-        types: filters.types.length > 0 ? filters.types : undefined,
+  const { data, isPending } = useServerActionQuery({
+    queryKey: ['history', { dateRange, types: selectedTypes }],
+    queryFn: () =>
+      getHistoryAction({
+        ...(dateRange ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() } : {}),
+        ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
         limit: 500,
-      });
-      setData(result);
-    });
-  }
+      }),
+    initialData: !dateRange && selectedTypes.length === 0 ? initialData : undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+
+  const docs = data?.docs ?? [];
+  const totalDocs = data?.totalDocs ?? 0;
 
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
     setDateRange(range);
     setPage(1);
-    fetchData({ dateRange: range, types: selectedTypes });
   }
 
   function handleSort(key: SortKey) {
@@ -122,7 +123,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
     }
   }
 
-  const sortedDocs = [...data.docs].sort((a, b) => {
+  const sortedDocs = [...docs].sort((a, b) => {
     if (!sortKey) return 0;
     let va: string | number = '';
     let vb: string | number = '';
@@ -147,7 +148,6 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
     return 0;
   });
 
-  const totalDocs = sortedDocs.length;
   const totalPages = Math.max(1, Math.ceil(totalDocs / itemsPerPage));
   const safePage = Math.min(page, totalPages);
   const paginatedDocs = sortedDocs.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
@@ -212,7 +212,6 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                         const movementTypes = types as MovementType[];
                         setSelectedTypes(movementTypes);
                         setPage(1);
-                        fetchData({ dateRange, types: movementTypes });
                       }}
                       className="w-px"
                     />
@@ -226,7 +225,7 @@ export function HistorySection({ initialData, ownerId }: HistorySectionProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedDocs.length === 0 ? (
+                {docs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                       No hay movimientos en el período seleccionado.

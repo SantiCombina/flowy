@@ -17,6 +17,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import type { User } from '@/payload-types';
 
 import { dispatchStockAction } from './actions';
@@ -31,6 +32,7 @@ interface DispatchStockModalProps {
 
 export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variants }: DispatchStockModalProps) {
   const { executeAsync, isExecuting } = useAction(dispatchStockAction);
+  const { invalidateQueries } = useInvalidateQueries();
   const [quantities, setQuantities] = useState<Record<number, string>>({});
 
   const handleQuantityChange = (variantId: number, value: string) => {
@@ -63,6 +65,7 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
     if (result?.data?.success) {
       toast.success('Stock despachado correctamente');
       setQuantities({});
+      invalidateQueries([['sellers']]);
       onSuccess();
       onClose();
     }

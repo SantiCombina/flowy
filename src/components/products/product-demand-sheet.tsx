@@ -1,14 +1,13 @@
 'use client';
 
 import { Calendar, Package, TrendingDown, TrendingUp } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
-import { useEffect } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
 import type { MonthlyDemand } from '@/app/services/sales';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { cn, formatCurrency } from '@/lib/utils';
 
 import { getVariantSalesHistoryAction } from './actions';
@@ -62,17 +61,14 @@ function getBarColor(entry: MonthlyDemand, maxUnits: number): string {
 }
 
 export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps) {
-  const { execute, result, isPending, reset } = useAction(getVariantSalesHistoryAction);
+  const { data, isPending, error } = useServerActionQuery({
+    queryKey: ['variantSalesHistory', variant?.id],
+    queryFn: () => getVariantSalesHistoryAction({ variantId: variant!.id }),
+    enabled: !!variant,
+    staleTime: 60_000,
+  });
 
-  useEffect(() => {
-    if (variant) {
-      execute({ variantId: variant.id });
-    } else {
-      reset();
-    }
-  }, [variant, execute, reset]);
-
-  const history = result?.data?.history;
+  const history = data?.history;
 
   const productName = variant?.product.name ?? '';
   const presentationLabel = variant?.presentation?.label;
@@ -218,9 +214,9 @@ export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps
             </>
           )}
 
-          {!isPending && !history && result?.serverError && (
+          {!isPending && !history && error && (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
-              <p className="text-sm text-destructive">{result.serverError}</p>
+              <p className="text-sm text-destructive">{error.message}</p>
             </div>
           )}
         </div>

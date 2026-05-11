@@ -32,7 +32,7 @@ async function SalesData({
 
   return (
     <SalesSection
-      sales={sales}
+      initialSales={{ success: true, sales }}
       zones={zones}
       showSellerColumn={!isSeller}
       canCollect={true}

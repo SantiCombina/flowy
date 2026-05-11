@@ -2,8 +2,7 @@
 
 import { Plus, Search, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -11,8 +10,10 @@ import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-drop
 import { Input } from '@/components/ui/input';
 import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
-import type { Client, User, Zone } from '@/payload-types';
+import type { Client, User } from '@/payload-types';
 
 import { ClientModal } from './client-modal';
 import { ClientsTable } from './clients-table';
@@ -26,38 +27,33 @@ interface ClientsSectionProps {
 export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {
   const router = useRouter();
   const isOwner = currentUser.role === 'owner';
+  const { invalidateQueries } = useInvalidateQueries();
+
+  const { data: zonesData } = useServerActionQuery({
+    queryKey: ['zones'],
+    queryFn: getZonesAction,
+    enabled: isOwner,
+    staleTime: 30_000,
+  });
+
+  const zones = zonesData?.zones ?? [];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [isManageZonesOpen, setIsManageZonesOpen] = useState(false);
-  const [zones, setZones] = useState<Zone[]>([]);
   const [zoneFilter, setZoneFilter] = useState<string>('');
   const [localidadFilter, setLocalidadFilter] = useState<string>('');
   const [provinciaFilter, setProvinciaFilter] = useState<string>('');
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', 10);
 
-  const { executeAsync: execGetZones } = useAction(getZonesAction);
-
-  useEffect(() => {
-    if (!isOwner) return;
-    execGetZones().then((result) => {
-      if (result?.data?.success) {
-        setZones(result.data.zones as Zone[]);
-      }
-    });
-  }, [isOwner]);
-
   const handleZonesChanged = () => {
+    invalidateQueries([['zones']]);
     router.refresh();
-    execGetZones().then((result) => {
-      if (result?.data?.success) {
-        setZones(result.data.zones as Zone[]);
-      }
-    });
   };
 
   const handleSuccess = () => {
+    invalidateQueries([['clients']]);
     router.refresh();
   };
 

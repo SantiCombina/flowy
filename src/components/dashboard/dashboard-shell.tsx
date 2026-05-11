@@ -1,9 +1,10 @@
 'use client';
 
-import { useAction } from 'next-safe-action/hooks';
-import { useState, useTransition } from 'react';
+import { keepPreviousData } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import type { OwnerDashboardStats, Period, SellerDashboardStats } from '@/app/services/dashboard';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 
 import { getOwnerDashboardStatsAction, getSellerDashboardStatsAction } from './actions';
 import { OwnerDashboard } from './owner-dashboard';
@@ -26,19 +27,20 @@ type DashboardShellProps =
 
 function OwnerDashboardShell({ userName, initialStats }: { userName: string; initialStats: OwnerDashboardStats }) {
   const [period, setPeriod] = useState<Period>('month');
-  const [stats, setStats] = useState<OwnerDashboardStats>(initialStats);
-  const [isPending, startTransition] = useTransition();
-  const { executeAsync } = useAction(getOwnerDashboardStatsAction);
+
+  const { data, isFetching } = useServerActionQuery({
+    queryKey: ['dashboard', { kind: 'owner', period }],
+    queryFn: () => getOwnerDashboardStatsAction({ period }),
+    initialData: { success: true, stats: initialStats },
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
 
   function handlePeriodChange(newPeriod: Period) {
-    startTransition(async () => {
-      const result = await executeAsync({ period: newPeriod });
-      if (result?.data?.success) {
-        setStats(result.data.stats);
-      }
-      setPeriod(newPeriod);
-    });
+    setPeriod(newPeriod);
   }
+
+  const stats = data?.success ? data.stats : initialStats;
 
   return (
     <OwnerDashboard
@@ -46,7 +48,7 @@ function OwnerDashboardShell({ userName, initialStats }: { userName: string; ini
       userName={userName}
       period={period}
       onPeriodChange={handlePeriodChange}
-      isPending={isPending}
+      isPending={isFetching}
     />
   );
 }
@@ -61,19 +63,20 @@ function SellerDashboardShell({
   initialStats: SellerDashboardStats;
 }) {
   const [period, setPeriod] = useState<Period>('month');
-  const [stats, setStats] = useState<SellerDashboardStats>(initialStats);
-  const [isPending, startTransition] = useTransition();
-  const { executeAsync } = useAction(getSellerDashboardStatsAction);
+
+  const { data, isFetching } = useServerActionQuery({
+    queryKey: ['dashboard', { kind: 'seller', period }],
+    queryFn: () => getSellerDashboardStatsAction({ period, ownerId }),
+    initialData: { success: true, stats: initialStats },
+    placeholderData: keepPreviousData,
+    staleTime: 30000,
+  });
 
   function handlePeriodChange(newPeriod: Period) {
-    startTransition(async () => {
-      const result = await executeAsync({ period: newPeriod, ownerId });
-      if (result?.data?.success) {
-        setStats(result.data.stats);
-      }
-      setPeriod(newPeriod);
-    });
+    setPeriod(newPeriod);
   }
+
+  const stats = data?.success ? data.stats : initialStats;
 
   return (
     <SellerDashboard
@@ -81,7 +84,7 @@ function SellerDashboardShell({
       userName={userName}
       period={period}
       onPeriodChange={handlePeriodChange}
-      isPending={isPending}
+      isPending={isFetching}
     />
   );
 }

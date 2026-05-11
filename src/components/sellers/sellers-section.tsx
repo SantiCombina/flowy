@@ -1,7 +1,6 @@
 'use client';
 
 import { Plus, Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import type { CommissionSummary } from '@/app/services/commissions';
@@ -11,8 +10,11 @@ import { useUserOptional } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import type { User } from '@/payload-types';
 
+import { getSellersAction } from './actions';
 import { DispatchStockModal } from './dispatch-stock-modal';
 import { EditSellerModal } from './edit-seller-modal';
 import { InviteSellerModal } from './invite-seller-modal';
@@ -21,16 +23,25 @@ import { SellerDetailsModal } from './seller-details-modal';
 import { SellersTable } from './sellers-table';
 
 interface SellersSectionProps {
-  sellers: User[];
+  initialSellers: { success: true; sellers: User[] };
   variants: PopulatedProductVariant[];
   ownerId: number;
   commissionBalances: Record<number, CommissionSummary>;
 }
 
-export function SellersSection({ sellers, variants, ownerId, commissionBalances }: SellersSectionProps) {
-  const router = useRouter();
+export function SellersSection({ initialSellers, variants, ownerId, commissionBalances }: SellersSectionProps) {
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
+  const { invalidateQueries } = useInvalidateQueries();
+
+  const { data } = useServerActionQuery({
+    queryKey: ['sellers'],
+    queryFn: getSellersAction,
+    initialData: initialSellers,
+    staleTime: 30_000,
+  });
+
+  const sellers = data?.sellers ?? initialSellers.sellers;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
@@ -44,7 +55,7 @@ export function SellersSection({ sellers, variants, ownerId, commissionBalances 
   const [sellerForReturn, setSellerForReturn] = useState<User | null>(null);
 
   const handleSuccess = () => {
-    router.refresh();
+    invalidateQueries([['sellers']]);
   };
 
   const handleOpenDetails = (seller: User) => {

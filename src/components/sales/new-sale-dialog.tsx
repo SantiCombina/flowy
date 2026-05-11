@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
@@ -218,30 +219,30 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const user = useUser();
   const isOwner = user?.role === 'owner';
 
-  const {
-    executeAsync: fetchSellerOptions,
-    isExecuting: isLoadingSellerOptions,
-    result: sellerOptionsResult,
-  } = useAction(getSaleOptionsAction);
+  const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
+    queryKey: ['saleOptions', { role: 'seller' }],
+    queryFn: () => getSaleOptionsAction(),
+    enabled: isOpen && !isOwner,
+    staleTime: 60_000,
+  });
 
-  const {
-    executeAsync: fetchOwnerOptions,
-    isExecuting: isLoadingOwnerOptions,
-    result: ownerOptionsResult,
-  } = useAction(getSaleOptionsAsOwnerAction);
+  const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
+    queryKey: ['saleOptions', { role: 'owner' }],
+    queryFn: () => getSaleOptionsAsOwnerAction(),
+    enabled: isOpen && isOwner,
+    staleTime: 60_000,
+  });
 
-  const fetchOptions = isOwner ? fetchOwnerOptions : fetchSellerOptions;
   const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
-  const optionsResult = isOwner ? ownerOptionsResult : sellerOptionsResult;
+  const optionsResult = isOwner ? ownerOptions : sellerOptions;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
-  const { executeAsync: fetchClients } = useAction(getClientsForSaleAction);
   const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
 
-  const variants: SaleVariantOption[] = optionsResult?.data?.variants ?? [];
-  const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.data?.clients ?? [];
+  const variants: SaleVariantOption[] = optionsResult?.variants ?? [];
+  const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.clients ?? [];
 
   const form = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
@@ -259,11 +260,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const hasUnselectedVariant = (watchedItems ?? []).some((item) => !item.variantId || item.variantId === 0);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    void fetchOptions();
-  }, [isOpen]);
-
   const handleClose = () => {
     setClientsOverride(null);
     setShowSuccess(false);
@@ -272,8 +268,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   };
 
   const handleNewClientSuccess = async (newClient: Client) => {
-    const result = await fetchClients();
-    if (result?.data?.clients) {
+    const result = await getClientsForSaleAction();
+    if (result?.data?.success && result.data.clients) {
       setClientsOverride(result.data.clients);
     } else {
       setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);

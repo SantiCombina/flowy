@@ -2,11 +2,9 @@
 
 import { Copy, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useAction } from 'next-safe-action/hooks';
-import { useState, useMemo, useRef, Fragment } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { toast } from 'sonner';
 
-import type { CommissionPaymentRow, CommissionSummary } from '@/app/services/commissions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +16,8 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -67,18 +67,23 @@ interface SellerDetailsModalProps {
 
 export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsModalProps) {
   const router = useRouter();
-  const [commissionSummary, setCommissionSummary] = useState<CommissionSummary | null>(null);
-  const [commissionPayments, setCommissionPayments] = useState<CommissionPaymentRow[]>([]);
+  const { invalidateQueries } = useInvalidateQueries();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isLoadingCommissions, setIsLoadingCommissions] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
-  const fetchVersionRef = useRef(0);
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
-  const { executeAsync: loadCommissions } = useAction(getCommissionDetailAction);
+  const { data, isPending: isLoadingCommissions } = useServerActionQuery({
+    queryKey: ['commissions', 'detail', seller?.id, selectedYear, selectedMonth],
+    queryFn: () => getCommissionDetailAction({ sellerId: seller!.id, year: selectedYear, month: selectedMonth }),
+    enabled: activeTab === 'commissions' && !!seller,
+    staleTime: 30_000,
+  });
+
+  const commissionSummary = data?.summary ?? null;
+  const commissionPayments = data?.payments ?? [];
 
   const periodLabel = useMemo(() => {
     return `${MONTH_LABELS[selectedMonth - 1]} ${selectedYear}`;
@@ -89,7 +94,6 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
     const newYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
     setSelectedMonth(newMonth);
     setSelectedYear(newYear);
-    fetchCommissions(newYear, newMonth);
   };
 
   const handleNextMonth = () => {
@@ -97,51 +101,24 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
     const newYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
     setSelectedMonth(newMonth);
     setSelectedYear(newYear);
-    fetchCommissions(newYear, newMonth);
-  };
-
-  const fetchCommissions = async (year: number, month: number) => {
-    if (!seller) return;
-    const currentVersion = ++fetchVersionRef.current;
-    setIsLoadingCommissions(true);
-    try {
-      const result = await loadCommissions({ sellerId: seller.id, year, month });
-      if (currentVersion !== fetchVersionRef.current) return;
-      if (result?.data?.success) {
-        setCommissionSummary(result.data.summary);
-        setCommissionPayments(result.data.payments);
-      } else {
-        toast.error(result?.serverError ?? 'No se pudo cargar la información de comisiones');
-      }
-    } catch {
-      if (currentVersion !== fetchVersionRef.current) return;
-      toast.error('Error al cargar las comisiones');
-    } finally {
-      if (currentVersion === fetchVersionRef.current) {
-        setIsLoadingCommissions(false);
-      }
-    }
   };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value === 'commissions' && seller && !commissionSummary) {
-      fetchCommissions(selectedYear, selectedMonth);
-    }
   };
 
   const handlePaymentSuccess = async () => {
     if (!seller) return;
-    fetchCommissions(selectedYear, selectedMonth);
+    invalidateQueries([['commissions', 'detail', seller.id, selectedYear, selectedMonth]]);
+    invalidateQueries([['sellers']]);
     router.refresh();
   };
 
   const handleClose = () => {
-    setCommissionSummary(null);
-    setCommissionPayments([]);
     const n = new Date();
     setSelectedYear(n.getFullYear());
     setSelectedMonth(n.getMonth() + 1);
+    setActiveTab('info');
     onClose();
   };
 

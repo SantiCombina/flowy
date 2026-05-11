@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -21,6 +21,8 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import { formatPhoneInput } from '@/lib/phone';
 import { cn } from '@/lib/utils';
@@ -50,6 +52,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   const { executeAsync: execCreate, isExecuting: isCreating } = useAction(createClientAction);
   const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateClientAction);
   const isExecuting = isCreating || isUpdating;
+  const { invalidateQueries } = useInvalidateQueries();
 
   const currentUser = useUser();
   const isOwner = currentUser.role === 'owner';
@@ -58,13 +61,20 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   const [loadingLocalities, setLoadingLocalities] = useState(false);
   const localitiesCache = useRef<Record<string, { id: string; nombre: string }[]>>({});
 
-  const [zones, setZones] = useState<Zone[]>([]);
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
 
+  const { data: zonesData } = useServerActionQuery({
+    queryKey: ['zones'],
+    queryFn: getZonesAction,
+    enabled: isOpen,
+    staleTime: 30_000,
+  });
+
+  const zones = (zonesData?.zones ?? []) as Zone[];
+
   const isDuplicateZone = zones.some((z) => z.name.toLowerCase() === newZoneName.trim().toLowerCase());
 
-  const { executeAsync: execGetZones } = useAction(getZonesAction);
   const { executeAsync: execCreateZone } = useAction(createZoneAction);
 
   const defaultValues = useMemo(
@@ -92,17 +102,6 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   });
 
   const provinciaValue = useWatch({ control: form.control, name: 'provincia' });
-
-  useEffect(() => {
-    if (!isOpen) return;
-    execGetZones()
-      .then((result) => {
-        if (result?.data?.success) {
-          setZones(result.data.zones as Zone[]);
-        }
-      })
-      .catch(() => undefined);
-  }, [isOpen, execGetZones]);
 
   const loadLocalities = useCallback(async (provinceName: string) => {
     if (localitiesCache.current[provinceName]) {
@@ -160,7 +159,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
 
     if (result?.data?.success && result.data.zone) {
       const newZone = result.data.zone as Zone;
-      setZones((prev) => [...prev, newZone]);
+      invalidateQueries([['zones']]);
       form.setValue('zone', newZone.id, { shouldDirty: true });
       setNewZoneName('');
       setIsCreatingZone(false);
@@ -183,6 +182,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     }
 
     if (result?.data?.success && result.data.client) {
+      invalidateQueries([['clients']]);
       onSuccess(result.data.client as Client);
       onClose();
     }
