@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { convertToWebP } from '@/lib/image-utils';
+import { queryKeys } from '@/lib/query-keys';
 import type { ProductVariant } from '@/payload-types';
 import { productSchema, type ProductFormData } from '@/schemas/products/product-schema';
 
@@ -51,7 +52,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { invalidateQueries } = useInvalidateQueries();
   const { data, isLoading } = useServerActionQuery({
-    queryKey: ['products', 'detail', productId],
+    queryKey: queryKeys.products.detail(productId),
     queryFn: () => getProductByIdAction({ id: productId! }),
     enabled: isEditing && !!productId && isOpen,
     staleTime: 30_000,

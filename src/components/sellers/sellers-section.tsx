@@ -13,6 +13,7 @@ import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-drop
 import { Input } from '@/components/ui/input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { getSellersAction } from './actions';
@@ -42,7 +43,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
   }, [queryClient, initialSellers]);
 
   const { data } = useServerActionQuery({
-    queryKey: ['sellers'],
+    queryKey: queryKeys.sellers.list(),
     queryFn: getSellersAction,
     initialData: initialSellers,
     staleTime: 30_000,
@@ -62,7 +63,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
   const [sellerForReturn, setSellerForReturn] = useState<User | null>(null);
 
   const handleSuccess = () => {
-    invalidateQueries([['sellers']]);
+    invalidateQueries([queryKeys.sellers.list()]);
   };
 
   const handleOpenDetails = (seller: User) => {

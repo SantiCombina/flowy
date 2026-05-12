@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { getMobileSellerInventoryAction, returnStockAction } from './actions';
@@ -35,7 +36,7 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
   const [quantities, setQuantities] = useState<Record<number, string>>({});
 
   const { data, isLoading } = useServerActionQuery({
-    queryKey: ['mobileInventory', seller?.id],
+    queryKey: queryKeys.mobileInventory.forSeller(seller?.id),
     queryFn: () => getMobileSellerInventoryAction({ sellerId: seller!.id }),
     enabled: isOpen && !!seller,
     staleTime: 10_000,
@@ -82,7 +83,11 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
     if (result?.data?.success) {
       toast.success('Devolución registrada correctamente');
       resetState();
-      invalidateQueries([['sellers'], ['products'], ['mobileInventory', seller.id]]);
+      invalidateQueries([
+        queryKeys.sellers.list(),
+        queryKeys.products.list('', 1),
+        queryKeys.mobileInventory.forSeller(seller.id),
+      ]);
       onSuccess();
       onClose();
     }

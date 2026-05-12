@@ -25,6 +25,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
 
 import { deleteProductAction, getProductDemandSummaryAction } from './actions';
@@ -368,7 +369,7 @@ export function ProductsTable({
         isOpen={variantForMovement !== null}
         onClose={() => setVariantForMovement(null)}
         variant={variantForMovement}
-        onSuccess={() => invalidateQueries([['products']])}
+        onSuccess={() => invalidateQueries([queryKeys.products.list('', 1)])}
       />
 
       <ProductDemandSheet variant={variantForDemand} onClose={() => setVariantForDemand(null)} />

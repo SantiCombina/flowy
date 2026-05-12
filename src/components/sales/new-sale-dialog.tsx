@@ -30,6 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
@@ -220,14 +221,14 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const isOwner = user?.role === 'owner';
 
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
-    queryKey: ['saleOptions', { role: 'seller' }],
+    queryKey: queryKeys.sales.options('seller'),
     queryFn: () => getSaleOptionsAction(),
     enabled: isOpen && !isOwner,
     staleTime: 60_000,
   });
 
   const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
-    queryKey: ['saleOptions', { role: 'owner' }],
+    queryKey: queryKeys.sales.options('owner'),
     queryFn: () => getSaleOptionsAsOwnerAction(),
     enabled: isOpen && isOwner,
     staleTime: 60_000,

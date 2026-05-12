@@ -20,6 +20,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
+import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDate, formatDateParts } from '@/lib/utils';
 
 const ALL_TYPES: MovementType[] = [
@@ -102,7 +103,7 @@ export function HistorySection({ initialData }: HistorySectionProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const { data, isPending } = useServerActionQuery({
-    queryKey: ['history', { dateRange, types: selectedTypes }],
+    queryKey: queryKeys.history.filtered(dateRange, selectedTypes),
     queryFn: () =>
       getHistoryAction({
         ...(dateRange ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() } : {}),

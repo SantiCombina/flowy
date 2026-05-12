@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { Zone } from '@/payload-types';
 
 import { createZoneAction, deleteZoneAction, getZonesAction, updateZoneAction } from './actions';
@@ -46,7 +47,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
   const [zoneToDelete, setZoneToDelete] = useState<Zone | null>(null);
 
   const { data, isPending: loading } = useServerActionQuery({
-    queryKey: ['zones'],
+    queryKey: queryKeys.zones.list(),
     queryFn: getZonesAction,
     enabled: isOpen,
     staleTime: 30_000,
@@ -79,7 +80,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     if (result?.data?.success && result.data.zone) {
       setNewZoneName('');
       setIsAdding(false);
-      invalidateQueries([['zones']]);
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.success(`Zona "${name}" creada`);
     }
@@ -98,7 +99,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     if (result?.data?.success && result.data.zone) {
       setEditingId(null);
       setEditingName('');
-      invalidateQueries([['zones']]);
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.success('Zona actualizada');
     }
@@ -112,7 +113,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     }
 
     if (result?.data?.success) {
-      invalidateQueries([['zones']]);
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.success('Zona eliminada');
     }

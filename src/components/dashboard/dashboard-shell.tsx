@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import type { OwnerDashboardStats, Period, SellerDashboardStats } from '@/app/services/dashboard';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 
 import { getOwnerDashboardStatsAction, getSellerDashboardStatsAction } from './actions';
 import { OwnerDashboard } from './owner-dashboard';
@@ -35,7 +36,7 @@ function OwnerDashboardShell({ userName, initialStats }: { userName: string; ini
   }, [queryClient, initialStats]);
 
   const { data, isFetching } = useServerActionQuery({
-    queryKey: ['dashboard', { kind: 'owner', period }],
+    queryKey: queryKeys.dashboard.owner(period),
     queryFn: () => getOwnerDashboardStatsAction({ period }),
     initialData: { success: true, stats: initialStats },
     placeholderData: keepPreviousData,
@@ -79,7 +80,7 @@ function SellerDashboardShell({
   }, [queryClient, initialStats]);
 
   const { data, isFetching } = useServerActionQuery({
-    queryKey: ['dashboard', { kind: 'seller', period }],
+    queryKey: queryKeys.dashboard.seller(period),
     queryFn: () => getSellerDashboardStatsAction({ period, ownerId }),
     initialData: { success: true, stats: initialStats },
     placeholderData: keepPreviousData,

@@ -20,6 +20,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -67,7 +68,7 @@ export function SellersTable({
 
     if (result?.data?.success) {
       toast.success('Vendedor eliminado correctamente');
-      invalidateQueries([['sellers']]);
+      invalidateQueries([queryKeys.sellers.list()]);
     } else {
       toast.error('Error al eliminar vendedor');
     }

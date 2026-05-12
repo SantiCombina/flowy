@@ -25,6 +25,7 @@ import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-drop
 import { Input } from '@/components/ui/input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
@@ -73,7 +74,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   }, [queryClient, initialVariants]);
 
   const { data, isPending } = useServerActionQuery({
-    queryKey: ['products', { search: searchQuery, page }],
+    queryKey: queryKeys.products.list(searchQuery, page),
     queryFn: () =>
       getVariantsAction({
         filters: searchQuery ? { search: searchQuery } : undefined,
@@ -130,7 +131,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   };
 
   const handleSuccess = useCallback(() => {
-    invalidateQueries([['products']]);
+    invalidateQueries([queryKeys.products.list('', 1)]);
   }, [invalidateQueries]);
 
   const handleCloseModal = () => {
@@ -140,7 +141,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
 
   const handleBulkPriceSuccess = useCallback(() => {
     setSelectedKeys(new Set());
-    invalidateQueries([['products']]);
+    invalidateQueries([queryKeys.products.list('', 1)]);
   }, [invalidateQueries]);
 
   const handleBulkToggleConfirm = async () => {
@@ -161,7 +162,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
       toast.success(`${result.data.updated} productos ${label}`);
       setSelectedKeys(new Set());
       setBulkToggleTarget(null);
-      invalidateQueries([['products']]);
+      invalidateQueries([queryKeys.products.list('', 1)]);
     } else {
       toast.error('No se pudo actualizar el estado de los productos');
     }

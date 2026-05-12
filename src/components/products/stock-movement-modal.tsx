@@ -20,6 +20,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 
 import { registerStockMovementAction } from './stock-actions';
 
@@ -103,7 +104,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
 
     if (result?.data?.success) {
       toast.success('Movimiento registrado correctamente');
-      invalidateQueries([['products'], ['history']]);
+      invalidateQueries([queryKeys.products.list('', 1), queryKeys.history.list()]);
       onSuccess?.(variant.id, result.data.newStock);
       handleClose();
     }

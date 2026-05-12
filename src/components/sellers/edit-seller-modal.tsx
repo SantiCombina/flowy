@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { formatPhoneInput } from '@/lib/phone';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
 
@@ -78,7 +79,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
 
     if (result?.data?.success) {
       toast.success('Vendedor actualizado correctamente');
-      invalidateQueries([['sellers']]);
+      invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
       onClose();
     }

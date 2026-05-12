@@ -8,6 +8,7 @@ import type { MonthlyDemand } from '@/app/services/sales';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import { cn, formatCurrency } from '@/lib/utils';
 
 import { getVariantSalesHistoryAction } from './actions';
@@ -62,7 +63,7 @@ function getBarColor(entry: MonthlyDemand, maxUnits: number): string {
 
 export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps) {
   const { data, isPending, error } = useServerActionQuery({
-    queryKey: ['variantSalesHistory', variant?.id],
+    queryKey: queryKeys.variantSalesHistory.forVariant(variant?.id),
     queryFn: () => getVariantSalesHistoryAction({ variantId: variant!.id }),
     enabled: !!variant,
     staleTime: 60_000,

@@ -18,6 +18,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { dispatchStockAction } from './actions';
@@ -65,7 +66,11 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
     if (result?.data?.success) {
       toast.success('Stock despachado correctamente');
       setQuantities({});
-      invalidateQueries([['sellers'], ['products'], ['mobileInventory', seller.id]]);
+      invalidateQueries([
+        queryKeys.sellers.list(),
+        queryKeys.products.list('', 1),
+        queryKeys.mobileInventory.forSeller(seller.id),
+      ]);
       onSuccess();
       onClose();
     }

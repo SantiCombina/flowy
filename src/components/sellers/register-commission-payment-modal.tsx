@@ -26,6 +26,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -96,7 +97,7 @@ export function RegisterCommissionPaymentModal({
 
     if (result?.data?.success) {
       toast.success('Pago de comisión registrado correctamente');
-      invalidateQueries([['sellers']]);
+      invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
       onClose();
     } else {

@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -74,7 +75,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
   const { data, isPending: isLoadingCommissions } = useServerActionQuery({
-    queryKey: ['commissions', 'detail', seller?.id, selectedYear, selectedMonth],
+    queryKey: queryKeys.sellers.commissions.detail(seller?.id, selectedYear, selectedMonth),
     queryFn: () => getCommissionDetailAction({ sellerId: seller!.id, year: selectedYear, month: selectedMonth }),
     enabled: activeTab === 'commissions' && !!seller,
     staleTime: 30_000,
@@ -107,8 +108,8 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
   const handlePaymentSuccess = async () => {
     if (!seller) return;
-    invalidateQueries([['commissions', 'detail', seller.id, selectedYear, selectedMonth]]);
-    invalidateQueries([['sellers']]);
+    invalidateQueries([queryKeys.sellers.commissions.detail(seller.id, selectedYear, selectedMonth)]);
+    invalidateQueries([queryKeys.sellers.list()]);
   };
 
   const handleClose = () => {

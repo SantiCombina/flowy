@@ -34,6 +34,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import type { FeatureFlags } from '@/lib/features';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 
 type FeatureKey = keyof FeatureFlags | null;
@@ -76,28 +77,28 @@ export function AppSidebar({ features }: AppSidebarProps) {
     switch (href) {
       case '/products':
         void queryClient.prefetchQuery({
-          queryKey: ['products', { search: '', page: 1 }],
+          queryKey: queryKeys.products.list('', 1),
           queryFn: () => getVariantsAction({ options: { limit: 50, page: 1, sort: 'product' } }),
           staleTime: 30_000,
         });
         break;
       case '/sales':
         void queryClient.prefetchQuery({
-          queryKey: ['sales'],
+          queryKey: queryKeys.sales.list(),
           queryFn: () => getSalesAction(),
           staleTime: 10_000,
         });
         break;
       case '/sellers':
         void queryClient.prefetchQuery({
-          queryKey: ['sellers'],
+          queryKey: queryKeys.sellers.list(),
           queryFn: () => getSellersAction(),
           staleTime: 30_000,
         });
         break;
       case '/history':
         void queryClient.prefetchQuery({
-          queryKey: ['history'],
+          queryKey: queryKeys.history.list(),
           queryFn: () => getHistoryAction({ limit: 500 }),
           staleTime: 60_000,
         });

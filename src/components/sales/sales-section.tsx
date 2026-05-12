@@ -44,6 +44,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
+import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
 
@@ -151,7 +152,7 @@ export function SalesSection({
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
 
   const { data, isFetching } = useServerActionQuery({
-    queryKey: ['sales'],
+    queryKey: queryKeys.sales.list(),
     queryFn: () => getSalesAction(),
     initialData: initialSales,
     staleTime: 10_000,
@@ -185,7 +186,7 @@ export function SalesSection({
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
   const handleCollectSuccess = useCallback(() => {
-    invalidateQueries([['sales']]);
+    invalidateQueries([queryKeys.sales.list()]);
     setCollectingModal(null);
   }, [invalidateQueries, setCollectingModal]);
 
@@ -199,13 +200,13 @@ export function SalesSection({
 
     if (result?.data?.success) {
       toast.success('Venta marcada como entregada.');
-      invalidateQueries([['sales']]);
+      invalidateQueries([queryKeys.sales.list()]);
     }
   };
 
   const handleEditSuccess = () => {
     setEditingSale(null);
-    invalidateQueries([['sales']]);
+    invalidateQueries([queryKeys.sales.list()]);
   };
 
   const handleDelete = async (saleId: number) => {
@@ -219,7 +220,7 @@ export function SalesSection({
 
     if (result?.data?.success) {
       toast.success('Venta eliminada correctamente');
-      invalidateQueries([['sales']]);
+      invalidateQueries([queryKeys.sales.list()]);
     }
   };
 

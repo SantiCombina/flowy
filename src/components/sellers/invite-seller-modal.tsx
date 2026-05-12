@@ -19,6 +19,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import { inviteSellerSchema, type InviteSellerValues } from '@/schemas/sellers/invite-seller-schema';
 
 import { inviteSellerAction } from './actions';
@@ -59,7 +60,7 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
     if (result?.data?.success) {
       setShowSuccess(true);
       form.reset();
-      invalidateQueries([['sellers']]);
+      invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
       setTimeout(() => {
         onClose();

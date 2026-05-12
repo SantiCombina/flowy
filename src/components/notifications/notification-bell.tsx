@@ -20,6 +20,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { getPusherClient } from '@/lib/pusher-client';
+import { queryKeys } from '@/lib/query-keys';
 
 import { NotificationItem } from './notification-item';
 
@@ -74,7 +75,7 @@ export function NotificationBell() {
   const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
 
   const { data } = useServerActionQuery({
-    queryKey: ['notifications'],
+    queryKey: queryKeys.notifications.list(),
     queryFn: getNotificationsAction,
     enabled: open,
     staleTime: 5_000,
@@ -91,7 +92,7 @@ export function NotificationBell() {
     const channel = role === 'seller' ? `private-seller-${userId}` : `private-owner-${userId}`;
     const pusher = getPusherClient();
     const subscription = pusher.subscribe(channel);
-    const handleEvent = () => invalidateQueries([['notifications']]);
+    const handleEvent = () => invalidateQueries([queryKeys.notifications.list()]);
     for (const event of NOTIFICATION_EVENTS) {
       subscription.bind(event, handleEvent);
     }
@@ -154,12 +155,12 @@ export function NotificationBell() {
 
   const handleMarkRead = async (id: number) => {
     await markRead({ id });
-    invalidateQueries([['notifications']]);
+    invalidateQueries([queryKeys.notifications.list()]);
   };
 
   const handleMarkAllRead = async () => {
     await markAllRead();
-    invalidateQueries([['notifications']]);
+    invalidateQueries([queryKeys.notifications.list()]);
   };
 
   const notificationList = (

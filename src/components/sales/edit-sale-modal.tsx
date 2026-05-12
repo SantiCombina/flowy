@@ -24,6 +24,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { editSaleFullSchema, type EditSaleFullValues } from '@/schemas/sales/edit-sale-full-schema';
@@ -214,13 +215,13 @@ function ItemRow({
 
 export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
-    queryKey: ['saleOptions', { role: 'seller' }],
+    queryKey: queryKeys.sales.options('seller'),
     queryFn: () => getSaleOptionsAction(),
     enabled: isOpen && isSeller,
     staleTime: 60_000,
   });
   const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
-    queryKey: ['saleOptions', { role: 'owner', sellerId: sale.sellerId }],
+    queryKey: queryKeys.sales.options('owner', sale.sellerId),
     queryFn: () => getSaleOptionsForOwnerAction({ sellerId: sale.sellerId }),
     enabled: isOpen && !isSeller,
     staleTime: 60_000,

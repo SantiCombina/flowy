@@ -12,6 +12,7 @@ import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
+import { queryKeys } from '@/lib/query-keys';
 import type { Client, User } from '@/payload-types';
 
 import { ClientModal } from './client-modal';
@@ -28,7 +29,7 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
   const { invalidateQueries } = useInvalidateQueries();
 
   const { data: zonesData } = useServerActionQuery({
-    queryKey: ['zones'],
+    queryKey: queryKeys.zones.list(),
     queryFn: getZonesAction,
     enabled: isOwner,
     staleTime: 30_000,
@@ -46,11 +47,11 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', 10);
 
   const handleZonesChanged = () => {
-    invalidateQueries([['zones']]);
+    invalidateQueries([queryKeys.zones.list()]);
   };
 
   const handleSuccess = () => {
-    invalidateQueries([['clients']]);
+    invalidateQueries([queryKeys.clients.list()]);
   };
 
   const handleEdit = (client: Client) => {

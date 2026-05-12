@@ -5,6 +5,7 @@ import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { queryKeys } from '@/lib/query-keys';
 
 import { NewSaleDialog } from './new-sale-dialog';
 
@@ -19,8 +20,8 @@ export function NewSaleButton() {
   };
 
   const handleSuccess = () => {
-    void queryClient.invalidateQueries({ queryKey: ['sales'] });
-    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.sales.list() });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.owner('month') });
   };
 
   return (

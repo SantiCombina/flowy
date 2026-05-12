@@ -25,6 +25,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import { formatPhoneInput } from '@/lib/phone';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import type { Client, Zone } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
@@ -65,7 +66,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   const [newZoneName, setNewZoneName] = useState('');
 
   const { data: zonesData } = useServerActionQuery({
-    queryKey: ['zones'],
+    queryKey: queryKeys.zones.list(),
     queryFn: getZonesAction,
     enabled: isOpen,
     staleTime: 30_000,
@@ -159,7 +160,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
 
     if (result?.data?.success && result.data.zone) {
       const newZone = result.data.zone as Zone;
-      invalidateQueries([['zones']]);
+      invalidateQueries([queryKeys.zones.list()]);
       form.setValue('zone', newZone.id, { shouldDirty: true });
       setNewZoneName('');
       setIsCreatingZone(false);
@@ -182,7 +183,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     }
 
     if (result?.data?.success && result.data.client) {
-      invalidateQueries([['clients']]);
+      invalidateQueries([queryKeys.clients.list()]);
       onSuccess(result.data.client as Client);
       onClose();
     }
