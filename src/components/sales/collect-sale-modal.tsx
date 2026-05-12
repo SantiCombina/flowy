@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { calculateCommission } from '@/lib/commissions';
 import { cn } from '@/lib/utils';
 import {
   collectSaleBySellerSchema,
@@ -74,7 +75,7 @@ export function CollectSaleModal({
     defaultValues: { saleId, amount: remaining },
   });
 
-  const commission = total * 0.03;
+  const commission = calculateCommission(amountPaid);
   const watchedAmountSeller = useWatch({ control: sellerForm.control, name: 'amount' });
   const watchedAmountOwner = useWatch({ control: ownerForm.control, name: 'amount' });
   const watchedAmount = isSeller ? watchedAmountSeller : watchedAmountOwner;

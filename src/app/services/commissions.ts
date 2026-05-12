@@ -3,15 +3,10 @@
 import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
+import { calculateCommission } from '@/lib/commissions';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
-
-const COMMISSION_RATE = 0.03;
-
-function getSaleCommission(sale: Sale): number {
-  return sale.commissionAmount > 0 ? sale.commissionAmount : sale.total * COMMISSION_RATE;
-}
 
 export interface CommissionSummary {
   totalCommission: number;
@@ -57,7 +52,7 @@ export async function getCommissionSummary(
 
   let totalCommission = 0;
   for (const sale of allSalesResult.docs as Sale[]) {
-    totalCommission += getSaleCommission(sale);
+    totalCommission += calculateCommission(sale.amountPaid ?? 0);
   }
 
   const allPaymentsResult = await payload.find({
@@ -92,7 +87,7 @@ export async function getCommissionSummary(
   let periodCommission = 0;
   for (const sale of periodSalesResult.docs as Sale[]) {
     periodSales += sale.total;
-    periodCommission += getSaleCommission(sale);
+    periodCommission += calculateCommission(sale.amountPaid ?? 0);
   }
 
   const periodPaymentsResult = await payload.find({
@@ -173,7 +168,7 @@ export async function getSellersCommissionSummaries(ownerId: number): Promise<Ma
     if (sellerId === 0) continue;
 
     const existing = commissionBySeller.get(sellerId) ?? { totalCommission: 0 };
-    existing.totalCommission += getSaleCommission(sale);
+    existing.totalCommission += calculateCommission(sale.amountPaid ?? 0);
     commissionBySeller.set(sellerId, existing);
   }
 

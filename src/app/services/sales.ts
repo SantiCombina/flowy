@@ -268,7 +268,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
   }
 
   const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const commissionAmount = Math.round(total * 0.03 * 100) / 100;
   const isImmediate = data.paymentMethod !== 'credit';
   const now = new Date().toISOString();
 
@@ -287,7 +286,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         stockSource: item.stockSource,
       })),
       total,
-      commissionAmount,
       amountPaid: isImmediate ? total : 0,
       paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
       deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
@@ -736,7 +734,6 @@ export async function editSaleFull(
   }
 
   const newTotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const newCommissionAmount = Math.round(newTotal * 0.03 * 100) / 100;
   const amountPaid = sale.amountPaid ?? 0;
   const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
 
@@ -757,7 +754,6 @@ export async function editSaleFull(
         stockSource: item.stockSource,
       })),
       total: newTotal,
-      commissionAmount: newCommissionAmount,
       ...(data.clientId ? { client: data.clientId } : { client: null }),
       notes: data.notes ?? null,
       ...(isImmediate

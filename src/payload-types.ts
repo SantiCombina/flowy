@@ -480,10 +480,6 @@ export interface Sale {
     id?: string | null;
   }[];
   total: number;
-  /**
-   * Comisión del vendedor calculada automáticamente al crear la venta
-   */
-  commissionAmount: number;
   amountPaid: number;
   notes?: string | null;
   paymentStatus: 'pending' | 'partially_collected' | 'collected';
@@ -1041,7 +1037,6 @@ export interface SalesSelect<T extends boolean = true> {
         id?: T;
       };
   total?: T;
-  commissionAmount?: T;
   amountPaid?: T;
   notes?: T;
   paymentStatus?: T;
