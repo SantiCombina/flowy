@@ -32,7 +32,7 @@ export function AssignmentsSection({ sellers }: AssignmentsSectionProps) {
     <div className="flex flex-1 flex-col">
       <PageHeader title="Asignaciones" description="Stock en poder de tus vendedores" />
 
-      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
+      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         {sellers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
             <Package className="h-12 w-12 text-muted-foreground/50" />

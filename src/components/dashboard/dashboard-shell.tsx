@@ -50,13 +50,15 @@ function OwnerDashboardShell({ userName, initialStats }: { userName: string; ini
   const stats = data?.success ? data.stats : initialStats;
 
   return (
-    <OwnerDashboard
-      stats={stats}
-      userName={userName}
-      period={period}
-      onPeriodChange={handlePeriodChange}
-      isPending={isFetching}
-    />
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <OwnerDashboard
+        stats={stats}
+        userName={userName}
+        period={period}
+        onPeriodChange={handlePeriodChange}
+        isPending={isFetching}
+      />
+    </div>
   );
 }
 
@@ -94,13 +96,15 @@ function SellerDashboardShell({
   const stats = data?.success ? data.stats : initialStats;
 
   return (
-    <SellerDashboard
-      stats={stats}
-      userName={userName}
-      period={period}
-      onPeriodChange={handlePeriodChange}
-      isPending={isFetching}
-    />
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <SellerDashboard
+        stats={stats}
+        userName={userName}
+        period={period}
+        onPeriodChange={handlePeriodChange}
+        isPending={isFetching}
+      />
+    </div>
   );
 }
 

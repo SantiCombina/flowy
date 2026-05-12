@@ -185,7 +185,7 @@ export function HistorySection({ initialData }: HistorySectionProps) {
         actions={<ColumnVisibilityDropdown tableName="history" />}
       />
 
-      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
+      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
           <div
             className={cn(

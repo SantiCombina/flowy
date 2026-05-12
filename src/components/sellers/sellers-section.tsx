@@ -96,7 +96,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
         }
       />
 
-      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
+      <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
