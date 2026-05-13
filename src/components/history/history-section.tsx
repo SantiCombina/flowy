@@ -2,7 +2,16 @@
 
 import { keepPreviousData } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  History,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
@@ -13,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
 import { ColumnHeaderMultiFilter } from '@/components/ui/column-header-multi-filter';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -179,17 +189,16 @@ export function HistorySection({ initialData }: HistorySectionProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Historial"
-        description="Registro de movimientos de inventario"
-        actions={<ColumnVisibilityDropdown tableName="history" />}
-      />
+      <PageHeader title="Historial" description="Registro de movimientos de inventario" />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="flex items-center justify-end p-1">
+          <ColumnVisibilityDropdown tableName="history" />
+        </div>
         <div className="space-y-3">
           <div
             className={cn(
-              'rounded-xl bg-card shadow-sm overflow-hidden border border-border/40 transition-opacity duration-150',
+              'rounded-xl bg-card shadow-md overflow-hidden transition-opacity duration-150',
               isPending && 'opacity-50 pointer-events-none',
             )}
           >
@@ -236,8 +245,12 @@ export function HistorySection({ initialData }: HistorySectionProps) {
               <TableBody>
                 {docs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
-                      No hay movimientos en el período seleccionado.
+                    <TableCell colSpan={10}>
+                      <EmptyState
+                        icon={History}
+                        title="No hay movimientos"
+                        description="No se encontraron movimientos en el período seleccionado."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -247,7 +260,10 @@ export function HistorySection({ initialData }: HistorySectionProps) {
                     return (
                       <Fragment key={movement.id}>
                         <TableRow
-                          className={cn('cursor-pointer', isExpanded && 'border-b-0')}
+                          className={cn(
+                            'cursor-pointer hover:bg-muted/50 animate-in fade-in duration-150',
+                            isExpanded && 'border-b-0',
+                          )}
                           onClick={() => setExpandedId((prev) => (prev === movement.id ? null : movement.id))}
                         >
                           {visibleColumns.includes('date') && (
@@ -328,7 +344,7 @@ export function HistorySection({ initialData }: HistorySectionProps) {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={(e) => {
+                              onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 setExpandedId((prev) => (prev === movement.id ? null : movement.id));
                               }}

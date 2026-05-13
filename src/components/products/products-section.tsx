@@ -174,10 +174,10 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
         title="Productos"
         description="Gestión del catálogo de productos"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-1">
             {canCreateProduct && !isPending && totalDocs > 0 && (
               <div
-                className="hidden sm:flex h-9 items-center gap-2 rounded-full border bg-background px-4 shadow-sm"
+                className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
                 title="Valor del inventario (página actual)"
               >
                 <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
@@ -197,9 +197,9 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
       />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pt-1">
           <div className="relative flex-1 sm:max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Buscar por nombre, código, marca..."

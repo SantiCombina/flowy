@@ -116,8 +116,8 @@ export function ProductModal({
               <ProductVariantsSection
                 fields={fields}
                 errors={errors}
-                register={register}
                 control={control}
+                setValue={setValue}
                 onAddVariant={handleAddVariant}
                 onRemoveVariant={handleRemoveVariant}
                 presentations={presentations}

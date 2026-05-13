@@ -74,7 +74,7 @@ export function ChangePasswordDialog() {
 
         {success ? (
           <ResponsiveModalBody className="space-y-4">
-            <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
+            <div className="rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
               Contraseña actualizada correctamente.
             </div>
             <Button variant="outline" className="w-full" onClick={() => handleOpenChange(false)}>

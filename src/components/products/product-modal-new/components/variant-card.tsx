@@ -2,8 +2,8 @@
 
 import { Trash2, X } from 'lucide-react';
 import { useState } from 'react';
-import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
-import { Controller, useWatch } from 'react-hook-form';
+import type { Control, UseFormSetValue } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,9 +32,8 @@ interface ProductFormData {
 }
 
 interface ExtendedVariantCardProps extends VariantCardProps {
-  register: UseFormRegister<ProductFormData>;
   control: Control<ProductFormData>;
-  errors: FieldErrors<ProductFormData>;
+  setValue: UseFormSetValue<ProductFormData>;
   usedPresentationIds: string[];
 }
 
@@ -47,10 +46,10 @@ export function VariantCard({
   onDeletePresentation,
   hasEmptyPresentation,
   usedPresentationIds,
-  register,
   control,
-  errors,
+  setValue,
 }: ExtendedVariantCardProps) {
+  const presentationId = useWatch({ control, name: `variants.${index}.presentationId` }) ?? '';
   const costPrice = useWatch({ control, name: `variants.${index}.costPrice` }) ?? 0;
   const profitMargin = useWatch({ control, name: `variants.${index}.profitMargin` }) ?? 0;
   const suggestedPrice = costPrice > 0 ? costPrice * (1 + profitMargin / 100) : null;
@@ -79,7 +78,7 @@ export function VariantCard({
   };
 
   return (
-    <div className="relative rounded-lg border border-l-4 border-l-primary/40 p-4 bg-card space-y-3">
+    <div className="relative rounded-lg border-l-4 border-l-primary/40 p-4 bg-card space-y-3 shadow-sm">
       {canDelete && (
         <Button
           type="button"
@@ -114,112 +113,98 @@ export function VariantCard({
               </button>
             )}
           </div>
-          <Controller
-            name={`variants.${index}.presentationId`}
-            control={control}
-            render={({ field }) => {
-              if (isCreatingPresentation) {
-                return (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="Nombre de la nueva presentación"
-                      value={newPresentationName}
-                      onChange={(e) => setNewPresentationName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          void handleCreatePresentation();
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => void handleCreatePresentation()}
-                        disabled={!newPresentationName.trim() || isSubmittingPresentation}
-                      >
-                        {isSubmittingPresentation ? 'Creando…' : 'Crear'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelPresentation}
-                        disabled={isSubmittingPresentation}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-
-              const handleValueChange = (newValue: string) => {
+          {isCreatingPresentation ? (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="Nombre de la nueva presentación"
+                value={newPresentationName}
+                onChange={(e) => setNewPresentationName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void handleCreatePresentation();
+                  }
+                }}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void handleCreatePresentation()}
+                  disabled={!newPresentationName.trim() || isSubmittingPresentation}
+                >
+                  {isSubmittingPresentation ? 'Creando…' : 'Crear'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelPresentation}
+                  disabled={isSubmittingPresentation}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Select
+              onValueChange={(newValue) => {
                 if (newValue === '__clear__') {
-                  field.onChange('');
+                  setValue(`variants.${index}.presentationId`, '');
                   return;
                 }
-                field.onChange(newValue);
-              };
-
-              const handleDeleteClick = (e: React.MouseEvent, presId: number, presLabel: string) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDeletePresentation(presId, presLabel);
-              };
-
-              return (
-                <Select onValueChange={handleValueChange} value={field.value}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.value && (
-                      <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
-                        ✕ Sin presentación
-                      </SelectItem>
-                    )}
-                    {presentations.length === 0 ? (
-                      <SelectItem value="_empty" disabled>
-                        Sin presentaciones
-                      </SelectItem>
-                    ) : (
-                      presentations.map((pres) => (
-                        <SelectItem
-                          key={pres.id}
-                          value={pres.id.toString()}
-                          className="pr-16"
-                          disabled={usedPresentationIds.includes(pres.id.toString())}
-                        >
-                          <SelectItemText>{pres.label}</SelectItemText>
-                          <button
-                            type="button"
-                            onMouseDown={(e) => handleDeleteClick(e, pres.id, pres.label)}
-                            className="absolute right-8 p-1 rounded hover:bg-destructive/10 text-destructive transition-colors z-10"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              );
-            }}
-          />
-          {errors.variants?.[index]?.presentationId && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.presentationId?.message}</p>
+                setValue(`variants.${index}.presentationId`, newValue);
+              }}
+              value={presentationId}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar..." />
+              </SelectTrigger>
+              <SelectContent>
+                {presentationId && (
+                  <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
+                    ✕ Sin presentación
+                  </SelectItem>
+                )}
+                {presentations.length === 0 ? (
+                  <SelectItem value="_empty" disabled>
+                    Sin presentaciones
+                  </SelectItem>
+                ) : (
+                  presentations.map((pres) => (
+                    <SelectItem
+                      key={pres.id}
+                      value={pres.id.toString()}
+                      className="pr-16"
+                      disabled={usedPresentationIds.includes(pres.id.toString())}
+                    >
+                      <SelectItemText>{pres.label}</SelectItemText>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeletePresentation(pres.id, pres.label);
+                        }}
+                        className="absolute right-8 p-1 rounded hover:bg-destructive/10 text-destructive transition-colors z-10"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
         <div className="space-y-2">
           <Label>Código</Label>
           <Input
-            {...register(`variants.${index}.code`)}
             placeholder="Código de variante"
-            className="bg-muted border-muted-foreground/30 font-mono text-sm font-medium tracking-wide placeholder:text-muted-foreground/50"
+            className="bg-muted font-mono text-sm font-medium tracking-wide placeholder:text-muted-foreground/50"
+            {...control.register(`variants.${index}.code`)}
           />
         </div>
       </div>
@@ -229,18 +214,9 @@ export function VariantCard({
           <Label>Stock *</Label>
           <Input
             type="number"
-            {...register(`variants.${index}.stock`, {
-              setValueAs: (value) => {
-                const num = parseFloat(value);
-                return isNaN(num) ? 0 : num;
-              },
-            })}
             placeholder="0"
-            defaultValue={0}
+            {...control.register(`variants.${index}.stock`, { valueAsNumber: true })}
           />
-          {errors.variants?.[index]?.stock && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.stock?.message}</p>
-          )}
         </div>
 
         <div className="space-y-2">
@@ -248,30 +224,14 @@ export function VariantCard({
           <Input
             type="number"
             min={0}
-            {...register(`variants.${index}.minimumStock`, {
-              setValueAs: (value) => {
-                const num = parseFloat(value);
-                return isNaN(num) ? 0 : num;
-              },
-            })}
             placeholder="0"
-            defaultValue={0}
+            {...control.register(`variants.${index}.minimumStock`, { valueAsNumber: true })}
           />
-          {errors.variants?.[index]?.minimumStock && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.minimumStock?.message}</p>
-          )}
         </div>
 
         <div className="space-y-2">
           <Label>Precio de costo *</Label>
-          <Controller
-            name={`variants.${index}.costPrice`}
-            control={control}
-            render={({ field }) => <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />}
-          />
-          {errors.variants?.[index]?.costPrice && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.costPrice?.message}</p>
-          )}
+          <PriceInput value={costPrice} onChange={(val) => setValue(`variants.${index}.costPrice`, val)} />
         </div>
       </div>
 
@@ -282,23 +242,14 @@ export function VariantCard({
             type="number"
             min={0}
             step={0.1}
-            {...register(`variants.${index}.profitMargin`, {
-              setValueAs: (value) => {
-                const num = parseFloat(value);
-                return isNaN(num) ? 0 : num;
-              },
-            })}
             placeholder="0"
-            defaultValue={0}
+            {...control.register(`variants.${index}.profitMargin`, { valueAsNumber: true })}
           />
-          {errors.variants?.[index]?.profitMargin && (
-            <p className="text-xs text-destructive">{errors.variants[index]?.profitMargin?.message}</p>
-          )}
         </div>
 
         <div className="col-span-2 space-y-2">
           <Label className="text-muted-foreground">Precio sugerido de venta</Label>
-          <div className="flex h-9 items-center rounded-md border bg-muted/50 px-3 text-sm font-medium tabular-nums">
+          <div className="flex h-9 items-center rounded-md bg-muted/50 px-3 text-sm font-medium tabular-nums">
             {suggestedPrice !== null
               ? `$ ${suggestedPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : '—'}

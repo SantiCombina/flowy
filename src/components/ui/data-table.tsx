@@ -1,11 +1,12 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -136,7 +137,7 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-card shadow-md overflow-hidden border border-border/20">
+      <div className="rounded-xl bg-card shadow-md overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -220,11 +221,8 @@ export function DataTable<T>({
               ))
             ) : pageData.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={selectable ? columns.length + 1 : columns.length}
-                  className="py-10 text-center text-muted-foreground"
-                >
-                  {emptyMessage}
+                <TableCell colSpan={selectable ? columns.length + 1 : columns.length}>
+                  <EmptyState icon={Inbox} title={emptyMessage} />
                 </TableCell>
               </TableRow>
             ) : (
@@ -235,7 +233,7 @@ export function DataTable<T>({
                   <TableRow
                     key={itemKey}
                     data-selected={isSelected || undefined}
-                    className={cn('group', isSelected && 'bg-muted/50')}
+                    className={cn('group animate-in fade-in duration-150', isSelected && 'bg-muted/50')}
                   >
                     {selectable && (
                       <TableCell className="w-6 px-2">

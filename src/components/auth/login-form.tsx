@@ -90,7 +90,7 @@ export function LoginForm() {
         <CardContent>
           {view === 'forgot-sent' ? (
             <div className="space-y-4">
-              <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
+              <div className="rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
                 Si el email está registrado, recibirás un enlace en breve.
               </div>
               <Button variant="outline" className="w-full" onClick={goToLogin}>
@@ -145,12 +145,12 @@ export function LoginForm() {
         <Form {...loginForm}>
           <form method="post" onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-2">
             {registered && (
-              <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
+              <div className="rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
                 Cuenta creada exitosamente. Ingresá tus credenciales.
               </div>
             )}
             {passwordReset && (
-              <div className="rounded-md bg-green-500/15 p-3 text-sm text-green-700">
+              <div className="rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
                 Contraseña actualizada. Ingresá con tu nueva contraseña.
               </div>
             )}

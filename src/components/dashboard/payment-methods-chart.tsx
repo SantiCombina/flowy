@@ -12,8 +12,8 @@ const formatCurrencyCompact = (value: number) => {
 
 const METHODS = [
   { key: 'cash', label: 'Efectivo', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-  { key: 'transfer', label: 'Transferencia', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-  { key: 'check', label: 'Cheque', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  { key: 'transfer', label: 'Transferencia', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  { key: 'check', label: 'Cheque', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
 ] as const;
 
 interface PaymentMethodsChartProps {
@@ -50,7 +50,7 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
 
   return (
     <div className="space-y-4">
-      <div className="relative [&_svg]:outline-none [&_*:focus]:outline-none">
+      <div className="relative [&_svg]:outline-none [&_*:focus]:outline-none" style={{ overflow: 'visible' }}>
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>
             <Pie
@@ -71,15 +71,8 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
               ))}
             </Pie>
             <Tooltip
-              formatter={(value, name) => [formatCurrency(value as number), String(name)]}
-              contentStyle={{
-                borderRadius: '12px',
-                border: 'none',
-                backgroundColor: 'white',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                fontSize: '12px',
-              }}
-              wrapperStyle={{ outline: 'none' }}
+              content={<CustomTooltip formatter={(value, name) => [formatCurrency(value as number), String(name)]} />}
+              wrapperStyle={{ outline: 'none', zIndex: 9999 }}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -114,6 +107,27 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number; name: string }>;
+  formatter?: (value: number, name: string) => [string, string];
+}
+
+function CustomTooltip({ active, payload, formatter }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0];
+  if (!item) return null;
+  const [formattedValue, name] = formatter
+    ? formatter(item.value as number, item.name)
+    : [String(item.value), item.name];
+  return (
+    <div className="rounded-xl bg-white px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-gray-900">{formattedValue}</p>
+      {name && <p className="text-gray-500 mt-0.5">{name}</p>}
     </div>
   );
 }

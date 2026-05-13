@@ -122,7 +122,7 @@ export function CollectSaleModal({
   };
 
   const summaryBlock = (
-    <div className="rounded-lg border bg-muted/50 p-4 text-sm">
+    <div className="rounded-lg bg-muted/50 p-4 text-sm shadow-sm">
       <div className="flex justify-between">
         <span className="text-muted-foreground">Total de la venta</span>
         <span>$ {total.toLocaleString('es-AR')}</span>
@@ -146,7 +146,7 @@ export function CollectSaleModal({
       </div>
       {afterPayment !== null && (
         <div
-          className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}
+          className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-success' : 'text-warning'}`}
         >
           <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
           <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>

@@ -116,12 +116,9 @@ export function DateRangePicker({
   }
 
   const trigger = (
-    <Button
-      variant="outline"
-      className={cn('h-9 justify-start gap-2 px-3 text-sm font-normal', !value && 'text-muted-foreground', className)}
-    >
+    <Button variant="outline" className={cn(!value && 'text-muted-foreground', className)}>
       <CalendarDays className="h-4 w-4 shrink-0" />
-      <span className="flex-1 text-left">{value ? formatRange(value) : placeholder}</span>
+      <span>{value ? formatRange(value) : placeholder}</span>
     </Button>
   );
 
@@ -194,7 +191,7 @@ export function DateRangePicker({
                   key={preset.label}
                   type="button"
                   onClick={() => handlePreset(preset.getRange)}
-                  className="rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent"
+                  className="rounded-full bg-muted px-3 py-1 text-sm transition-colors hover:bg-accent"
                 >
                   {preset.label}
                 </button>

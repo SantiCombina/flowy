@@ -6,7 +6,7 @@ import { es } from 'date-fns/locale';
 import { CalendarIcon, CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
-import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -102,35 +102,37 @@ function ItemRow({
   return (
     <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,1fr)_80px_110px_140px_32px] sm:gap-2 sm:items-start">
       <div className="flex gap-2 sm:contents">
-        <Controller
+        <FormField
           control={control}
           name={`items.${index}.variantId`}
           render={({ field, fieldState }) => (
-            <div className="min-w-0 flex-1 sm:flex-none">
-              <Combobox
-                options={variants.map((v) => {
-                  const totalStock = v.warehouseStock + v.personalStock;
-                  const parts = [
-                    v.brandName ?? null,
-                    v.productName,
-                    v.presentationLabel ?? null,
-                    totalStock === 0 ? '(sin stock)' : null,
-                  ].filter(Boolean);
-                  return {
-                    value: String(v.variantId),
-                    label: parts.join(' · '),
-                    disabled: totalStock === 0,
-                  };
-                })}
-                value={field.value ? String(field.value) : ''}
-                onValueChange={handleVariantChange}
-                placeholder="Producto..."
-                searchPlaceholder="Buscar por nombre o marca..."
-                emptyMessage="No se encontró el producto."
-                className={cn(fieldState.error && 'border-destructive')}
-              />
-              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-            </div>
+            <FormItem className="min-w-0 flex-1 sm:flex-none">
+              <FormControl>
+                <Combobox
+                  options={variants.map((v) => {
+                    const totalStock = v.warehouseStock + v.personalStock;
+                    const parts = [
+                      v.brandName ?? null,
+                      v.productName,
+                      v.presentationLabel ?? null,
+                      totalStock === 0 ? '(sin stock)' : null,
+                    ].filter(Boolean);
+                    return {
+                      value: String(v.variantId),
+                      label: parts.join(' · '),
+                      disabled: totalStock === 0,
+                    };
+                  })}
+                  value={field.value ? String(field.value) : ''}
+                  onValueChange={handleVariantChange}
+                  placeholder="Producto..."
+                  searchPlaceholder="Buscar por nombre o marca..."
+                  emptyMessage="No se encontró el producto."
+                  className={cn(fieldState.error && 'border-destructive')}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
 
@@ -146,69 +148,75 @@ function ItemRow({
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:contents">
-        <Controller
+        <FormField
           control={control}
           name={`items.${index}.quantity`}
           render={({ field, fieldState }) => (
-            <div>
+            <FormItem>
               <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Cant.</p>
-              <Input
-                type="number"
-                min={1}
-                max={availableStock || undefined}
-                step={1}
-                placeholder="1"
-                value={field.value || ''}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  field.onChange(availableStock ? Math.min(val, availableStock) : val);
-                }}
-                className={fieldState.error ? 'border-destructive' : ''}
-                disabled={!variantId || availableStock === 0}
-              />
-              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-            </div>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={1}
+                  max={availableStock || undefined}
+                  step={1}
+                  placeholder="1"
+                  value={field.value || ''}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    field.onChange(availableStock ? Math.min(val, availableStock) : val);
+                  }}
+                  className={fieldState.error ? 'border-destructive' : ''}
+                  disabled={!variantId || availableStock === 0}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
 
-        <Controller
+        <FormField
           control={control}
           name={`items.${index}.unitPrice`}
           render={({ field, fieldState }) => (
-            <div>
+            <FormItem>
               <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Precio</p>
-              <PriceInput
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                className={fieldState.error ? 'border-destructive' : ''}
-              />
-              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-            </div>
+              <FormControl>
+                <PriceInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  className={fieldState.error ? 'border-destructive' : ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
 
-        <Controller
+        <FormField
           control={control}
           name={`items.${index}.stockSource`}
           render={({ field, fieldState }) => (
-            <div>
+            <FormItem>
               <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Origen</p>
-              <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
-                <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Origen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="warehouse" disabled={warehouseStock === 0}>
-                    Depósito ({warehouseStock})
-                  </SelectItem>
-                  <SelectItem value="personal" disabled={personalStock === 0}>
-                    Mi inventario ({personalStock})
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {fieldState.error && <p className="text-xs text-destructive mt-1">{fieldState.error.message}</p>}
-            </div>
+              <FormControl>
+                <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
+                  <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
+                    <SelectValue placeholder="Origen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="warehouse" disabled={warehouseStock === 0}>
+                      Depósito ({warehouseStock})
+                    </SelectItem>
+                    <SelectItem value="personal" disabled={personalStock === 0}>
+                      Mi inventario ({personalStock})
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
         />
       </div>
@@ -510,7 +518,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                 />
 
                 {serverError && (
-                  <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
+                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2">
                     <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
                     <p className="text-sm text-destructive">{serverError}</p>
                   </div>

@@ -26,7 +26,7 @@ export function PageHeader({ title, description, actions, isLoading, hideTitle }
           <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
         </div>
         {actions && (
-          <div className="shrink-0 self-end sm:self-auto [&_[data-slot=button][data-variant=default]]:shadow-md [&_[data-slot=button][data-variant=default]]:shadow-primary/20 [&_[data-slot=button][data-variant=default]]:hover:brightness-110">
+          <div className="shrink-0 self-end sm:self-auto pt-1 [&_[data-slot=button][data-variant=default]]:shadow-md [&_[data-slot=button][data-variant=default]]:shadow-primary/20 [&_[data-slot=button][data-variant=default]]:hover:brightness-110">
             {actions}
           </div>
         )}

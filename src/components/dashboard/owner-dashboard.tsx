@@ -112,7 +112,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
               <CardTitle className="text-base">Ventas · {PERIOD_CHART_LABEL[period]}</CardTitle>
             </CardHeader>
             <CardContent>
-              <SalesChart data={stats.salesByDay} period={period} color="#6366f1" gradientId="ownerSalesGradient" />
+              <SalesChart data={stats.salesByDay} period={period} gradientId="ownerSalesGradient" />
             </CardContent>
           </Card>
 
@@ -139,7 +139,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                   const pct = Math.round((seller.total / totalSellerRevenue) * 100);
                   const podiumColor =
                     i === 0
-                      ? 'text-amber-400'
+                      ? 'text-warning'
                       : i === 1
                         ? 'text-slate-400'
                         : i === 2
@@ -189,12 +189,12 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
               {stats.lowStockAlerts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center space-y-1 py-6 text-center">
                   <TrendingUp className="h-8 w-8 text-emerald-500" />
-                  <p className="text-sm font-medium text-emerald-600">¡Todo en orden!</p>
+                  <p className="text-sm font-medium text-success">¡Todo en orden!</p>
                   <p className="text-xs text-muted-foreground">No hay variantes con bajo stock</p>
                 </div>
               ) : (
                 stats.lowStockAlerts.map((alert, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+                  <div key={i} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm shadow-sm">
                     <div className="shrink-0">
                       {alert.imageUrl ? (
                         <Image

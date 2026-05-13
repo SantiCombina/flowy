@@ -109,11 +109,7 @@ export function SellersTable({
         if (!summary || summary.pendingBalance === 0) {
           return <div className="text-muted-foreground">$ 0</div>;
         }
-        return (
-          <div className="font-medium text-orange-600 dark:text-orange-400">
-            {formatCurrency(summary.pendingBalance)}
-          </div>
-        );
+        return <div className="font-medium text-warning">{formatCurrency(summary.pendingBalance)}</div>;
       },
       className: 'w-px',
     },
@@ -162,7 +158,7 @@ export function SellersTable({
       const isActive = seller.isActive ?? true;
       return (
         <div className="flex justify-center">
-          <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
+          <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-success' : 'bg-muted'}`} />
         </div>
       );
     },

@@ -119,7 +119,10 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
             </p>
           ) : (
             inventory.map((item) => (
-              <div key={item.variantId} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div
+                key={item.variantId}
+                className="flex items-center justify-between gap-3 rounded-lg bg-muted/30 p-3 shadow-sm"
+              >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
                     {item.productName}

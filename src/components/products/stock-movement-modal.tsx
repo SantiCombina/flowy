@@ -40,7 +40,7 @@ const movementTypes = [
   {
     value: 'exit',
     label: 'Salida',
-    icon: <ArrowDown className="text-red-600" />,
+    icon: <ArrowDown className="text-destructive" />,
   },
   {
     value: 'adjustment',
@@ -127,7 +127,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <ResponsiveModalBody className="space-y-4">
-          <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
+          <div className="rounded-lg bg-muted/50 p-3 space-y-1 shadow-sm">
             <p className="text-sm font-medium">
               {variant.product.name} - {variant.presentation.label}
             </p>
@@ -170,11 +170,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
           </div>
 
           {newStock !== null && (
-            <div
-              className={`rounded-lg border p-3 ${
-                newStock < 0 ? 'border-destructive bg-destructive/10' : 'border-primary bg-primary/10'
-              }`}
-            >
+            <div className={`rounded-lg p-3 shadow-sm ${newStock < 0 ? 'bg-destructive/10' : 'bg-primary/10'}`}>
               <p className="text-sm font-medium">
                 Nuevo stock: {newStock} unidades
                 {newStock < 0 && <span className="ml-2 text-destructive">(Stock negativo no permitido)</span>}

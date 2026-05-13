@@ -18,7 +18,7 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({ period, onPeriodChange, disabled }: PeriodSelectorProps) {
   return (
-    <div className="flex gap-0.5 rounded-md border bg-muted p-0.5 w-fit">
+    <div className="flex gap-0.5 rounded-md bg-muted p-0.5 w-fit shadow-sm">
       {PERIODS.map(({ value, label }) => (
         <button
           key={value}

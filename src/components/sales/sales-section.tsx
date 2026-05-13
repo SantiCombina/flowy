@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Inbox,
   Pencil,
   Trash2,
   Truck,
@@ -37,6 +38,7 @@ import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filte
 import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import type { DateRangeValue } from '@/components/ui/date-range-filter';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
@@ -356,7 +358,7 @@ export function SalesSection({
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
-          <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
+          <div className="rounded-xl bg-card shadow-md overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -453,8 +455,12 @@ export function SalesSection({
               <TableBody>
                 {paginatedSales.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={totalCols} className="py-10 text-center text-muted-foreground">
-                      No hay ventas registradas.
+                    <TableCell colSpan={totalCols}>
+                      <EmptyState
+                        icon={Inbox}
+                        title="No hay ventas"
+                        description="No se encontraron ventas registradas."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -472,7 +478,10 @@ export function SalesSection({
                     return (
                       <Fragment key={sale.id}>
                         <TableRow
-                          className={cn('cursor-pointer', isExpanded && 'border-b-0')}
+                          className={cn(
+                            'cursor-pointer hover:bg-muted/50 animate-in fade-in duration-150',
+                            isExpanded && 'border-b-0',
+                          )}
                           onClick={() => toggleExpand(sale.id)}
                         >
                           {visibleColumns.includes('date') && (
@@ -514,7 +523,10 @@ export function SalesSection({
                               </span>
                               {sale.checkDueDate && (
                                 <span
-                                  className={cn('ml-1.5 text-xs', isOverdue ? 'text-red-500' : 'text-muted-foreground')}
+                                  className={cn(
+                                    'ml-1.5 text-xs',
+                                    isOverdue ? 'text-destructive' : 'text-muted-foreground',
+                                  )}
                                 >
                                   · {formatShortDate(sale.checkDueDate)}
                                   {isOverdue && ' (listo para cobrar)'}
@@ -589,7 +601,7 @@ export function SalesSection({
                         {isExpanded && (
                           <TableRow className="hover:bg-transparent">
                             <TableCell colSpan={totalCols} className="px-6 pb-4 pt-0 bg-muted/30">
-                              <div className="rounded-md border bg-background overflow-hidden">
+                              <div className="rounded-md bg-background overflow-hidden shadow-sm">
                                 <table className="w-full text-sm">
                                   <thead>
                                     <tr className="border-b bg-muted/50">
@@ -630,7 +642,7 @@ export function SalesSection({
                                   {sale.checkDueDate && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Fecha cobro cheque</p>
-                                      <p className={cn('font-medium', isOverdue && 'text-red-600')}>
+                                      <p className={cn('font-medium', isOverdue && 'text-destructive')}>
                                         {formatShortDate(sale.checkDueDate)}
                                         {isOverdue && ' · Listo para cobrar'}
                                       </p>
@@ -645,7 +657,7 @@ export function SalesSection({
                                   {displayStatus === 'partially_collected' && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Restante</p>
-                                      <p className="font-medium text-orange-600">
+                                      <p className="font-medium text-warning">
                                         $ {formatPrice(sale.total - displayAmountPaid)}
                                       </p>
                                     </div>

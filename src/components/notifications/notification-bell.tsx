@@ -188,7 +188,7 @@ export function NotificationBell() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-info [&_svg]:hover:text-info"
             onClick={handleMarkAllRead}
             disabled={isMarkingAll}
           >
@@ -237,7 +237,7 @@ export function NotificationBell() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-blue-500 [&_svg]:hover:text-blue-500"
+            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-info [&_svg]:hover:text-info"
             onClick={handleMarkAllRead}
             disabled={isMarkingAll}
           >

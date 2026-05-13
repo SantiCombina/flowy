@@ -158,7 +158,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
                       className={cn(
                         'h-10 rounded-xl px-3 gap-3 transition-all duration-200',
                         'text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90',
-                        'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-orange-400 data-[active=true]:shadow-none',
+                        'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-warning data-[active=true]:shadow-none',
                         'group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!h-8',
                       )}
                     >

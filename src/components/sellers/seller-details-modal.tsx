@@ -190,17 +190,17 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                   className={`space-y-4 ${isLoadingCommissions ? 'opacity-60 pointer-events-none transition-opacity' : 'transition-opacity'}`}
                 >
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border p-3">
+                    <div className="rounded-lg bg-muted/30 p-3 shadow-sm">
                       <span className="text-xs text-muted-foreground">Saldo pendiente</span>
                       <p
-                        className={`text-lg font-semibold ${commissionSummary.pendingBalance > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}`}
+                        className={`text-lg font-semibold ${commissionSummary.pendingBalance > 0 ? 'text-warning' : 'text-success'}`}
                       >
                         {formatCurrency(commissionSummary.pendingBalance)}
                       </p>
                     </div>
-                    <div className="rounded-lg border p-3">
+                    <div className="rounded-lg bg-muted/30 p-3 shadow-sm">
                       <span className="text-xs text-muted-foreground">Total pagado</span>
-                      <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                      <p className="text-lg font-semibold text-success">
                         {formatCurrency(commissionSummary.totalPaid)}
                       </p>
                     </div>
@@ -230,17 +230,17 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-lg border p-2.5">
+                      <div className="rounded-lg bg-muted/30 p-2.5 shadow-sm">
                         <span className="text-[11px] text-muted-foreground">Ventas</span>
                         <p className="text-sm font-semibold">{formatCurrency(commissionSummary.periodSales)}</p>
                       </div>
-                      <div className="rounded-lg border p-2.5">
+                      <div className="rounded-lg bg-muted/30 p-2.5 shadow-sm">
                         <span className="text-[11px] text-muted-foreground">Comisión</span>
                         <p className="text-sm font-semibold">{formatCurrency(commissionSummary.periodCommission)}</p>
                       </div>
-                      <div className="rounded-lg border p-2.5">
+                      <div className="rounded-lg bg-muted/30 p-2.5 shadow-sm">
                         <span className="text-[11px] text-muted-foreground">Pagos</span>
-                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        <p className="text-sm font-semibold text-success">
                           {formatCurrency(commissionSummary.periodPayments)}
                         </p>
                       </div>
@@ -258,7 +258,10 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                     ) : (
                       <div className="space-y-2 max-h-60 overflow-y-auto">
                         {commissionPayments.map((payment) => (
-                          <div key={payment.id} className="flex items-center justify-between rounded-lg border p-3">
+                          <div
+                            key={payment.id}
+                            className="flex items-center justify-between rounded-lg bg-muted/30 p-3 shadow-sm"
+                          >
                             <div className="flex flex-col gap-0.5">
                               <span className="text-sm font-medium">{formatCurrency(payment.amount)}</span>
                               <span className="text-xs text-muted-foreground">

@@ -211,7 +211,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
               control={form.control}
               name="isActive"
               render={({ field }) => (
-                <FormItem className="flex bg-white flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormItem className="flex bg-white flex-row items-start space-x-3 space-y-0 rounded-md p-4 shadow-sm">
                   <FormControl>
                     <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>

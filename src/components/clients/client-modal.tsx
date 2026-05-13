@@ -382,7 +382,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
                             type="button"
                             onClick={() => void handleCreateZone()}
                             disabled={!newZoneName.trim() || isDuplicateZone}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-emerald-600 transition-colors"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-success hover:bg-success-muted hover:text-success-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-success transition-colors"
                             title="Crear zona"
                           >
                             <Check className="h-4 w-4" strokeWidth={2.5} />

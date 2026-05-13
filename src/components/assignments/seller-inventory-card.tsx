@@ -34,7 +34,7 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
       : seller.items;
 
   return (
-    <Card className="flex flex-col overflow-hidden border shadow-sm relative p-0">
+    <Card className="flex flex-col overflow-hidden shadow-sm relative p-0">
       <div className={`h-1.5 w-full bg-linear-to-r ${palette.bar}`} />
 
       <CardHeader className="px-5 pt-5 pb-4">
@@ -56,7 +56,7 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
       </CardHeader>
 
       <CardContent className="flex-1 px-5 pt-0 pb-5">
-        <div className="rounded-lg border bg-muted/30 divide-y divide-border/60 overflow-hidden">
+        <div className="rounded-lg bg-muted/30 divide-y divide-border/60 overflow-hidden shadow-sm">
           {filteredItems.map((item) => (
             <div key={item.variantId} className="flex items-center justify-between gap-3 px-4 py-2.5">
               <div className="min-w-0 flex-1">
@@ -72,8 +72,8 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
                 variant="secondary"
                 className={
                   item.quantity >= 10
-                    ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-0'
-                    : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/10 border-0'
+                    ? 'bg-success-muted text-success-muted-foreground hover:bg-success-muted border-0'
+                    : 'bg-warning-muted text-warning-muted-foreground hover:bg-warning-muted border-0'
                 }
               >
                 {item.quantity}

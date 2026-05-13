@@ -6,7 +6,7 @@ export function DashboardSection() {
       <PageHeader title="Dashboard" description="Resumen general del negocio" />
 
       <main className="flex-1 px-4 pb-6 sm:px-6">
-        <div className="flex items-center justify-center rounded-lg border border-dashed p-12">
+        <div className="flex items-center justify-center rounded-lg bg-muted/40 p-12 shadow-sm">
           <p className="text-muted-foreground">Contenido del dashboard próximamente...</p>
         </div>
       </main>
