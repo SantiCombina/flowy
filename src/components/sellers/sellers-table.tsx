@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDownToLine, ArrowUpFromLine, Eye, Pencil, Trash2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { CommissionSummary } from '@/app/services/commissions';
@@ -26,6 +26,20 @@ import type { User } from '@/payload-types';
 
 import { deleteSellerAction } from './actions';
 
+const statusDotColumn: Column<User> = {
+  key: 'status',
+  header: '',
+  cell: (seller) => {
+    const isActive = seller.isActive ?? true;
+    return (
+      <div className="flex justify-center">
+        <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-success' : 'bg-muted'}`} />
+      </div>
+    );
+  },
+  className: 'w-6 pr-0',
+};
+
 interface SellersTableProps {
   sellers: User[];
   commissionBalances?: Record<number, CommissionSummary>;
@@ -36,7 +50,7 @@ interface SellersTableProps {
   onReturn?: (seller: User) => void;
 }
 
-export function SellersTable({
+function SellersTableComponent({
   sellers,
   commissionBalances,
   searchQuery = '',
@@ -46,7 +60,7 @@ export function SellersTable({
   onReturn,
 }: SellersTableProps) {
   const { getVisibleColumns } = useSettings();
-  const visibleColumns = getVisibleColumns('sellers');
+  const visibleColumns = useMemo(() => getVisibleColumns('sellers'), [getVisibleColumns]);
   const { invalidateQueries } = useInvalidateQueries();
   const [sellerToDelete, setSellerToDelete] = useState<User | null>(null);
 
@@ -76,109 +90,106 @@ export function SellersTable({
     setSellerToDelete(null);
   };
 
-  const allColumns: Record<string, Column<User>> = {
-    name: {
-      key: 'name',
-      header: COLUMN_LABELS.name,
-      sortable: true,
-      sortValue: (s) => s.name,
-      cell: (seller) => <div className="font-medium">{seller.name}</div>,
-    },
-    email: {
-      key: 'email',
-      header: COLUMN_LABELS.email,
-      sortable: true,
-      sortValue: (s) => s.email,
-      cell: (seller) => <div className="text-muted-foreground">{seller.email}</div>,
-    },
-    phone: {
-      key: 'phone',
-      header: COLUMN_LABELS.phone,
-      sortable: true,
-      sortValue: (s) => s.phone ?? '',
-      cell: (seller) => <div className="text-muted-foreground">{seller.phone || '-'}</div>,
-      className: 'w-px',
-    },
-    commissionBalance: {
-      key: 'commissionBalance',
-      header: COLUMN_LABELS.commissionBalance,
-      sortable: true,
-      sortValue: (s) => commissionBalances?.[s.id]?.pendingBalance ?? 0,
-      cell: (seller) => {
-        const summary = commissionBalances?.[seller.id];
-        if (!summary || summary.pendingBalance === 0) {
-          return <div className="text-muted-foreground">$ 0</div>;
-        }
-        return <div className="font-medium text-warning">{formatCurrency(summary.pendingBalance)}</div>;
+  const allColumns = useMemo<Record<string, Column<User>>>(
+    () => ({
+      name: {
+        key: 'name',
+        header: COLUMN_LABELS.name,
+        sortable: true,
+        sortValue: (s) => s.name,
+        cell: (seller) => <div className="font-medium">{seller.name}</div>,
       },
-      className: 'w-px',
-    },
-    createdAt: {
-      key: 'createdAt',
-      header: COLUMN_LABELS.createdAt,
-      sortable: true,
-      sortValue: (s) => s.createdAt,
-      cell: (seller) => {
-        const date = new Date(seller.createdAt);
-        return (
-          <div className="text-sm text-muted-foreground">
-            {date.toLocaleDateString('es-AR', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })}
-          </div>
-        );
+      email: {
+        key: 'email',
+        header: COLUMN_LABELS.email,
+        sortable: true,
+        sortValue: (s) => s.email,
+        cell: (seller) => <div className="text-muted-foreground">{seller.email}</div>,
       },
-      className: 'w-px',
-    },
-  };
+      phone: {
+        key: 'phone',
+        header: COLUMN_LABELS.phone,
+        sortable: true,
+        sortValue: (s) => s.phone ?? '',
+        cell: (seller) => <div className="text-muted-foreground">{seller.phone || '-'}</div>,
+        className: 'w-px',
+      },
+      commissionBalance: {
+        key: 'commissionBalance',
+        header: COLUMN_LABELS.commissionBalance,
+        sortable: true,
+        sortValue: (s) => commissionBalances?.[s.id]?.pendingBalance ?? 0,
+        cell: (seller) => {
+          const summary = commissionBalances?.[seller.id];
+          if (!summary || summary.pendingBalance === 0) {
+            return <div className="text-muted-foreground">$ 0</div>;
+          }
+          return <div className="font-medium text-warning">{formatCurrency(summary.pendingBalance)}</div>;
+        },
+        className: 'w-px',
+      },
+      createdAt: {
+        key: 'createdAt',
+        header: COLUMN_LABELS.createdAt,
+        sortable: true,
+        sortValue: (s) => s.createdAt,
+        cell: (seller) => {
+          const date = new Date(seller.createdAt);
+          return (
+            <div className="text-sm text-muted-foreground">
+              {date.toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })}
+            </div>
+          );
+        },
+        className: 'w-px',
+      },
+    }),
+    [commissionBalances],
+  );
 
-  const actionsColumn: Column<User> = {
-    key: 'actions',
-    header: '',
-    cell: (seller) => (
-      <ActionMenu
-        items={[
-          { label: 'Ver detalles', icon: Eye, onClick: () => onViewDetails?.(seller) },
-          { label: 'Despachar stock', icon: ArrowDownToLine, onClick: () => onDispatch?.(seller) },
-          { label: 'Devolver stock', icon: ArrowUpFromLine, onClick: () => onReturn?.(seller) },
-          { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(seller), separator: true },
-          { label: 'Eliminar', icon: Trash2, onClick: () => setSellerToDelete(seller), variant: 'destructive' },
-        ]}
-      />
-    ),
-    className: 'w-16',
-  };
+  const actionsColumn = useMemo<Column<User>>(
+    () => ({
+      key: 'actions',
+      header: '',
+      cell: (seller) => (
+        <ActionMenu
+          items={[
+            { label: 'Ver detalles', icon: Eye, onClick: () => onViewDetails?.(seller) },
+            { label: 'Despachar stock', icon: ArrowDownToLine, onClick: () => onDispatch?.(seller) },
+            { label: 'Devolver stock', icon: ArrowUpFromLine, onClick: () => onReturn?.(seller) },
+            { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(seller), separator: true },
+            { label: 'Eliminar', icon: Trash2, onClick: () => setSellerToDelete(seller), variant: 'destructive' },
+          ]}
+        />
+      ),
+      className: 'w-16',
+    }),
+    [onViewDetails, onEdit, onDispatch, onReturn],
+  );
 
-  const statusDotColumn: Column<User> = {
-    key: 'status',
-    header: '',
-    cell: (seller) => {
-      const isActive = seller.isActive ?? true;
-      return (
-        <div className="flex justify-center">
-          <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-success' : 'bg-muted'}`} />
-        </div>
-      );
-    },
-    className: 'w-6 pr-0',
-  };
+  const columns = useMemo<Column<User>[]>(
+    () => [
+      statusDotColumn,
+      ...Object.entries(allColumns)
+        .filter(([key]) => visibleColumns.includes(key))
+        .map(([, col]) => col),
+      actionsColumn,
+    ],
+    [allColumns, visibleColumns, actionsColumn],
+  );
 
-  const columns: Column<User>[] = [
-    statusDotColumn,
-    ...Object.entries(allColumns)
-      .filter(([key]) => visibleColumns.includes(key))
-      .map(([, col]) => col),
-    actionsColumn,
-  ];
+  const keyExtractor = useCallback((seller: User) => seller.id, []);
 
   return (
     <>
       <DataTable<User>
         data={filteredSellers}
         columns={columns}
-        keyExtractor={(seller) => seller.id}
+        keyExtractor={keyExtractor}
         emptyMessage={searchQuery ? 'No se encontraron vendedores' : 'No hay vendedores registrados aún'}
       />
 
@@ -202,3 +213,5 @@ export function SellersTable({
     </>
   );
 }
+
+export const SellersTable = memo(SellersTableComponent);

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
@@ -249,6 +249,15 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const variants: SaleVariantOption[] = optionsResult?.variants ?? [];
   const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.clients ?? [];
@@ -287,24 +296,30 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     setIsClientModalOpen(false);
   };
 
-  const onSubmit = async (data: SaleValues) => {
-    setServerError(null);
-    const result = await submitSale(data);
+  const onSubmit = useCallback(
+    async (data: SaleValues) => {
+      setServerError(null);
+      const result = await submitSale(data);
 
-    if (result?.serverError) {
-      setServerError(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        setServerError(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      setShowSuccess(true);
-      onSuccess();
-      setTimeout(onClose, 2000);
-    }
-  };
+      if (result?.data?.success) {
+        setShowSuccess(true);
+        onSuccess();
+        closeTimeoutRef.current = setTimeout(onClose, 2000);
+      }
+    },
+    [submitSale, onSuccess, onClose],
+  );
 
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // eslint-disable-next-line react-hooks/refs -- RHF handleSubmit is an event handler, not render-time
+  const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return (
     <>
@@ -331,7 +346,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
         ) : (
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={handleFormSubmit}
               onKeyDown={(e) => {
                 if (
                   e.key === 'Enter' &&

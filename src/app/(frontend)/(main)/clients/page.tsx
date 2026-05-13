@@ -1,15 +1,18 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getClientDebts, getClients } from '@/app/services/clients';
 import { ClientsSection } from '@/components/clients/clients-section';
+import { ClientsSkeleton } from '@/components/clients/clients-skeleton';
 import { getCurrentUser } from '@/lib/payload';
+import { serializeForClient } from '@/lib/serialization';
 
 export const metadata: Metadata = {
   title: 'Clientes',
 };
 
-export default async function ClientsPage() {
+async function ClientsContent() {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -33,5 +36,13 @@ export default async function ClientsPage() {
     getClientDebts({ ownerId, sellerId }),
   ]);
 
-  return <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={user} />;
+  return <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={serializeForClient(user)} />;
+}
+
+export default async function ClientsPage() {
+  return (
+    <Suspense fallback={<ClientsSkeleton />}>
+      <ClientsContent />
+    </Suspense>
+  );
 }

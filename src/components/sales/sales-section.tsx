@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { endOfDay, startOfDay } from 'date-fns';
 import {
   ArrowDown,
@@ -16,7 +15,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
@@ -120,6 +119,43 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
+interface SortableHeadProps {
+  column: SortKey;
+  label: string;
+  className?: string;
+  sortKey: SortKey | null;
+  sortDir: 'asc' | 'desc';
+  onSort: (key: string) => void;
+}
+
+const SortableHead = memo(function SortableHead({
+  column,
+  label,
+  className,
+  sortKey,
+  sortDir,
+  onSort,
+}: SortableHeadProps) {
+  return (
+    <TableHead
+      className={className}
+      aria-sort={sortKey === column ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          'flex items-center gap-1 hover:text-foreground transition-colors',
+          className?.includes('text-right') && 'w-full justify-end',
+        )}
+      >
+        {label}
+        <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
+      </button>
+    </TableHead>
+  );
+});
+
 interface SalesSectionProps {
   initialSales: { success: true; sales: SaleRow[] };
   zones: Zone[];
@@ -130,7 +166,7 @@ interface SalesSectionProps {
   initialStatusFilter?: StatusFilter;
 }
 
-export function SalesSection({
+function SalesSectionComponent({
   initialSales,
   zones,
   showSellerColumn,
@@ -142,18 +178,11 @@ export function SalesSection({
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
   const { invalidateQueries } = useInvalidateQueries();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (initialSales.sales.length > 0) {
-      queryClient.setQueryData(['sales'], initialSales);
-    }
-  }, [queryClient, initialSales]);
 
   const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
 
-  const { data, isFetching } = useServerActionQuery({
+  const { data } = useServerActionQuery({
     queryKey: queryKeys.sales.list(),
     queryFn: () => getSalesAction(),
     initialData: initialSales,
@@ -328,31 +357,11 @@ export function SalesSection({
   const hasActions = canManage || canCollect || canMarkDelivery;
   const totalCols = visibleOptionalCount + 1 + 1 + (hasActions ? 1 : 0);
 
-  const sortableHead = (key: SortKey, label: string, className?: string) => (
-    <TableHead
-      className={className}
-      aria-sort={sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-    >
-      <button
-        type="button"
-        onClick={() => handleSort(key)}
-        className={cn(
-          'flex items-center gap-1 hover:text-foreground transition-colors',
-          className?.includes('text-right') && 'w-full justify-end',
-        )}
-      >
-        {label}
-        <SortIcon column={key} sortKey={sortKey} sortDir={sortDir} />
-      </button>
-    </TableHead>
-  );
-
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader
         title="Ventas"
         description="Registro y seguimiento de ventas"
-        isLoading={isFetching}
         actions={<ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />}
       />
 
@@ -377,8 +386,24 @@ export function SalesSection({
                       className="w-px"
                     />
                   )}
-                  {showSeller && sortableHead('seller', 'Vendedor')}
-                  {visibleColumns.includes('client') && sortableHead('client', 'Cliente')}
+                  {showSeller && (
+                    <SortableHead
+                      column="seller"
+                      label="Vendedor"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
+                  {visibleColumns.includes('client') && (
+                    <SortableHead
+                      column="client"
+                      label="Cliente"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
                   {visibleColumns.includes('zone') && (
                     <ColumnHeaderFilter
                       title="Zona"
@@ -395,8 +420,26 @@ export function SalesSection({
                       className="w-px"
                     />
                   )}
-                  {visibleColumns.includes('items') && sortableHead('items', 'Ítems', 'w-px text-center')}
-                  {visibleColumns.includes('total') && sortableHead('total', 'Total', 'w-px text-right')}
+                  {visibleColumns.includes('items') && (
+                    <SortableHead
+                      column="items"
+                      label="Ítems"
+                      className="w-px text-center"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
+                  {visibleColumns.includes('total') && (
+                    <SortableHead
+                      column="total"
+                      label="Total"
+                      className="w-px text-right"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
                   {visibleColumns.includes('paymentMethod') && (
                     <ColumnHeaderFilter
                       title="Pago"
@@ -697,7 +740,7 @@ export function SalesSection({
 
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <span>Filas por página</span>
+              <span className="hidden sm:inline">Filas por página</span>
               <Select
                 value={String(itemsPerPage)}
                 onValueChange={(v) => {
@@ -705,7 +748,7 @@ export function SalesSection({
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-9 w-17.5">
+                <SelectTrigger className="h-9 w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -718,11 +761,21 @@ export function SalesSection({
               </Select>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span>
-                {filteredSales.length === 0
-                  ? '0 resultados'
-                  : `${(safePage - 1) * itemsPerPage + 1}–${Math.min(safePage * itemsPerPage, filteredSales.length)} de ${filteredSales.length}`}
+                {filteredSales.length === 0 ? (
+                  '0 resultados'
+                ) : (
+                  <>
+                    <span className="sm:hidden">
+                      {safePage}/{totalPages}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {(safePage - 1) * itemsPerPage + 1}–{Math.min(safePage * itemsPerPage, filteredSales.length)} de{' '}
+                      {filteredSales.length}
+                    </span>
+                  </>
+                )}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -814,3 +867,5 @@ export function SalesSection({
     </div>
   );
 }
+
+export const SalesSection = memo(SalesSectionComponent);

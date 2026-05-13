@@ -1,4 +1,5 @@
 import { AlertTriangle, ImageOff, Package, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
 import type { OwnerDashboardStats, Period } from '@/app/services/dashboard';
@@ -7,10 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatShortDate } from '@/lib/utils';
 
-import { PaymentMethodsChart } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
-import { SalesChart } from './sales-chart';
 import { StatCard } from './stat-card';
+
+const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), { ssr: false });
+const PaymentMethodsChart = dynamic(() => import('./payment-methods-chart').then((m) => m.PaymentMethodsChart), {
+  ssr: false,
+});
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -203,7 +207,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                           width={36}
                           height={36}
                           className="h-9 w-9 rounded object-cover"
-                          unoptimized
+                          sizes="36px"
                         />
                       ) : (
                         <div className="flex h-9 w-9 items-center justify-center rounded bg-muted">

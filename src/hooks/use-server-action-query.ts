@@ -7,6 +7,13 @@ type ServerActionResult<TData> = {
   serverError?: string;
 };
 
+export class BusinessError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BusinessError';
+  }
+}
+
 export function useServerActionQuery<TData>(
   options: {
     queryKey: QueryKey;
@@ -20,12 +27,16 @@ export function useServerActionQuery<TData>(
     queryFn: async () => {
       const result = await queryFn();
       if (result.serverError) {
-        throw new Error(result.serverError);
+        throw new BusinessError(result.serverError);
       }
       if (result.data === undefined) {
         throw new Error('No se recibieron datos del servidor');
       }
       return result.data;
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof BusinessError) return false;
+      return failureCount < 3;
     },
     ...rest,
   });

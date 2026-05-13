@@ -1,8 +1,7 @@
 'use client';
 
 import { keepPreviousData } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { OwnerDashboardStats, Period, SellerDashboardStats } from '@/app/services/dashboard';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
@@ -29,11 +28,6 @@ type DashboardShellProps =
 
 function OwnerDashboardShell({ userName, initialStats }: { userName: string; initialStats: OwnerDashboardStats }) {
   const [period, setPeriod] = useState<Period>('month');
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    queryClient.setQueryData(['dashboard', { kind: 'owner', period: 'month' }], { success: true, stats: initialStats });
-  }, [queryClient, initialStats]);
 
   const { data, isFetching } = useServerActionQuery({
     queryKey: queryKeys.dashboard.owner(period),
@@ -72,14 +66,6 @@ function SellerDashboardShell({
   initialStats: SellerDashboardStats;
 }) {
   const [period, setPeriod] = useState<Period>('month');
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    queryClient.setQueryData(['dashboard', { kind: 'seller', period: 'month' }], {
-      success: true,
-      stats: initialStats,
-    });
-  }, [queryClient, initialStats]);
 
   const { data, isFetching } = useServerActionQuery({
     queryKey: queryKeys.dashboard.seller(period),

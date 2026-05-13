@@ -1,4 +1,5 @@
 import { Package, ShoppingCart, Star, Users, Wallet } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 import type { Period, SellerDashboardStats } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
@@ -6,10 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatShortDate } from '@/lib/utils';
 
-import { PaymentMethodsChart } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
-import { SalesChart } from './sales-chart';
 import { StatCard } from './stat-card';
+
+const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), { ssr: false });
+const PaymentMethodsChart = dynamic(() => import('./payment-methods-chart').then((m) => m.PaymentMethodsChart), {
+  ssr: false,
+});
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: 'Efectivo',

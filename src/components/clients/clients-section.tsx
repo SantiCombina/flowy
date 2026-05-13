@@ -13,6 +13,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
+import type { Serialized } from '@/lib/serialization';
 import type { Client, User } from '@/payload-types';
 
 import { ClientModal } from './client-modal';
@@ -21,7 +22,7 @@ import { ClientsTable } from './clients-table';
 interface ClientsSectionProps {
   clients: Client[];
   clientDebts: Record<number, number>;
-  currentUser: User;
+  currentUser: Serialized<User>;
 }
 
 export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {

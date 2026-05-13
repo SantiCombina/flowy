@@ -13,6 +13,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.ufs.sh' },
     ],
   },
+  optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import type { SaleRow, SaleVariantOption } from '@/app/services/sales';
@@ -245,6 +245,15 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<{ id: number; name: string }[] | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const localClients = clientsOverride ?? clients;
 
@@ -318,24 +327,30 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
     setIsClientModalOpen(false);
   };
 
-  const onSubmit = async (data: EditSaleFullValues) => {
-    setServerError(null);
-    const result = await submitEdit(data);
+  const onSubmit = useCallback(
+    async (data: EditSaleFullValues) => {
+      setServerError(null);
+      const result = await submitEdit(data);
 
-    if (result?.serverError) {
-      setServerError(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        setServerError(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      setShowSuccess(true);
-      onSuccess();
-      setTimeout(onClose, 2000);
-    }
-  };
+      if (result?.data?.success) {
+        setShowSuccess(true);
+        onSuccess();
+        closeTimeoutRef.current = setTimeout(onClose, 2000);
+      }
+    },
+    [submitEdit, onSuccess, onClose],
+  );
 
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // eslint-disable-next-line react-hooks/refs -- RHF handleSubmit is an event handler, not render-time
+  const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return (
     <>
@@ -361,7 +376,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
           </ResponsiveModalBody>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+            <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 min-h-0">
               <ResponsiveModalBody className="flex flex-col gap-3">
                 <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_80px_110px_140px_32px] gap-2">
                   <p className="text-xs font-medium text-muted-foreground">Producto</p>

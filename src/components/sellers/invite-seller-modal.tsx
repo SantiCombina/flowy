@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -34,6 +34,15 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
   const { executeAsync, isExecuting } = useAction(inviteSellerAction);
   const { invalidateQueries } = useInvalidateQueries();
   const [showSuccess, setShowSuccess] = useState(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const form = useForm<InviteSellerValues>({
     resolver: zodResolver(inviteSellerSchema),
@@ -49,29 +58,35 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
     }
   }, [isOpen, form]);
 
-  const onSubmit = async (data: InviteSellerValues) => {
-    const result = await executeAsync(data);
+  const onSubmit = useCallback(
+    async (data: InviteSellerValues) => {
+      const result = await executeAsync(data);
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      setShowSuccess(true);
-      form.reset();
-      invalidateQueries([queryKeys.sellers.list()]);
-      onSuccess();
-      setTimeout(() => {
-        onClose();
-      }, 2000);
-    }
-  };
+      if (result?.data?.success) {
+        setShowSuccess(true);
+        form.reset();
+        invalidateQueries([queryKeys.sellers.list()]);
+        onSuccess();
+        closeTimeoutRef.current = setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
+    },
+    [executeAsync, form, invalidateQueries, onSuccess, onClose],
+  );
 
   const handleClose = () => {
     setShowSuccess(false);
     onClose();
   };
+
+  // eslint-disable-next-line react-hooks/refs -- RHF handleSubmit is an event handler, not render-time
+  const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return (
     <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-md">
@@ -94,7 +109,7 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
         </ResponsiveModalBody>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 min-h-0">
             <ResponsiveModalBody className="space-y-4">
               <FormField
                 control={form.control}

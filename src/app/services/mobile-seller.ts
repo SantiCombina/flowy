@@ -59,106 +59,136 @@ export async function dispatchStockToMobileSeller(
   const activeItems = items.filter((item) => item.quantity > 0);
   if (activeItems.length === 0) return;
 
-  const variantIds = activeItems.map((item) => item.variantId);
-
-  const [variantsResult, inventoryResult] = await Promise.all([
-    payload.find({
-      collection: 'product-variants',
-      where: { id: { in: variantIds } },
-      depth: 1,
-      limit: variantIds.length,
-      overrideAccess: true,
-    }),
-    payload.find({
-      collection: 'mobile-seller-inventory',
-      where: {
-        and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
-      },
-      limit: variantIds.length,
-      overrideAccess: true,
-    }),
-  ]);
-
-  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
-  const inventoryMap = new Map(
-    inventoryResult.docs.map((inv) => {
-      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
-      return [variantId, inv];
-    }),
-  );
-
-  const dispatchedProductNames: string[] = [];
-
-  for (const item of activeItems) {
-    const variant = variantMap.get(item.variantId);
-    if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
-
-    const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
-    dispatchedProductNames.push(`${item.quantity}x ${productName}`);
-
-    const warehouseStock = variant.stock;
-
-    if (warehouseStock < item.quantity) {
-      throw new Error(
-        `Stock insuficiente para la variante ${variant.code ?? item.variantId}. ` +
-          `Disponible: ${warehouseStock}, solicitado: ${item.quantity}`,
-      );
-    }
-
-    const newWarehouseStock = warehouseStock - item.quantity;
-    variant.stock = newWarehouseStock;
-
-    await payload.update({
-      collection: 'product-variants',
-      id: item.variantId,
-      data: { stock: newWarehouseStock },
-      overrideAccess: true,
-    });
-
-    const existingInventory = inventoryMap.get(item.variantId);
-
-    if (existingInventory) {
-      await payload.update({
-        collection: 'mobile-seller-inventory',
-        id: existingInventory.id,
-        data: { quantity: existingInventory.quantity + item.quantity },
-        overrideAccess: true,
-      });
-    } else {
-      await payload.create({
-        collection: 'mobile-seller-inventory',
-        data: {
-          seller: sellerId,
-          variant: item.variantId,
-          quantity: item.quantity,
-          owner: ownerId,
-        },
-        overrideAccess: true,
-      });
-    }
-
-    await payload.create({
-      collection: 'stock-movements',
-      data: {
-        variant: item.variantId,
-        type: 'dispatch_to_mobile',
-        quantity: item.quantity,
-        previousStock: warehouseStock,
-        newStock: newWarehouseStock,
-        mobileSeller: sellerId,
-        owner: ownerId,
-        createdBy: ownerId,
-        reason: `Despacho a vendedor móvil (ID: ${sellerId})`,
-      },
-      overrideAccess: true,
-    });
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  if (dispatchedProductNames.length > 0) {
-    const summary =
-      dispatchedProductNames.length <= 3
-        ? dispatchedProductNames.join(', ')
-        : `${dispatchedProductNames.slice(0, 2).join(', ')} y ${dispatchedProductNames.length - 2} más`;
+  try {
+    const variantIds = activeItems.map((item) => item.variantId);
+
+    const [variantsResult, inventoryResult] = await Promise.all([
+      payload.find({
+        collection: 'product-variants',
+        where: { id: { in: variantIds } },
+        depth: 1,
+        limit: variantIds.length,
+        overrideAccess: true,
+        req: { transactionID },
+      }),
+      payload.find({
+        collection: 'mobile-seller-inventory',
+        where: {
+          and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
+        },
+        limit: variantIds.length,
+        overrideAccess: true,
+        req: { transactionID },
+      }),
+    ]);
+
+    const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+    const inventoryMap = new Map(
+      inventoryResult.docs.map((inv) => {
+        const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+        return [variantId, inv];
+      }),
+    );
+
+    const dispatchedProductNames: string[] = [];
+
+    for (const item of activeItems) {
+      const variant = variantMap.get(item.variantId);
+      if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+      const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+      dispatchedProductNames.push(`${item.quantity}x ${productName}`);
+
+      const warehouseStock = variant.stock;
+
+      if (warehouseStock < item.quantity) {
+        throw new Error(
+          `Stock insuficiente para la variante ${variant.code ?? item.variantId}. ` +
+            `Disponible: ${warehouseStock}, solicitado: ${item.quantity}`,
+        );
+      }
+
+      const newWarehouseStock = warehouseStock - item.quantity;
+      variant.stock = newWarehouseStock;
+
+      await payload.update({
+        collection: 'product-variants',
+        id: item.variantId,
+        data: { stock: newWarehouseStock },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+
+      const existingInventory = inventoryMap.get(item.variantId);
+
+      if (existingInventory) {
+        await payload.update({
+          collection: 'mobile-seller-inventory',
+          id: existingInventory.id,
+          data: { quantity: existingInventory.quantity + item.quantity },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+      } else {
+        await payload.create({
+          collection: 'mobile-seller-inventory',
+          data: {
+            seller: sellerId,
+            variant: item.variantId,
+            quantity: item.quantity,
+            owner: ownerId,
+          },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+      }
+
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'dispatch_to_mobile',
+          quantity: item.quantity,
+          previousStock: warehouseStock,
+          newStock: newWarehouseStock,
+          mobileSeller: sellerId,
+          owner: ownerId,
+          createdBy: ownerId,
+          reason: `Despacho a vendedor móvil (ID: ${sellerId})`,
+        },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+    }
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
+
+  const variantsResult = await payload.find({
+    collection: 'product-variants',
+    where: { id: { in: activeItems.map((i) => i.variantId) } },
+    depth: 1,
+    limit: activeItems.length,
+    overrideAccess: true,
+  });
+  const variantMapForNotif = new Map(variantsResult.docs.map((v) => [v.id, v]));
+
+  const names = activeItems.map((item) => {
+    const variant = variantMapForNotif.get(item.variantId);
+    const productName = typeof variant?.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+    return `${item.quantity}x ${productName}`;
+  });
+
+  if (names.length > 0) {
+    const summary = names.length <= 3 ? names.join(', ') : `${names.slice(0, 2).join(', ')} y ${names.length - 2} más`;
 
     await notifyEvent({
       recipientId: sellerId,
@@ -181,94 +211,122 @@ export async function returnStockFromMobileSeller(
   const activeItems = items.filter((item) => item.quantity > 0);
   if (activeItems.length === 0) return;
 
-  const variantIds = activeItems.map((item) => item.variantId);
-
-  const [sellerUser, variantsResult, inventoryResult] = await Promise.all([
-    payload.findByID({ collection: 'users', id: sellerId, overrideAccess: true }),
-    payload.find({
-      collection: 'product-variants',
-      where: { id: { in: variantIds } },
-      depth: 1,
-      limit: variantIds.length,
-      overrideAccess: true,
-    }),
-    payload.find({
-      collection: 'mobile-seller-inventory',
-      where: {
-        and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
-      },
-      limit: variantIds.length,
-      overrideAccess: true,
-    }),
-  ]);
-
-  const sellerName = sellerUser?.name ?? 'Vendedor';
-  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
-  const inventoryMap = new Map(
-    inventoryResult.docs.map((inv) => {
-      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
-      return [variantId, { ...inv }];
-    }),
-  );
-
-  const returnedProductNames: string[] = [];
-
-  for (const item of activeItems) {
-    const mobileInventory = inventoryMap.get(item.variantId);
-
-    if (!mobileInventory) {
-      throw new Error(`El vendedor no tiene stock de la variante ${item.variantId}`);
-    }
-
-    if (mobileInventory.quantity < item.quantity) {
-      throw new Error(
-        `Cantidad a devolver (${item.quantity}) mayor al stock del vendedor (${mobileInventory.quantity})`,
-      );
-    }
-
-    const variant = variantMap.get(item.variantId);
-    if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
-
-    const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
-    returnedProductNames.push(`${item.quantity}x ${productName}`);
-
-    const warehouseStock = variant.stock;
-    const newWarehouseStock = warehouseStock + item.quantity;
-    variant.stock = newWarehouseStock;
-
-    const previousMobileQuantity = mobileInventory.quantity;
-    mobileInventory.quantity = previousMobileQuantity - item.quantity;
-
-    await payload.update({
-      collection: 'product-variants',
-      id: item.variantId,
-      data: { stock: newWarehouseStock },
-      overrideAccess: true,
-    });
-
-    await payload.update({
-      collection: 'mobile-seller-inventory',
-      id: mobileInventory.id,
-      data: { quantity: mobileInventory.quantity },
-      overrideAccess: true,
-    });
-
-    await payload.create({
-      collection: 'stock-movements',
-      data: {
-        variant: item.variantId,
-        type: 'return_from_mobile',
-        quantity: item.quantity,
-        previousStock: warehouseStock,
-        newStock: newWarehouseStock,
-        mobileSeller: sellerId,
-        owner: ownerId,
-        createdBy: ownerId,
-        reason: `Devolución de vendedor móvil (ID: ${sellerId})`,
-      },
-      overrideAccess: true,
-    });
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
+
+  try {
+    const variantIds = activeItems.map((item) => item.variantId);
+
+    const [variantsResult, inventoryResult] = await Promise.all([
+      payload.find({
+        collection: 'product-variants',
+        where: { id: { in: variantIds } },
+        depth: 1,
+        limit: variantIds.length,
+        overrideAccess: true,
+        req: { transactionID },
+      }),
+      payload.find({
+        collection: 'mobile-seller-inventory',
+        where: {
+          and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
+        },
+        limit: variantIds.length,
+        overrideAccess: true,
+        req: { transactionID },
+      }),
+    ]);
+
+    const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+    const inventoryMap = new Map(
+      inventoryResult.docs.map((inv) => {
+        const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+        return [variantId, { ...inv }];
+      }),
+    );
+
+    for (const item of activeItems) {
+      const mobileInventory = inventoryMap.get(item.variantId);
+
+      if (!mobileInventory) {
+        throw new Error(`El vendedor no tiene stock de la variante ${item.variantId}`);
+      }
+
+      if (mobileInventory.quantity < item.quantity) {
+        throw new Error(
+          `Cantidad a devolver (${item.quantity}) mayor al stock del vendedor (${mobileInventory.quantity})`,
+        );
+      }
+
+      const variant = variantMap.get(item.variantId);
+      if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+      const warehouseStock = variant.stock;
+      const newWarehouseStock = warehouseStock + item.quantity;
+      variant.stock = newWarehouseStock;
+
+      const previousMobileQuantity = mobileInventory.quantity;
+      mobileInventory.quantity = previousMobileQuantity - item.quantity;
+
+      await payload.update({
+        collection: 'product-variants',
+        id: item.variantId,
+        data: { stock: newWarehouseStock },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+
+      await payload.update({
+        collection: 'mobile-seller-inventory',
+        id: mobileInventory.id,
+        data: { quantity: mobileInventory.quantity },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: item.variantId,
+          type: 'return_from_mobile',
+          quantity: item.quantity,
+          previousStock: warehouseStock,
+          newStock: newWarehouseStock,
+          mobileSeller: sellerId,
+          owner: ownerId,
+          createdBy: ownerId,
+          reason: `Devolución de vendedor móvil (ID: ${sellerId})`,
+        },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+    }
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
+
+  const sellerUser = await payload.findByID({ collection: 'users', id: sellerId, overrideAccess: true });
+  const sellerName = sellerUser?.name ?? 'Vendedor';
+
+  const variantsResult = await payload.find({
+    collection: 'product-variants',
+    where: { id: { in: activeItems.map((i) => i.variantId) } },
+    depth: 1,
+    limit: activeItems.length,
+    overrideAccess: true,
+  });
+  const variantMapForNotif = new Map(variantsResult.docs.map((v) => [v.id, v]));
+
+  const returnedProductNames = activeItems.map((item) => {
+    const variant = variantMapForNotif.get(item.variantId);
+    const productName = typeof variant?.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+    return `${item.quantity}x ${productName}`;
+  });
 
   if (returnedProductNames.length > 0) {
     const summary =

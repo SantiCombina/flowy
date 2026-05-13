@@ -153,152 +153,187 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
 export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
   const payload = await getPayloadClient();
 
-  const variantIds = data.items.map((item) => item.variantId);
-  const variantsResult = await payload.find({
-    collection: 'product-variants',
-    where: { id: { in: variantIds } },
-    depth: 1,
-    limit: variantIds.length,
-    overrideAccess: true,
-  });
-  const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
-
-  const personalItems = data.items.filter((item) => item.stockSource === 'personal');
-  const inventoryMap = new Map<number, { id: number; quantity: number }>();
-  if (personalItems.length > 0) {
-    const personalVariantIds = personalItems.map((item) => item.variantId);
-    const inventoryResult = await payload.find({
-      collection: 'mobile-seller-inventory',
-      where: {
-        and: [{ seller: { equals: sellerId } }, { variant: { in: personalVariantIds } }],
-      },
-      limit: personalVariantIds.length,
-      overrideAccess: true,
-    });
-    for (const inv of inventoryResult.docs) {
-      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
-      inventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
-    }
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  for (const item of data.items) {
-    const variant = variantMap.get(item.variantId);
-    if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+  const lowStockNotifications: Array<{
+    recipientId: number;
+    ownerId: number;
+    type: 'stock_low';
+    title: string;
+    body: string;
+    metadata: Record<string, unknown>;
+  }> = [];
 
-    if (item.stockSource === 'warehouse') {
-      if (variant.stock < item.quantity) {
-        throw new Error(
-          `Stock insuficiente en depósito para ${variant.code ?? item.variantId}. ` +
-            `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
-        );
-      }
+  let sale: Sale | undefined;
+  let total = 0;
 
-      const previousStock = variant.stock;
-      const newStock = previousStock - item.quantity;
-      variant.stock = newStock;
+  try {
+    const variantIds = data.items.map((item) => item.variantId);
+    const variantsResult = await payload.find({
+      collection: 'product-variants',
+      where: { id: { in: variantIds } },
+      depth: 1,
+      limit: variantIds.length,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+    const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
 
-      await payload.update({
-        collection: 'product-variants',
-        id: item.variantId,
-        data: { stock: newStock },
-        overrideAccess: true,
-      });
-
-      await payload.create({
-        collection: 'stock-movements',
-        data: {
-          variant: item.variantId,
-          type: 'sale',
-          quantity: item.quantity,
-          previousStock,
-          newStock,
-          owner: ownerId,
-          createdBy: sellerId,
+    const personalItems = data.items.filter((item) => item.stockSource === 'personal');
+    const inventoryMap = new Map<number, { id: number; quantity: number }>();
+    if (personalItems.length > 0) {
+      const personalVariantIds = personalItems.map((item) => item.variantId);
+      const inventoryResult = await payload.find({
+        collection: 'mobile-seller-inventory',
+        where: {
+          and: [{ seller: { equals: sellerId } }, { variant: { in: personalVariantIds } }],
         },
+        limit: personalVariantIds.length,
         overrideAccess: true,
+        req: { transactionID },
       });
+      for (const inv of inventoryResult.docs) {
+        const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+        inventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
+      }
+    }
 
-      if (variant.minimumStock && variant.minimumStock > 0 && newStock > 0 && newStock <= variant.minimumStock) {
-        const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
-        await notifyEvent({
-          recipientId: ownerId,
-          ownerId,
-          type: 'stock_low',
-          title: 'Stock bajo',
-          body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
-          metadata: { variantId: item.variantId, newStock, minimumStock: variant.minimumStock },
+    for (const item of data.items) {
+      const variant = variantMap.get(item.variantId);
+      if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+      if (item.stockSource === 'warehouse') {
+        if (variant.stock < item.quantity) {
+          throw new Error(
+            `Stock insuficiente en depósito para ${variant.code ?? item.variantId}. ` +
+              `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
+          );
+        }
+
+        const previousStock = variant.stock;
+        const newStock = previousStock - item.quantity;
+        variant.stock = newStock;
+
+        await payload.update({
+          collection: 'product-variants',
+          id: item.variantId,
+          data: { stock: newStock },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+
+        await payload.create({
+          collection: 'stock-movements',
+          data: {
+            variant: item.variantId,
+            type: 'sale',
+            quantity: item.quantity,
+            previousStock,
+            newStock,
+            owner: ownerId,
+            createdBy: sellerId,
+          },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+
+        if (variant.minimumStock && variant.minimumStock > 0 && newStock > 0 && newStock <= variant.minimumStock) {
+          const productName = typeof variant.product === 'object' ? variant.product.name : `Variante ${item.variantId}`;
+          lowStockNotifications.push({
+            recipientId: ownerId,
+            ownerId,
+            type: 'stock_low',
+            title: 'Stock bajo',
+            body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
+            metadata: { variantId: item.variantId, newStock, minimumStock: variant.minimumStock },
+          });
+        }
+      } else {
+        const inventoryRecord = inventoryMap.get(item.variantId);
+
+        if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
+          throw new Error(
+            `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
+              `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
+          );
+        }
+
+        const previousQuantity = inventoryRecord.quantity;
+        const newMobileStock = previousQuantity - item.quantity;
+        inventoryRecord.quantity = newMobileStock;
+
+        await payload.update({
+          collection: 'mobile-seller-inventory',
+          id: inventoryRecord.id,
+          data: { quantity: newMobileStock },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+
+        await payload.create({
+          collection: 'stock-movements',
+          data: {
+            variant: item.variantId,
+            type: 'sale',
+            quantity: item.quantity,
+            previousStock: previousQuantity,
+            newStock: newMobileStock,
+            mobileSeller: sellerId,
+            owner: ownerId,
+            createdBy: sellerId,
+          },
+          overrideAccess: true,
+          req: { transactionID },
         });
       }
-    } else {
-      const inventoryRecord = inventoryMap.get(item.variantId);
-
-      if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
-        throw new Error(
-          `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
-            `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
-        );
-      }
-
-      const previousQuantity = inventoryRecord.quantity;
-      const newMobileStock = previousQuantity - item.quantity;
-      inventoryRecord.quantity = newMobileStock;
-
-      await payload.update({
-        collection: 'mobile-seller-inventory',
-        id: inventoryRecord.id,
-        data: { quantity: newMobileStock },
-        overrideAccess: true,
-      });
-
-      await payload.create({
-        collection: 'stock-movements',
-        data: {
-          variant: item.variantId,
-          type: 'sale',
-          quantity: item.quantity,
-          previousStock: previousQuantity,
-          newStock: newMobileStock,
-          mobileSeller: sellerId,
-          owner: ownerId,
-          createdBy: sellerId,
-        },
-        overrideAccess: true,
-      });
     }
+
+    total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const isImmediate = data.paymentMethod !== 'credit';
+    const now = new Date().toISOString();
+
+    sale = await payload.create({
+      collection: 'sales',
+      draft: false,
+      data: {
+        seller: sellerId,
+        owner: ownerId,
+        ...(data.clientId ? { client: data.clientId } : {}),
+        date: now,
+        items: data.items.map((item) => ({
+          variant: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          stockSource: item.stockSource,
+        })),
+        total,
+        amountPaid: isImmediate ? total : 0,
+        paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+        deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
+        ...(data.immediateDelivery ? { deliveredAt: now } : {}),
+        ownerPaymentStatus: 'pending' as const,
+        ownerAmountPaid: 0,
+        ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
+        ...(isImmediate ? { collectedAt: now } : {}),
+        ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
+      },
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
   }
 
-  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const isImmediate = data.paymentMethod !== 'credit';
-  const now = new Date().toISOString();
-
-  const sale = await payload.create({
-    collection: 'sales',
-    draft: false,
-    data: {
-      seller: sellerId,
-      owner: ownerId,
-      ...(data.clientId ? { client: data.clientId } : {}),
-      date: now,
-      items: data.items.map((item) => ({
-        variant: item.variantId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        stockSource: item.stockSource,
-      })),
-      total,
-      amountPaid: isImmediate ? total : 0,
-      paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
-      deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
-      ...(data.immediateDelivery ? { deliveredAt: now } : {}),
-      ownerPaymentStatus: 'pending' as const,
-      ownerAmountPaid: 0,
-      ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
-      ...(isImmediate ? { collectedAt: now } : {}),
-      ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
-      ...(data.notes ? { notes: data.notes } : {}),
-    },
-    overrideAccess: true,
-  });
+  for (const notification of lowStockNotifications) {
+    await notifyEvent(notification);
+  }
 
   const sellerUser = await payload.findByID({
     collection: 'users',
@@ -317,9 +352,13 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     metadata: { saleId: sale.id, total, sellerId },
   });
 
-  revalidateTag('owner-dashboard');
-  revalidateTag('seller-dashboard');
-  revalidateTag('product-demand');
+  try {
+    revalidateTag('owner-dashboard');
+    revalidateTag('seller-dashboard');
+    revalidateTag('product-demand');
+  } catch {
+    // revalidation failure should not break the operation
+  }
 
   return sale as Sale;
 }
@@ -520,6 +559,7 @@ async function restoreItemStock(
   saleSellerId: number,
   ownerId: number,
   reason: string,
+  transactionID: string | number,
 ): Promise<void> {
   const variantId = resolveId(item.variant) ?? 0;
 
@@ -528,6 +568,7 @@ async function restoreItemStock(
       collection: 'product-variants',
       id: variantId,
       overrideAccess: true,
+      req: { transactionID },
     });
     if (!variant) return;
     const newStock = variant.stock + item.quantity;
@@ -536,6 +577,7 @@ async function restoreItemStock(
       id: variantId,
       data: { stock: newStock },
       overrideAccess: true,
+      req: { transactionID },
     });
     await payload.create({
       collection: 'stock-movements',
@@ -550,6 +592,7 @@ async function restoreItemStock(
         createdBy: saleSellerId,
       },
       overrideAccess: true,
+      req: { transactionID },
     });
   } else {
     const { docs } = await payload.find({
@@ -557,6 +600,7 @@ async function restoreItemStock(
       where: { and: [{ seller: { equals: saleSellerId } }, { variant: { equals: variantId } }] },
       limit: 1,
       overrideAccess: true,
+      req: { transactionID },
     });
     if (!docs[0]) return;
     const newQty = docs[0].quantity + item.quantity;
@@ -565,6 +609,7 @@ async function restoreItemStock(
       id: docs[0].id,
       data: { quantity: newQty },
       overrideAccess: true,
+      req: { transactionID },
     });
     await payload.create({
       collection: 'stock-movements',
@@ -580,6 +625,7 @@ async function restoreItemStock(
         createdBy: saleSellerId,
       },
       overrideAccess: true,
+      req: { transactionID },
     });
   }
 }
@@ -587,28 +633,45 @@ async function restoreItemStock(
 export async function deleteSale(saleId: number, callerId: number, callerRole: 'owner' | 'seller'): Promise<void> {
   const payload = await getPayloadClient();
 
-  const sale = await payload.findByID({
-    collection: 'sales',
-    id: saleId,
-    depth: 1,
-    overrideAccess: true,
-  });
-
-  if (!sale) throw new Error('Venta no encontrada');
-  verifySaleAccess(sale as Sale, callerId, callerRole);
-
-  const saleSellerId = resolveId(sale.seller) ?? callerId;
-  const saleOwnerId = resolveId(sale.owner) ?? callerId;
-
-  for (const item of sale.items) {
-    await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`);
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true });
+  try {
+    const sale = await payload.findByID({
+      collection: 'sales',
+      id: saleId,
+      depth: 1,
+      overrideAccess: true,
+      req: { transactionID },
+    });
 
-  revalidateTag('owner-dashboard');
-  revalidateTag('seller-dashboard');
-  revalidateTag('product-demand');
+    if (!sale) throw new Error('Venta no encontrada');
+    verifySaleAccess(sale as Sale, callerId, callerRole);
+
+    const saleSellerId = resolveId(sale.seller) ?? callerId;
+    const saleOwnerId = resolveId(sale.owner) ?? callerId;
+
+    for (const item of sale.items) {
+      await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`, transactionID);
+    }
+
+    await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true, req: { transactionID } });
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
+
+  try {
+    revalidateTag('owner-dashboard');
+    revalidateTag('seller-dashboard');
+    revalidateTag('product-demand');
+  } catch {
+    // revalidation failure should not break the operation
+  }
 }
 
 export async function editSaleFull(
@@ -619,156 +682,187 @@ export async function editSaleFull(
 ): Promise<void> {
   const payload = await getPayloadClient();
 
-  const sale = await payload.findByID({
-    collection: 'sales',
-    id: saleId,
-    depth: 1,
-    overrideAccess: true,
-  });
-
-  if (!sale) throw new Error('Venta no encontrada');
-  verifySaleAccess(sale as Sale, callerId, callerRole);
-
-  const saleSellerId = resolveId(sale.seller) ?? callerId;
-  const saleOwnerId = resolveId(sale.owner) ?? callerId;
-
-  for (const item of sale.items) {
-    await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Edición venta #${saleId} — reversión`);
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  const editVariantIds = data.items.map((item) => item.variantId);
-  const editVariantsResult = await payload.find({
-    collection: 'product-variants',
-    where: { id: { in: editVariantIds } },
-    depth: 1,
-    limit: editVariantIds.length,
-    overrideAccess: true,
-  });
-  const editVariantMap = new Map(editVariantsResult.docs.map((v) => [v.id, { ...v }]));
-
-  const editPersonalItems = data.items.filter((item) => item.stockSource === 'personal');
-  const editInventoryMap = new Map<number, { id: number; quantity: number }>();
-  if (editPersonalItems.length > 0) {
-    const editPersonalVariantIds = editPersonalItems.map((item) => item.variantId);
-    const editInventoryResult = await payload.find({
-      collection: 'mobile-seller-inventory',
-      where: {
-        and: [{ seller: { equals: saleSellerId } }, { variant: { in: editPersonalVariantIds } }],
-      },
-      limit: editPersonalVariantIds.length,
+  try {
+    const sale = await payload.findByID({
+      collection: 'sales',
+      id: saleId,
+      depth: 1,
       overrideAccess: true,
+      req: { transactionID },
     });
-    for (const inv of editInventoryResult.docs) {
-      const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
-      editInventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
+
+    if (!sale) throw new Error('Venta no encontrada');
+    verifySaleAccess(sale as Sale, callerId, callerRole);
+
+    const saleSellerId = resolveId(sale.seller) ?? callerId;
+    const saleOwnerId = resolveId(sale.owner) ?? callerId;
+
+    for (const item of sale.items) {
+      await restoreItemStock(
+        payload,
+        item,
+        saleSellerId,
+        saleOwnerId,
+        `Edición venta #${saleId} — reversión`,
+        transactionID,
+      );
     }
-  }
 
-  for (const item of data.items) {
-    const variant = editVariantMap.get(item.variantId);
-    if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+    const editVariantIds = data.items.map((item) => item.variantId);
+    const editVariantsResult = await payload.find({
+      collection: 'product-variants',
+      where: { id: { in: editVariantIds } },
+      depth: 1,
+      limit: editVariantIds.length,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+    const editVariantMap = new Map(editVariantsResult.docs.map((v) => [v.id, { ...v }]));
 
-    if (item.stockSource === 'warehouse') {
-      if (variant.stock < item.quantity) {
-        throw new Error(
-          `Stock insuficiente en depósito para ${variant.code ?? item.variantId}. ` +
-            `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
-        );
-      }
-      const previousStock = variant.stock;
-      const newStock = previousStock - item.quantity;
-      variant.stock = newStock;
-      await payload.update({
-        collection: 'product-variants',
-        id: item.variantId,
-        data: { stock: newStock },
-        overrideAccess: true,
-      });
-      await payload.create({
-        collection: 'stock-movements',
-        data: {
-          variant: item.variantId,
-          type: 'sale_edit' as const,
-          quantity: -item.quantity,
-          previousStock,
-          newStock,
-          reason: `Edición venta #${saleId}`,
-          owner: saleOwnerId,
-          createdBy: callerId,
-        },
-        overrideAccess: true,
-      });
-    } else {
-      const inventoryRecord = editInventoryMap.get(item.variantId);
-      if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
-        throw new Error(
-          `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
-            `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
-        );
-      }
-      const previousQuantity = inventoryRecord.quantity;
-      const newMobileStock = previousQuantity - item.quantity;
-      inventoryRecord.quantity = newMobileStock;
-      await payload.update({
+    const editPersonalItems = data.items.filter((item) => item.stockSource === 'personal');
+    const editInventoryMap = new Map<number, { id: number; quantity: number }>();
+    if (editPersonalItems.length > 0) {
+      const editPersonalVariantIds = editPersonalItems.map((item) => item.variantId);
+      const editInventoryResult = await payload.find({
         collection: 'mobile-seller-inventory',
-        id: inventoryRecord.id,
-        data: { quantity: newMobileStock },
-        overrideAccess: true,
-      });
-      await payload.create({
-        collection: 'stock-movements',
-        data: {
-          variant: item.variantId,
-          type: 'sale_edit' as const,
-          quantity: -item.quantity,
-          previousStock: previousQuantity,
-          newStock: newMobileStock,
-          reason: `Edición venta #${saleId}`,
-          mobileSeller: saleSellerId,
-          owner: saleOwnerId,
-          createdBy: callerId,
+        where: {
+          and: [{ seller: { equals: saleSellerId } }, { variant: { in: editPersonalVariantIds } }],
         },
+        limit: editPersonalVariantIds.length,
         overrideAccess: true,
+        req: { transactionID },
       });
+      for (const inv of editInventoryResult.docs) {
+        const variantId = typeof inv.variant === 'number' ? inv.variant : inv.variant.id;
+        editInventoryMap.set(variantId, { id: inv.id, quantity: inv.quantity });
+      }
     }
+
+    for (const item of data.items) {
+      const variant = editVariantMap.get(item.variantId);
+      if (!variant) throw new Error(`Variante ${item.variantId} no encontrada`);
+
+      if (item.stockSource === 'warehouse') {
+        if (variant.stock < item.quantity) {
+          throw new Error(
+            `Stock insuficiente en depósito para ${variant.code ?? item.variantId}. ` +
+              `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
+          );
+        }
+        const previousStock = variant.stock;
+        const newStock = previousStock - item.quantity;
+        variant.stock = newStock;
+        await payload.update({
+          collection: 'product-variants',
+          id: item.variantId,
+          data: { stock: newStock },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+        await payload.create({
+          collection: 'stock-movements',
+          data: {
+            variant: item.variantId,
+            type: 'sale_edit' as const,
+            quantity: -item.quantity,
+            previousStock,
+            newStock,
+            reason: `Edición venta #${saleId}`,
+            owner: saleOwnerId,
+            createdBy: callerId,
+          },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+      } else {
+        const inventoryRecord = editInventoryMap.get(item.variantId);
+        if (!inventoryRecord || inventoryRecord.quantity < item.quantity) {
+          throw new Error(
+            `Stock insuficiente en inventario personal para ${variant.code ?? item.variantId}. ` +
+              `Disponible: ${inventoryRecord?.quantity ?? 0}, requerido: ${item.quantity}`,
+          );
+        }
+        const previousQuantity = inventoryRecord.quantity;
+        const newMobileStock = previousQuantity - item.quantity;
+        inventoryRecord.quantity = newMobileStock;
+        await payload.update({
+          collection: 'mobile-seller-inventory',
+          id: inventoryRecord.id,
+          data: { quantity: newMobileStock },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+        await payload.create({
+          collection: 'stock-movements',
+          data: {
+            variant: item.variantId,
+            type: 'sale_edit' as const,
+            quantity: -item.quantity,
+            previousStock: previousQuantity,
+            newStock: newMobileStock,
+            reason: `Edición venta #${saleId}`,
+            mobileSeller: saleSellerId,
+            owner: saleOwnerId,
+            createdBy: callerId,
+          },
+          overrideAccess: true,
+          req: { transactionID },
+        });
+      }
+    }
+
+    const newTotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const amountPaid = sale.amountPaid ?? 0;
+    const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
+
+    const newPaymentStatus = amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
+    const newOwnerPaymentStatus =
+      ownerAmountPaid >= newTotal ? 'collected' : ownerAmountPaid > 0 ? 'partially_collected' : 'pending';
+
+    const isImmediate = data.paymentMethod !== 'credit';
+
+    await payload.update({
+      collection: 'sales',
+      id: saleId,
+      data: {
+        items: data.items.map((item) => ({
+          variant: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          stockSource: item.stockSource,
+        })),
+        total: newTotal,
+        ...(data.clientId ? { client: data.clientId } : { client: null }),
+        notes: data.notes ?? null,
+        ...(isImmediate
+          ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' }
+          : { paymentMethod: null }),
+        ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
+        paymentStatus: newPaymentStatus,
+        ownerPaymentStatus: newOwnerPaymentStatus,
+      } as Partial<Sale>,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
   }
 
-  const newTotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const amountPaid = sale.amountPaid ?? 0;
-  const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
-
-  const newPaymentStatus = amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
-  const newOwnerPaymentStatus =
-    ownerAmountPaid >= newTotal ? 'collected' : ownerAmountPaid > 0 ? 'partially_collected' : 'pending';
-
-  const isImmediate = data.paymentMethod !== 'credit';
-
-  await payload.update({
-    collection: 'sales',
-    id: saleId,
-    data: {
-      items: data.items.map((item) => ({
-        variant: item.variantId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        stockSource: item.stockSource,
-      })),
-      total: newTotal,
-      ...(data.clientId ? { client: data.clientId } : { client: null }),
-      notes: data.notes ?? null,
-      ...(isImmediate
-        ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' }
-        : { paymentMethod: null }),
-      ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
-      paymentStatus: newPaymentStatus,
-      ownerPaymentStatus: newOwnerPaymentStatus,
-    } as Partial<Sale>,
-    overrideAccess: true,
-  });
-
-  revalidateTag('owner-dashboard');
-  revalidateTag('seller-dashboard');
-  revalidateTag('product-demand');
+  try {
+    revalidateTag('owner-dashboard');
+    revalidateTag('seller-dashboard');
+    revalidateTag('product-demand');
+  } catch {
+    // revalidation failure should not break the operation
+  }
 }
 
 export async function markAsDelivered(saleId: number, callerId: number, callerRole: 'owner' | 'seller'): Promise<void> {

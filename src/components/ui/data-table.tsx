@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { memo, useMemo, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,7 +46,7 @@ interface DataTableProps<T> {
 const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
 const SKELETON_ROWS = 5;
 
-export function DataTable<T>({
+function DataTableComponent<T>({
   columns,
   data,
   keyExtractor,
@@ -265,9 +265,9 @@ export function DataTable<T>({
         <div className="flex items-center gap-2">
           {onItemsPerPageChange && (
             <>
-              <span>Filas por página</span>
+              <span className="hidden sm:inline">Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-9 w-17.5">
+                <SelectTrigger className="h-9 w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,11 +282,20 @@ export function DataTable<T>({
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span>
-            {totalItems === 0
-              ? '0 resultados'
-              : `${(safePage - 1) * itemsPerPage + 1}–${Math.min(safePage * itemsPerPage, totalItems)} de ${totalItems}`}
+            {totalItems === 0 ? (
+              '0 resultados'
+            ) : (
+              <>
+                <span className="sm:hidden">
+                  {safePage}/{totalPages}
+                </span>
+                <span className="hidden sm:inline">
+                  {(safePage - 1) * itemsPerPage + 1}–{Math.min(safePage * itemsPerPage, totalItems)} de {totalItems}
+                </span>
+              </>
+            )}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -313,3 +322,5 @@ export function DataTable<T>({
     </div>
   );
 }
+
+export const DataTable = memo(DataTableComponent) as <T>(props: DataTableProps<T>) => React.JSX.Element;

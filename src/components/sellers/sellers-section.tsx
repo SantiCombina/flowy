@@ -1,8 +1,7 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { CommissionSummary } from '@/app/services/commissions';
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -34,13 +33,6 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
   const { invalidateQueries } = useInvalidateQueries();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (initialSellers.sellers.length > 0) {
-      queryClient.setQueryData(['sellers'], initialSellers);
-    }
-  }, [queryClient, initialSellers]);
 
   const { data } = useServerActionQuery({
     queryKey: queryKeys.sellers.list(),

@@ -1,3 +1,13 @@
+export type MovementType =
+  | 'entry'
+  | 'exit'
+  | 'adjustment'
+  | 'sale'
+  | 'dispatch_to_mobile'
+  | 'return_from_mobile'
+  | 'sale_cancelled'
+  | 'sale_edit';
+
 export const queryKeys = {
   products: {
     list: (search: string, page: number) => ['products', { search, page }] as const,
@@ -22,7 +32,8 @@ export const queryKeys = {
   },
   history: {
     list: () => ['history'] as const,
-    filtered: (dateRange: unknown, types: unknown[]) => ['history', { dateRange, types }] as const,
+    filtered: (dateRange: { from: Date; to: Date } | undefined, types: MovementType[]) =>
+      ['history', { dateRange, types }] as const,
   },
   notifications: {
     list: () => ['notifications'] as const,

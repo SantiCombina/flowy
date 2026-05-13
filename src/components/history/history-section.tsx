@@ -1,7 +1,6 @@
 'use client';
 
 import { keepPreviousData } from '@tanstack/react-query';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDown,
   ArrowRight,
@@ -12,7 +11,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, memo, useState } from 'react';
 
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
 import { getHistoryAction } from '@/components/history/actions';
@@ -88,20 +87,44 @@ function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: Sort
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
+interface SortableHeadProps {
+  column: SortKey;
+  label: string;
+  className?: string;
+  sortKey: SortKey | null;
+  sortDir: 'asc' | 'desc';
+  onSort: (key: SortKey) => void;
+}
+
+const SortableHead = memo(function SortableHead({
+  column,
+  label,
+  className,
+  sortKey,
+  sortDir,
+  onSort,
+}: SortableHeadProps) {
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="flex items-center gap-1 hover:text-foreground transition-colors"
+      >
+        {label}
+        <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
+      </button>
+    </TableHead>
+  );
+});
+
 interface HistorySectionProps {
   initialData: { success: true } & HistoryResult;
 }
 
-export function HistorySection({ initialData }: HistorySectionProps) {
+function HistorySectionComponent({ initialData }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (initialData.docs.length > 0) {
-      queryClient.setQueryData(['history'], initialData);
-    }
-  }, [queryClient, initialData]);
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
@@ -174,19 +197,6 @@ export function HistorySection({ initialData }: HistorySectionProps) {
   const showReference = visibleColumns.includes('reference');
   const showReason = visibleColumns.includes('reason');
 
-  const sortableHead = (key: SortKey, label: string, className?: string) => (
-    <TableHead className={className}>
-      <button
-        type="button"
-        onClick={() => handleSort(key)}
-        className="flex items-center gap-1 hover:text-foreground transition-colors"
-      >
-        {label}
-        <SortIcon column={key} sortKey={sortKey} sortDir={sortDir} />
-      </button>
-    </TableHead>
-  );
-
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader title="Historial" description="Registro de movimientos de inventario" />
@@ -234,8 +244,25 @@ export function HistorySection({ initialData }: HistorySectionProps) {
                       className="w-px"
                     />
                   )}
-                  {visibleColumns.includes('product') && sortableHead('productName', 'Producto')}
-                  {visibleColumns.includes('quantity') && sortableHead('quantity', 'Cantidad', 'w-px text-right')}
+                  {visibleColumns.includes('product') && (
+                    <SortableHead
+                      column="productName"
+                      label="Producto"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
+                  {visibleColumns.includes('quantity') && (
+                    <SortableHead
+                      column="quantity"
+                      label="Cantidad"
+                      className="w-px text-right"
+                      sortKey={sortKey}
+                      sortDir={sortDir}
+                      onSort={handleSort}
+                    />
+                  )}
                   <TableHead className="w-px text-center">Stock</TableHead>
                   {showReference && <TableHead className="w-px">Referencia</TableHead>}
                   {showReason && <TableHead>Razón</TableHead>}
@@ -399,7 +426,7 @@ export function HistorySection({ initialData }: HistorySectionProps) {
 
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <span>Filas por página</span>
+              <span className="hidden sm:inline">Filas por página</span>
               <Select
                 value={String(itemsPerPage)}
                 onValueChange={(v) => {
@@ -407,7 +434,7 @@ export function HistorySection({ initialData }: HistorySectionProps) {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-9 w-17.5">
+                <SelectTrigger className="h-9 w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -420,11 +447,20 @@ export function HistorySection({ initialData }: HistorySectionProps) {
               </Select>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span>
-                {totalDocs === 0
-                  ? '0 resultados'
-                  : `${(safePage - 1) * itemsPerPage + 1}–${Math.min(safePage * itemsPerPage, totalDocs)} de ${totalDocs}`}
+                {totalDocs === 0 ? (
+                  '0 resultados'
+                ) : (
+                  <>
+                    <span className="sm:hidden">
+                      {safePage}/{totalPages}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {(safePage - 1) * itemsPerPage + 1}–{Math.min(safePage * itemsPerPage, totalDocs)} de {totalDocs}
+                    </span>
+                  </>
+                )}
               </span>
               <div className="flex items-center gap-1">
                 <Button
@@ -451,3 +487,5 @@ export function HistorySection({ initialData }: HistorySectionProps) {
     </div>
   );
 }
+
+export const HistorySection = memo(HistorySectionComponent);
