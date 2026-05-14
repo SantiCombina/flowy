@@ -434,7 +434,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-9 w-20">
+                <SelectTrigger className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

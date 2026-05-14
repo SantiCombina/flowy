@@ -13,10 +13,10 @@ interface RealtimeRefresherProps {
 const EVENT_TO_KEYS: Record<string, string[][]> = {
   sale_created: [['sales']],
   payment_registered: [['sales']],
-  stock_dispatched: [['products', 'variants'], ['sales']],
-  stock_returned: [['products', 'variants']],
-  stock_low: [['products', 'variants']],
-  stock_adjusted: [['products', 'variants']],
+  stock_dispatched: [['products'], ['sales']],
+  stock_returned: [['products']],
+  stock_low: [['products']],
+  stock_adjusted: [['products']],
 };
 
 export function RealtimeRefresher({ channel, events }: RealtimeRefresherProps) {

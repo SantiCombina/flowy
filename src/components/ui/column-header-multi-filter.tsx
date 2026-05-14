@@ -36,7 +36,6 @@ export function ColumnHeaderMultiFilter({
 }: ColumnHeaderMultiFilterProps) {
   const isSorted = currentSortKey === sortKey;
   const hasFilter = filterValue.length > 0;
-  const selectedCount = filterValue.length;
 
   const toggleValue = (value: string) => {
     if (filterValue.includes(value)) {
@@ -80,15 +79,22 @@ export function ColumnHeaderMultiFilter({
               aria-pressed={hasFilter}
             >
               <Filter className="h-3.5 w-3.5" />
-              {hasFilter && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 text-[8px] font-bold text-primary-foreground">
-                  {selectedCount}
-                </span>
-              )}
+              {hasFilter && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />}
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-52 p-1.5" align="start">
             <div className="space-y-0.5">
+              <button
+                type="button"
+                onClick={() => onFilterChange([])}
+                className={cn(
+                  'flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm transition-colors',
+                  !hasFilter ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-muted',
+                )}
+              >
+                Todas
+                {!hasFilter && <Check className="h-3.5 w-3.5" />}
+              </button>
               {filterOptions.map((option) => {
                 const isSelected = filterValue.includes(option.value);
                 return (
@@ -97,19 +103,12 @@ export function ColumnHeaderMultiFilter({
                     type="button"
                     onClick={() => toggleValue(option.value)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors',
+                      'flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-sm transition-colors',
                       isSelected ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-muted',
                     )}
                   >
-                    <span
-                      className={cn(
-                        'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
-                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/30',
-                      )}
-                    >
-                      {isSelected && <Check className="h-3 w-3" />}
-                    </span>
                     {option.label}
+                    {isSelected && <Check className="h-3.5 w-3.5" />}
                   </button>
                 );
               })}

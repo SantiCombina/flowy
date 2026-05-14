@@ -1,7 +1,7 @@
 'use client';
 
-import { keepPreviousData } from '@tanstack/react-query';
-import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { DollarSign, EyeOff, Eye, Plus, RotateCcw, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -65,22 +65,37 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
 
-  const { data, isPending } = useServerActionQuery({
+  const isFirstPageNoSearch = page === 1 && !searchQuery;
+  const queryClient = useQueryClient();
+
+  const {
+    data: queryData,
+    isPending,
+    isError,
+  } = useServerActionQuery({
     queryKey: queryKeys.products.list(searchQuery, page),
     queryFn: () =>
       getVariantsAction({
         filters: searchQuery ? { search: searchQuery } : undefined,
         options: { limit: 50, page, sort: 'product' },
       }),
-    initialData: page === 1 && !searchQuery ? { success: true, ...initialVariants } : undefined,
-    placeholderData: keepPreviousData,
+    enabled: !isFirstPageNoSearch,
+    placeholderData: (previousData) => previousData,
     staleTime: 30_000,
   });
 
-  const variants = data?.docs ?? [];
-  const totalDocs = data?.totalDocs ?? 0;
-  const totalPages = data?.totalPages ?? 1;
+  const displayData =
+    queryData ?? (isFirstPageNoSearch ? initialVariants : { docs: [], totalDocs: 0, totalPages: 1, page: 1 });
+  const queryError = isError && !isFirstPageNoSearch ? 'Error al cargar productos' : null;
+
+  const variants = displayData.docs;
+  const totalDocs = displayData.totalDocs;
+  const totalPages = displayData.totalPages;
   const inventoryValue = variants.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
+
+  const handleRefetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.products.list(searchQuery, page) });
+  }, [queryClient, searchQuery, page]);
 
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
@@ -204,6 +219,16 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
             <ColumnVisibilityDropdown tableName="products" />
           </div>
         </div>
+
+        {queryError && !isFirstPageNoSearch && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <span className="flex-1">{queryError}</span>
+            <Button variant="ghost" size="sm" className="h-8 gap-1 text-destructive" onClick={handleRefetch}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reintentar
+            </Button>
+          </div>
+        )}
 
         <ProductsTable
           variants={variants}

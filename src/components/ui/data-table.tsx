@@ -63,12 +63,6 @@ function DataTableComponent<T>({
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [prevData, setPrevData] = useState(data);
-
-  if (prevData !== data) {
-    setPrevData(data);
-    setPage(1);
-  }
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -267,7 +261,7 @@ function DataTableComponent<T>({
             <>
               <span className="hidden sm:inline">Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-9 w-20">
+                <SelectTrigger className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
