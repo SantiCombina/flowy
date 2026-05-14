@@ -154,12 +154,20 @@ export function NotificationBell() {
   };
 
   const handleMarkRead = async (id: number) => {
-    await markRead({ id });
+    const result = await markRead({ id });
+    if (result?.serverError) {
+      toast.error('No se pudo marcar como leído');
+      return;
+    }
     invalidateQueries([queryKeys.notifications.list()]);
   };
 
   const handleMarkAllRead = async () => {
-    await markAllRead();
+    const result = await markAllRead();
+    if (result?.serverError) {
+      toast.error('No se pudieron marcar las notificaciones');
+      return;
+    }
     invalidateQueries([queryKeys.notifications.list()]);
   };
 

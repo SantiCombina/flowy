@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,13 +44,16 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
     const result = await executeAsync(data);
 
     if (result?.serverError) {
+      toast.error(result.serverError);
       setError(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
+      toast.success('Cuenta creada');
       router.push('/login?registered=true');
     } else if (result?.data?.error) {
+      toast.error(result.data.error);
       setError(result.data.error);
     }
   }

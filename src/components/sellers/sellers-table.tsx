@@ -81,10 +81,8 @@ function SellersTableComponent({
     }
 
     if (result?.data?.success) {
-      toast.success('Vendedor eliminado correctamente');
+      toast.warning('Vendedor eliminado');
       invalidateQueries([queryKeys.sellers.list()]);
-    } else {
-      toast.error('Error al eliminar vendedor');
     }
 
     setSellerToDelete(null);

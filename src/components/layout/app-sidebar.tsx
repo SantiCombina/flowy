@@ -142,7 +142,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
       <SidebarContent className="px-6 group-data-[collapsible=icon]:px-2">
         <SidebarGroup className="p-0">
-          <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
             Menú
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -157,7 +157,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
                       size="default"
                       className={cn(
                         'h-10 rounded-xl px-3 gap-3 transition-all duration-200',
-                        'text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground/90',
+                        'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
                         'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-warning data-[active=true]:shadow-none',
                         'group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!h-8',
                       )}

@@ -6,6 +6,7 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['192.168.0.102:3000', 'localhost:3000'],
     },
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
   },
   images: {
     remotePatterns: [
@@ -13,7 +14,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.ufs.sh' },
     ],
   },
-  optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

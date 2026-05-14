@@ -115,7 +115,7 @@ function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | 
 }
 
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey | null; sortDir: 'asc' | 'desc' }) {
-  if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />;
+  if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/70" />;
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
@@ -236,6 +236,7 @@ function SalesSectionComponent({
   };
 
   const handleEditSuccess = () => {
+    toast.success('Venta editada');
     setEditingSale(null);
     invalidateQueries([queryKeys.sales.list()]);
   };
@@ -250,7 +251,7 @@ function SalesSectionComponent({
     }
 
     if (result?.data?.success) {
-      toast.success('Venta eliminada correctamente');
+      toast.warning('Venta eliminada');
       invalidateQueries([queryKeys.sales.list()]);
     }
   };

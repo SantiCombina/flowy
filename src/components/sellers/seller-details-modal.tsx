@@ -108,6 +108,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
   const handlePaymentSuccess = async () => {
     if (!seller) return;
+    toast.success('Pago registrado');
     invalidateQueries([queryKeys.sellers.commissions.detail(seller.id, selectedYear, selectedMonth)]);
     invalidateQueries([queryKeys.sellers.list()]);
   };
@@ -123,7 +124,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
   const handleCopyCbu = async () => {
     if (!seller?.cbu) return;
     await navigator.clipboard.writeText(seller.cbu);
-    toast.success('CBU/Alias copiado al portapapeles');
+    toast.info('CBU/Alias copiado');
   };
 
   return (

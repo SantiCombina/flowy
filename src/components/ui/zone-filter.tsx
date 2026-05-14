@@ -45,7 +45,11 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
   };
 
   const trigger = (
-    <Button variant="outline" className="w-28 sm:w-44 justify-between overflow-hidden font-normal">
+    <Button
+      variant="outline"
+      className="w-28 sm:w-44 justify-between overflow-hidden font-normal"
+      onClick={isMobile ? () => setOpen(true) : undefined}
+    >
       <span className="min-w-0 truncate">{selectedLabel}</span>
     </Button>
   );
@@ -53,9 +57,7 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
   if (isMobile) {
     return (
       <>
-        <div onClick={() => setOpen(true)} className="cursor-pointer">
-          {trigger}
-        </div>
+        {trigger}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
             <SheetTitle className="sr-only">Filtrar por zona</SheetTitle>
@@ -75,7 +77,7 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
                 <div
                   className={cn(
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded border',
-                    !value ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40',
+                    !value ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/70',
                   )}
                 >
                   {!value && <Check className="h-3 w-3" />}
@@ -97,7 +99,7 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
                     <div
                       className={cn(
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded border',
-                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40',
+                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/70',
                       )}
                     >
                       {isSelected && <Check className="h-3 w-3" />}

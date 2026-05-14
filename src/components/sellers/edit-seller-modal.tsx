@@ -78,7 +78,8 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
     }
 
     if (result?.data?.success) {
-      toast.success('Vendedor actualizado correctamente');
+      const wasDeactivated = seller.isActive && !data.isActive;
+      toast[wasDeactivated ? 'warning' : 'success'](wasDeactivated ? 'Vendedor desactivado' : 'Vendedor actualizado');
       invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
       onClose();

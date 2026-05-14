@@ -10,6 +10,15 @@ import { getCurrentUser } from '@/lib/payload';
 export const metadata: Metadata = {
   title: 'Iniciar sesión',
   description: 'Ingresá a tu cuenta de Flowy para gestionar tu inventario y ventas.',
+  alternates: {
+    canonical: '/login',
+  },
+  openGraph: {
+    title: 'Iniciar sesión | Flowy',
+    description: 'Ingresá a tu cuenta de Flowy para gestionar tu inventario y ventas.',
+    url: '/login',
+    type: 'website',
+  },
 };
 
 const features = [
@@ -35,14 +44,14 @@ export default async function LoginPage() {
         <div className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-4xl font-bold leading-tight">Gestión de inventario y ventas simplificada</h2>
-            <p className="text-lg text-primary-foreground/70 leading-relaxed">
+            <p className="text-lg text-primary-foreground/90 leading-relaxed">
               Controlá tu stock, coordiná tu equipo de vendedores y seguí tus ventas desde un solo lugar.
             </p>
           </div>
 
           <div className="space-y-3">
             {features.map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-3 text-primary-foreground/85">
+              <div key={label} className="flex items-center gap-3 text-primary-foreground">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-foreground/15">
                   <Icon className="h-4 w-4" />
                 </div>
@@ -53,9 +62,9 @@ export default async function LoginPage() {
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-primary-foreground/60">© 2026 Flowy</p>
+          <p className="text-xs text-primary-foreground/90">© 2026 Flowy</p>
           <a href="https://forge.ar" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-            <span className="text-xs text-primary-foreground/70">Un desarrollo de</span>
+            <span className="text-xs text-primary-foreground/90">Un desarrollo de</span>
             <Image src="/Forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto" />
           </a>
         </div>

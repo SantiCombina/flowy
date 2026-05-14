@@ -116,7 +116,11 @@ export function DateRangePicker({
   }
 
   const trigger = (
-    <Button variant="outline" className={cn(!value && 'text-muted-foreground', className)}>
+    <Button
+      variant="outline"
+      className={cn(!value && 'text-muted-foreground', className)}
+      onClick={isMobile ? () => setOpen(true) : undefined}
+    >
       <CalendarDays className="h-4 w-4 shrink-0" />
       <span>{value ? formatRange(value) : placeholder}</span>
     </Button>
@@ -178,7 +182,7 @@ export function DateRangePicker({
   if (isMobile) {
     return (
       <>
-        <div onClick={() => setOpen(true)}>{trigger}</div>
+        {trigger}
         <Drawer open={open} onOpenChange={handleOpenChange}>
           <DrawerContent className="p-0 gap-0 max-h-[90svh] overflow-y-auto">
             <DrawerTitle className="sr-only">Seleccionar período</DrawerTitle>

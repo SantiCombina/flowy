@@ -7,18 +7,20 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-sans',
+  preload: true,
 });
 
 const manrope = Manrope({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-display',
+  preload: true,
 });
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
   interactiveWidget: 'resizes-visual',
 };
 

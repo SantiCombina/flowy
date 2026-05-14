@@ -111,9 +111,7 @@ function ProductsTableComponent({
     }
 
     if (result?.data?.success) {
-      toast.success('Producto eliminado correctamente');
-    } else {
-      toast.error('Error al eliminar producto');
+      toast.warning('Producto eliminado');
     }
   };
 

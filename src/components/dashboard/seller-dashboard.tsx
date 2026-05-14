@@ -164,7 +164,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
             <CardContent className="space-y-4 pt-2">
               {stats.inventory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center space-y-1 py-6 text-center">
-                  <Package className="h-8 w-8 text-muted-foreground/40" />
+                  <Package className="h-8 w-8 text-muted-foreground/70" />
                   <p className="text-sm text-muted-foreground">No tenés stock asignado</p>
                 </div>
               ) : (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { DollarSign, EyeOff, Eye, Plus, RotateCcw, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useMemo } from 'react';
@@ -79,14 +79,17 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
         filters: searchQuery ? { search: searchQuery } : undefined,
         options: { limit: 50, page, sort: 'product' },
       }),
-    enabled: !isFirstPageNoSearch,
-    placeholderData: (previousData) => previousData,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
 
-  const displayData =
-    queryData ?? (isFirstPageNoSearch ? initialVariants : { docs: [], totalDocs: 0, totalPages: 1, page: 1 });
-  const queryError = isError && !isFirstPageNoSearch ? 'Error al cargar productos' : null;
+  const queryError = isError ? 'Error al cargar productos' : null;
+
+  const displayData = useMemo(() => {
+    if (queryData?.docs && queryData.docs.length > 0) return queryData;
+    if (isFirstPageNoSearch) return { success: true as const, ...initialVariants };
+    return queryData ?? { success: true as const, docs: [], totalDocs: 0, totalPages: 1, page: 1 };
+  }, [queryData, isFirstPageNoSearch, initialVariants]);
 
   const variants = displayData.docs;
   const totalDocs = displayData.totalDocs;
@@ -94,7 +97,11 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const inventoryValue = variants.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
 
   const handleRefetch = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.products.list(searchQuery, page) });
+    try {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.products.list(searchQuery, page) });
+    } catch {
+      toast.error('Error al actualizar productos');
+    }
   }, [queryClient, searchQuery, page]);
 
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
@@ -124,6 +131,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
         qualities: result.data.qualities,
         presentations: result.data.presentations,
       });
+      toast.success('Datos de referencia actualizados');
     }
   }, []);
 
@@ -166,7 +174,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
 
     if (result?.data?.success) {
       const label = bulkToggleTarget ? 'activados' : 'pausados';
-      toast.success(`${result.data.updated} productos ${label}`);
+      toast.warning(`${result.data.updated} productos ${label}`);
       setSelectedKeys(new Set());
       setBulkToggleTarget(null);
       invalidateQueries([queryKeys.products.list('', 1)]);
@@ -220,7 +228,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
           </div>
         </div>
 
-        {queryError && !isFirstPageNoSearch && (
+        {queryError && (
           <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <span className="flex-1">{queryError}</span>
             <Button variant="ghost" size="sm" className="h-8 gap-1 text-destructive" onClick={handleRefetch}>
@@ -241,7 +249,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
-          isLoading={isPending}
+          isLoading={isPending && variants.length === 0}
         />
       </main>
 

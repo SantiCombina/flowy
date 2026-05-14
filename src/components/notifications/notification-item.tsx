@@ -34,7 +34,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
           {notification.title}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground/80 leading-snug">{notification.body}</p>
-        <p className="mt-1 text-[11px] text-muted-foreground/60">{timeAgo(notification.createdAt)}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground/70">{timeAgo(notification.createdAt)}</p>
       </div>
     </button>
   );

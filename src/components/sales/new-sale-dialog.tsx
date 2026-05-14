@@ -3,10 +3,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, CheckCircle2, Trash2, XCircle } from 'lucide-react';
+import { CalendarIcon, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -245,19 +246,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
   const optionsResult = isOwner ? ownerOptions : sellerOptions;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const variants: SaleVariantOption[] = optionsResult?.variants ?? [];
   const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.clients ?? [];
@@ -280,7 +271,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
 
   const handleClose = () => {
     setClientsOverride(null);
-    setShowSuccess(false);
     setServerError(null);
     onClose();
   };
@@ -307,9 +297,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
       }
 
       if (result?.data?.success) {
-        setShowSuccess(true);
+        toast.success('Venta registrada');
         onSuccess();
-        closeTimeoutRef.current = setTimeout(onClose, 2000);
+        onClose();
       }
     },
     [submitSale, onSuccess, onClose],
@@ -318,7 +308,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // eslint-disable-next-line react-hooks/refs -- RHF handleSubmit is an event handler, not render-time
   const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return (
@@ -329,17 +318,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           <ResponsiveModalDescription>Completá los datos de la venta para registrarla.</ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
-        {showSuccess ? (
-          <ResponsiveModalBody className="flex flex-col items-center justify-center py-12 space-y-4">
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="text-center space-y-1">
-              <h3 className="font-semibold text-lg">¡Venta registrada!</h3>
-              <p className="text-sm text-muted-foreground">La venta fue guardada correctamente.</p>
-            </div>
-          </ResponsiveModalBody>
-        ) : isLoadingOptions ? (
+        {isLoadingOptions ? (
           <ResponsiveModalBody className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground">Cargando productos…</p>
           </ResponsiveModalBody>

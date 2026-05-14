@@ -115,7 +115,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     if (result?.data?.success) {
       invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
-      toast.success('Zona eliminada');
+      toast.warning('Zona eliminada');
     }
   };
 

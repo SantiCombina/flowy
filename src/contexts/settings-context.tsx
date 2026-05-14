@@ -129,7 +129,6 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
       }
     } catch {
       setState((prev) => ({ ...prev, [key]: previous }));
-      toast.error('Error al actualizar columnas');
     }
   }, []);
 
@@ -150,11 +149,9 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
           itemsPerPage: itemsPerPage.toString(),
         }));
         toast.success('Preferencia actualizada');
-      } else {
-        toast.error('Error al actualizar preferencia');
       }
     } catch {
-      toast.error('Error al actualizar preferencia');
+      // silently handled by serverError check above
     }
   }, []);
 

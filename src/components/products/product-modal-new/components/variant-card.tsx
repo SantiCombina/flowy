@@ -203,7 +203,7 @@ export function VariantCard({
           <Label>Código</Label>
           <Input
             placeholder="Código de variante"
-            className="bg-muted font-mono text-sm font-medium tracking-wide placeholder:text-muted-foreground/50"
+            className="bg-muted font-mono text-sm font-medium tracking-wide placeholder:text-muted-foreground/70"
             {...control.register(`variants.${index}.code`)}
           />
         </div>

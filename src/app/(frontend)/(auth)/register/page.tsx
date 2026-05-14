@@ -3,6 +3,15 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Crear cuenta',
   description: 'Creá tu cuenta en Flowy y empezá a gestionar tu negocio.',
+  alternates: {
+    canonical: '/register',
+  },
+  openGraph: {
+    title: 'Crear cuenta | Flowy',
+    description: 'Creá tu cuenta en Flowy y empezá a gestionar tu negocio.',
+    url: '/register',
+    type: 'website',
+  },
 };
 
 import { validateInvitation } from '@/app/services/invitations';

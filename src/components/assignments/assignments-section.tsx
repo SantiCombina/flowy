@@ -35,7 +35,7 @@ export function AssignmentsSection({ sellers }: AssignmentsSectionProps) {
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         {sellers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-            <Package className="h-12 w-12 text-muted-foreground/50" />
+            <Package className="h-12 w-12 text-muted-foreground/70" />
             <p className="text-muted-foreground">Ningún vendedor tiene stock asignado actualmente.</p>
             <p className="text-sm text-muted-foreground">
               Asigná stock desde la vista de Vendedores para que aparezca aquí.

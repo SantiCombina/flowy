@@ -183,6 +183,7 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     }
 
     if (result?.data?.success && result.data.client) {
+      toast.success(isEditMode ? 'Cliente actualizado' : 'Cliente creado');
       invalidateQueries([queryKeys.clients.list()]);
       onSuccess(result.data.client as Client);
       onClose();

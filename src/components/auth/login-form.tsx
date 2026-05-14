@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,21 +46,30 @@ export function LoginForm() {
     const result = await executeLogin(data);
 
     if (result?.serverError) {
+      toast.error(result.serverError);
       setLoginError(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
+      toast.success('Ingreso exitoso');
       setRedirecting(true);
       await Promise.all([router.push('/'), router.refresh()]);
-    } else if (result?.data?.error) {
-      setLoginError(result.data.error);
     }
   }
 
   async function onForgotSubmit(data: ForgotPasswordValues) {
-    await executeForgot(data);
-    setView('forgot-sent');
+    const result = await executeForgot(data);
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success) {
+      toast.success('Enlace enviado');
+      setView('forgot-sent');
+    }
   }
 
   function goToForgot() {
@@ -122,7 +132,7 @@ export function LoginForm() {
                   <button
                     type="button"
                     onClick={goToLogin}
-                    className="text-xs text-muted-foreground/60 hover:text-muted-foreground"
+                    className="text-xs text-muted-foreground/70 hover:text-muted-foreground"
                   >
                     Volver al inicio de sesión
                   </button>
@@ -198,7 +208,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={goToForgot}
-                className="text-xs text-muted-foreground/60 hover:text-muted-foreground"
+                className="text-xs text-muted-foreground/70 hover:text-muted-foreground"
               >
                 ¿Olvidaste tu contraseña?
               </button>

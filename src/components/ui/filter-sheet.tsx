@@ -35,9 +35,24 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
   if (isMobile) {
     return (
       <>
-        <div onClick={() => setOpen(true)} className="cursor-pointer">
-          {trigger}
-        </div>
+        {React.isValidElement(trigger) ? (
+          React.cloneElement(trigger, { onClick: () => setOpen(true) } as React.HTMLAttributes<HTMLElement>)
+        ) : (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setOpen(true);
+              }
+            }}
+            className="cursor-pointer"
+          >
+            {trigger}
+          </div>
+        )}
         <Drawer open={open} onOpenChange={setOpen}>
           <DrawerContent className="p-0 gap-0">
             <DrawerTitle className="sr-only">{title}</DrawerTitle>
@@ -55,7 +70,7 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
                   <div
                     className={cn(
                       'flex h-5 w-5 shrink-0 items-center justify-center rounded border',
-                      item.checked ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40',
+                      item.checked ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/70',
                     )}
                   >
                     {item.checked && <Check className="h-3 w-3" />}

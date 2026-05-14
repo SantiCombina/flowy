@@ -49,15 +49,16 @@ export function ColumnHeaderDateFilter({
     }
   };
 
-  const triggerButton = (
+  const triggerButton = (onClick?: () => void) => (
     <button
       type="button"
+      onClick={onClick}
       className={cn(
         'relative flex items-center justify-center rounded-sm p-0.5 transition-colors',
-        hasFilter ? 'text-primary hover:text-primary/80' : 'text-muted-foreground/50 hover:text-muted-foreground',
+        hasFilter ? 'text-primary hover:text-primary/80' : 'text-muted-foreground/70 hover:text-muted-foreground',
       )}
       aria-label={`Filtrar por ${title.toLowerCase()}`}
-      aria-pressed={hasFilter}
+      data-active={hasFilter}
     >
       <CalendarDays className="h-3.5 w-3.5" />
       {hasFilter && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />}
@@ -82,13 +83,13 @@ export function ColumnHeaderDateFilter({
               <ArrowDown className="h-3.5 w-3.5" />
             )
           ) : (
-            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/70" />
           )}
         </button>
 
         {isMobile ? (
           <>
-            <div onClick={() => setOpen(true)}>{triggerButton}</div>
+            {triggerButton(() => setOpen(true))}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetContent
                 side="bottom"
@@ -108,7 +109,7 @@ export function ColumnHeaderDateFilter({
           </>
         ) : (
           <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+            <PopoverTrigger asChild>{triggerButton()}</PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               {content}
             </PopoverContent>

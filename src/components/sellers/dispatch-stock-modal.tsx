@@ -64,7 +64,22 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
     }
 
     if (result?.data?.success) {
-      toast.success('Stock despachado correctamente');
+      const zeroStockItems = items
+        .filter((item) => {
+          const v = variants.find((var_) => var_.id === item.variantId);
+          return v && v.stock - item.quantity === 0;
+        })
+        .map((item) => {
+          const v = variants.find((var_) => var_.id === item.variantId);
+          return v?.product.name ?? '';
+        })
+        .filter(Boolean);
+      for (const productName of zeroStockItems) {
+        toast.warning(`Depósito sin stock de ${productName}`);
+      }
+      if (zeroStockItems.length === 0) {
+        toast.success('Stock despachado');
+      }
       setQuantities({});
       invalidateQueries([
         queryKeys.sellers.list(),

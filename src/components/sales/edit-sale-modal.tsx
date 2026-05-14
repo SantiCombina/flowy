@@ -1,10 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
+import { Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import type { SaleRow, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -241,19 +242,9 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
   const variants = isSeller ? (sellerOptions?.variants ?? []) : (ownerOptions?.variants ?? []);
   const clients = isSeller ? (sellerOptions?.clients ?? []) : (ownerOptions?.clients ?? []);
 
-  const [showSuccess, setShowSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<{ id: number; name: string }[] | null>(null);
-  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const localClients = clientsOverride ?? clients;
 
@@ -302,7 +293,6 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
 
   const handleClose = () => {
     setClientsOverride(null);
-    setShowSuccess(false);
     setServerError(null);
     onClose();
   };
@@ -338,9 +328,9 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
       }
 
       if (result?.data?.success) {
-        setShowSuccess(true);
+        toast.success('Venta actualizada');
         onSuccess();
-        closeTimeoutRef.current = setTimeout(onClose, 2000);
+        onClose();
       }
     },
     [submitEdit, onSuccess, onClose],
@@ -349,7 +339,6 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // eslint-disable-next-line react-hooks/refs -- RHF handleSubmit is an event handler, not render-time
   const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return (
@@ -360,17 +349,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
           <ResponsiveModalDescription>Modificá los datos de la venta.</ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
-        {showSuccess ? (
-          <ResponsiveModalBody className="flex flex-col items-center justify-center py-12 space-y-4">
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="text-center space-y-1">
-              <h3 className="font-semibold text-lg">¡Venta actualizada!</h3>
-              <p className="text-sm text-muted-foreground">Los cambios fueron guardados correctamente.</p>
-            </div>
-          </ResponsiveModalBody>
-        ) : isLoadingOptions ? (
+        {isLoadingOptions ? (
           <ResponsiveModalBody className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground">Cargando productos…</p>
           </ResponsiveModalBody>

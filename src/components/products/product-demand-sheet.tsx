@@ -254,7 +254,7 @@ function MetricCard({ icon: Icon, label, value, empty = false, currentRaw, previ
           </div>
           <div>
             <p className="text-[11px] font-medium text-muted-foreground leading-none mb-1">{label}</p>
-            <p className={cn('text-sm font-bold leading-none tracking-tight', empty && 'text-muted-foreground/50')}>
+            <p className={cn('text-sm font-bold leading-none tracking-tight', empty && 'text-muted-foreground/70')}>
               {value}
             </p>
           </div>

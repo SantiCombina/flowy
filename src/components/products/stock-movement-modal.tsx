@@ -103,9 +103,17 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
     }
 
     if (result?.data?.success) {
-      toast.success('Movimiento registrado correctamente');
+      toast.success('Movimiento registrado');
       invalidateQueries([queryKeys.products.list('', 1), queryKeys.history.list()]);
       onSuccess?.(variant.id, result.data.newStock);
+      if (
+        typeof result.data.newStock === 'number' &&
+        'minimumStock' in variant &&
+        typeof variant.minimumStock === 'number' &&
+        result.data.newStock < variant.minimumStock
+      ) {
+        toast.warning(`Stock bajo: ${result.data.newStock} unidades`);
+      }
       handleClose();
     }
   };

@@ -5,9 +5,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/login', '/register'],
-        disallow: ['/'],
+        allow: ['/'],
+        disallow: ['/dashboard', '/products', '/sellers', '/clients', '/sales', '/settings', '/profile'],
       },
     ],
+    sitemap: `${process.env.NEXT_PUBLIC_URL ?? 'https://flowy.app'}/sitemap.xml`,
   };
 }

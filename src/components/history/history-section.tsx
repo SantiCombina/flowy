@@ -83,7 +83,7 @@ function getQuantityDisplay(movement: HistoryMovement, impact: StockImpact): str
 }
 
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey | null; sortDir: 'asc' | 'desc' }) {
-  if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />;
+  if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/70" />;
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
 }
 
@@ -339,7 +339,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                           <TableCell className="text-center tabular-nums text-sm text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
                               {movement.previousStock}
-                              <ArrowRight className="h-3 w-3 text-muted-foreground/60" />
+                              <ArrowRight className="h-3 w-3 text-muted-foreground/70" />
                               {movement.newStock}
                             </span>
                           </TableCell>
@@ -362,7 +362,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                                   </TooltipContent>
                                 </Tooltip>
                               ) : (
-                                <span className="text-muted-foreground/50">—</span>
+                                <span className="text-muted-foreground/70">—</span>
                               )}
                             </TableCell>
                           )}

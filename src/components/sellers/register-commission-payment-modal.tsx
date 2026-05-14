@@ -96,12 +96,10 @@ export function RegisterCommissionPaymentModal({
     }
 
     if (result?.data?.success) {
-      toast.success('Pago de comisión registrado correctamente');
+      toast.success('Pago registrado');
       invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
       onClose();
-    } else {
-      toast.error('Error al registrar el pago de comisión');
     }
   };
 

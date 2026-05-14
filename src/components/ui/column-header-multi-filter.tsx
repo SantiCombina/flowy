@@ -61,7 +61,7 @@ export function ColumnHeaderMultiFilter({
               <ArrowDown className="h-3.5 w-3.5" />
             )
           ) : (
-            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/70" />
           )}
         </button>
 
@@ -73,10 +73,10 @@ export function ColumnHeaderMultiFilter({
                 'relative flex items-center justify-center rounded-sm p-0.5 transition-colors',
                 hasFilter
                   ? 'text-primary hover:text-primary/80'
-                  : 'text-muted-foreground/50 hover:text-muted-foreground',
+                  : 'text-muted-foreground/70 hover:text-muted-foreground',
               )}
               aria-label={`Filtrar por ${title.toLowerCase()}`}
-              aria-pressed={hasFilter}
+              data-active={hasFilter}
             >
               <Filter className="h-3.5 w-3.5" />
               {hasFilter && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary" />}

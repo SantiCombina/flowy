@@ -110,10 +110,8 @@ export function ClientsTable({
     }
 
     if (result?.data?.success) {
-      toast.success('Cliente eliminado correctamente');
+      toast.warning('Cliente eliminado');
       invalidateQueries([queryKeys.clients.list()]);
-    } else {
-      toast.error('Error al eliminar el cliente');
     }
 
     setClientToDelete(null);
