@@ -105,7 +105,7 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
               <CardTitle className="text-base">Mis ventas · {PERIOD_CHART_LABEL[period]}</CardTitle>
             </CardHeader>
             <CardContent>
-              <SalesChart data={stats.salesByDay} period={period} color="#3b82f6" gradientId="sellerSalesGradient" />
+              <SalesChart data={stats.salesByDay} period={period} color="#2563eb" gradientId="sellerSalesGradient" />
             </CardContent>
           </Card>
 

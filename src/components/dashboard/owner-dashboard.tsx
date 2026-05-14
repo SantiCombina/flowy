@@ -147,9 +147,9 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                   const pct = Math.round((seller.total / totalSellerRevenue) * 100);
                   const podiumColor =
                     i === 0
-                      ? 'text-warning'
+                      ? 'text-amber-700'
                       : i === 1
-                        ? 'text-slate-400'
+                        ? 'text-slate-600'
                         : i === 2
                           ? 'text-amber-700'
                           : 'text-muted-foreground';
@@ -197,7 +197,7 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
               {stats.lowStockAlerts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center space-y-1 py-6 text-center">
                   <TrendingUp className="h-8 w-8 text-emerald-500" />
-                  <p className="text-sm font-medium text-success">¡Todo en orden!</p>
+                  <p className="text-sm font-medium text-emerald-600">¡Todo en orden!</p>
                   <p className="text-xs text-muted-foreground">No hay variantes con bajo stock</p>
                 </div>
               ) : (

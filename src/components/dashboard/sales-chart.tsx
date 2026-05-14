@@ -36,7 +36,7 @@ interface SalesChartProps {
   gradientId: string;
 }
 
-export function SalesChart({ data, period, color = '#10b981', gradientId }: SalesChartProps) {
+export function SalesChart({ data, period, color = '#059669', gradientId }: SalesChartProps) {
   const resolvedColor = color;
   const glowId = `${gradientId}Glow`;
 

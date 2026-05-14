@@ -11,9 +11,9 @@ const formatCurrencyCompact = (value: number) => {
 };
 
 const METHODS = [
-  { key: 'cash', label: 'Efectivo', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
-  { key: 'transfer', label: 'Transferencia', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
-  { key: 'check', label: 'Cheque', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
+  { key: 'cash', label: 'Efectivo', color: '#059669', bg: 'rgba(5,150,105,0.12)' },
+  { key: 'transfer', label: 'Transferencia', color: '#2563eb', bg: 'rgba(37,99,235,0.12)' },
+  { key: 'check', label: 'Cheque', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
 ] as const;
 
 interface PaymentMethodsChartProps {
