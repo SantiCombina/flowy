@@ -749,7 +749,7 @@ function SalesSectionComponent({
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-9 w-auto px-3">
+                <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

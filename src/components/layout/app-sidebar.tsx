@@ -176,7 +176,8 @@ export function AppSidebar({ features }: AppSidebarProps) {
       </SidebarContent>
 
       {!isMobile && (
-        <div
+        <button
+          type="button"
           onClick={toggleSidebar}
           aria-label={isCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
           className={cn(

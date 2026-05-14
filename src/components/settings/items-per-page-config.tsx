@@ -32,7 +32,7 @@ export function ItemsPerPageConfig({ initialValue, onSave }: ItemsPerPageConfigP
     <div className="flex items-center gap-4">
       <span className="text-sm text-muted-foreground">Mostrar</span>
       <Select value={value.toString()} onValueChange={handleChange} disabled={isSaving}>
-        <SelectTrigger className="w-25">
+        <SelectTrigger aria-label="Elementos por página" className="w-25">
           <SelectValue placeholder="10" />
         </SelectTrigger>
         <SelectContent>

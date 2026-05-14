@@ -261,7 +261,7 @@ function DataTableComponent<T>({
             <>
               <span className="hidden sm:inline">Filas por página</span>
               <Select value={String(itemsPerPage)} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
-                <SelectTrigger className="h-9 w-auto px-3">
+                <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

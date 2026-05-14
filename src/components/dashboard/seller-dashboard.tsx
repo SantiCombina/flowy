@@ -10,9 +10,13 @@ import { formatCurrency, formatShortDate } from '@/lib/utils';
 import { PeriodSelector } from './period-selector';
 import { StatCard } from './stat-card';
 
-const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), { ssr: false });
+const SalesChart = dynamic(() => import('./sales-chart').then((m) => m.SalesChart), {
+  ssr: false,
+  loading: () => <div className="h-[300px] w-full animate-pulse rounded-xl bg-muted" />,
+});
 const PaymentMethodsChart = dynamic(() => import('./payment-methods-chart').then((m) => m.PaymentMethodsChart), {
   ssr: false,
+  loading: () => <div className="h-[300px] w-full animate-pulse rounded-xl bg-muted" />,
 });
 
 const PAYMENT_LABELS: Record<string, string> = {
