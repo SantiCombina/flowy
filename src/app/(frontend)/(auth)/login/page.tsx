@@ -32,7 +32,7 @@ export default async function LoginPage() {
   if (user) redirect('/');
 
   return (
-    <div className="flex min-h-dvh">
+    <main className="flex min-h-dvh">
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary p-12 text-primary-foreground">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20">
@@ -44,7 +44,7 @@ export default async function LoginPage() {
         <div className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-4xl font-bold leading-tight">Gestión de inventario y ventas simplificada</h2>
-            <p className="text-lg text-primary-foreground/90 leading-relaxed">
+            <p className="text-lg text-primary-foreground leading-relaxed">
               Controlá tu stock, coordiná tu equipo de vendedores y seguí tus ventas desde un solo lugar.
             </p>
           </div>
@@ -62,9 +62,9 @@ export default async function LoginPage() {
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-primary-foreground/90">© 2026 Flowy</p>
+          <p className="text-xs text-primary-foreground">© 2026 Flowy</p>
           <a href="https://forge.ar" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
-            <span className="text-xs text-primary-foreground/90">Un desarrollo de</span>
+            <span className="text-xs text-primary-foreground">Un desarrollo de</span>
             <Image src="/Forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto" />
           </a>
         </div>
@@ -82,6 +82,6 @@ export default async function LoginPage() {
           <LoginForm />
         </Suspense>
       </div>
-    </div>
+    </main>
   );
 }

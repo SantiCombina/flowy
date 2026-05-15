@@ -16,6 +16,12 @@ const METHODS = [
   { key: 'check', label: 'Cheque', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
 ] as const;
 
+export const PAYMENT_METHOD_STYLES: Record<string, { color: string; bg: string; label: string }> = {
+  cash: { color: '#059669', bg: 'rgba(5,150,105,0.12)', label: 'Efectivo' },
+  transfer: { color: '#2563eb', bg: 'rgba(37,99,235,0.12)', label: 'Transferencia' },
+  check: { color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', label: 'Cheque' },
+};
+
 interface PaymentMethodsChartProps {
   cash: number;
   transfer: number;

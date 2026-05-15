@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatShortDate } from '@/lib/utils';
 
+import { PAYMENT_METHOD_STYLES } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
 import { StatCard } from './stat-card';
 
@@ -265,9 +266,26 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : 'A crédito'}
-                      </Badge>
+                      {(() => {
+                        const style = sale.paymentMethod ? PAYMENT_METHOD_STYLES[sale.paymentMethod] : null;
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="text-xs"
+                            style={
+                              style
+                                ? {
+                                    borderColor: style.color,
+                                    color: style.color,
+                                    backgroundColor: style.bg,
+                                  }
+                                : undefined
+                            }
+                          >
+                            {sale.paymentMethod ? PAYMENT_LABELS[sale.paymentMethod] : 'A crédito'}
+                          </Badge>
+                        );
+                      })()}
                       <span className="font-semibold">{formatCurrency(sale.total)}</span>
                     </div>
                   </div>

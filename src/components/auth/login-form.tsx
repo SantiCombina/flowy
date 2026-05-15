@@ -132,7 +132,7 @@ export function LoginForm() {
                   <button
                     type="button"
                     onClick={goToLogin}
-                    className="text-xs text-muted-foreground/70 hover:text-muted-foreground"
+                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
                   >
                     Volver al inicio de sesión
                   </button>
@@ -208,7 +208,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={goToForgot}
-                className="text-xs text-muted-foreground/70 hover:text-muted-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
               >
                 ¿Olvidaste tu contraseña?
               </button>
