@@ -223,7 +223,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevMonth}>
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <span className="text-sm font-medium min-w-[120px] text-center">{periodLabel}</span>
+                        <span className="text-sm font-medium min-w-120px text-center">{periodLabel}</span>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNextMonth}>
                           <ChevronRight className="h-4 w-4" />
                         </Button>

@@ -28,7 +28,7 @@ async function ClientsContent() {
     ownerId = typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
     sellerId = user.id;
   } else {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   const [clients, clientDebts] = await Promise.all([

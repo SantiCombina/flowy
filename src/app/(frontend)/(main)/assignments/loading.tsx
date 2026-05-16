@@ -3,7 +3,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function AssignmentsLoading() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* PageHeader skeleton */}
       <div className="relative bg-background px-4 sm:px-6 py-5">
         <div>
           <Skeleton className="h-8 w-36 sm:h-9" />
@@ -12,16 +11,13 @@ export default function AssignmentsLoading() {
       </div>
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        {/* Badges skeleton */}
         <div className="flex flex-wrap items-center gap-2">
           <Skeleton className="h-6 w-44 rounded-full" />
           <Skeleton className="h-6 w-48 rounded-full" />
         </div>
 
-        {/* Search skeleton */}
         <Skeleton className="h-9 w-full max-w-sm rounded-md" />
 
-        {/* Grid de cards skeleton */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
@@ -29,7 +25,6 @@ export default function AssignmentsLoading() {
               className="rounded-xl border bg-card p-4 shadow-sm space-y-4"
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              {/* Card header */}
               <div className="flex items-center gap-3">
                 <Skeleton className="h-10 w-10 rounded-full shrink-0" />
                 <div className="flex-1 space-y-1.5">
@@ -39,7 +34,6 @@ export default function AssignmentsLoading() {
                 <Skeleton className="h-5 w-16 rounded-full" />
               </div>
 
-              {/* Items list */}
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, j) => (
                   <div key={j} className="flex items-center justify-between py-1.5">
@@ -49,7 +43,6 @@ export default function AssignmentsLoading() {
                 ))}
               </div>
 
-              {/* Footer */}
               <div className="pt-2 border-t">
                 <Skeleton className="h-3.5 w-28" />
               </div>

@@ -18,7 +18,7 @@ export default async function MobileInventoryPage() {
   }
 
   if (user.role !== 'seller') {
-    redirect('/');
+    redirect('/dashboard');
   }
 
   const inventory = await getMobileSellerInventory(user.id);

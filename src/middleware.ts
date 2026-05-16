@@ -11,7 +11,7 @@ const routeToFeature: Record<string, string> = {
   '/settings': 'FEATURE_SETTINGS',
 };
 
-const publicRoutes = ['/login', '/register'];
+const publicRoutes = ['/login', '/register', '/'];
 
 function getTokenRole(token: string): string | null {
   try {
@@ -45,7 +45,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const isPublicRoute = publicRoutes.some((route) => pathname === route);
 
   if (isPublicRoute) {
     return NextResponse.next();
@@ -63,7 +63,7 @@ export function middleware(request: NextRequest) {
     const isEnabled = process.env[featureEnvKey] === 'true';
 
     if (!isEnabled) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 
@@ -81,6 +81,7 @@ export const config = {
     '/sales',
     '/statistics',
     '/settings',
+    '/dashboard',
     '/profile',
     '/clients',
     '/mobile-inventory',

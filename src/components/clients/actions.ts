@@ -25,7 +25,6 @@ export const createClientAction = actionClient.schema(clientSchema).action(async
     ownerId = user.id;
   }
 
-  // Validar zona si está definida
   if (parsedInput.zone) {
     const zone = await getZoneById(parsedInput.zone, ownerId);
     if (!zone) {
@@ -46,8 +45,6 @@ export const updateClientAction = actionClient.schema(updateClientSchema).action
   }
 
   const { id, ...data } = parsedInput;
-
-  // Validar zona si está definida
   if (data.zone) {
     const ownerId =
       user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);

@@ -54,7 +54,7 @@ export function ActionMenu({ items }: ActionMenuProps) {
                   variant="ghost"
                   onClick={() => handleSelect(item)}
                   className={cn(
-                    'flex w-full items-center justify-start gap-3 !px-4 py-3.5 text-left text-base h-auto rounded-md',
+                    'flex w-full items-center justify-start gap-3 px-4! py-3.5 text-left text-base h-auto rounded-md',
                     item.variant === 'destructive'
                       ? 'text-destructive hover:bg-destructive/10 hover:text-destructive active:bg-destructive/10'
                       : '',

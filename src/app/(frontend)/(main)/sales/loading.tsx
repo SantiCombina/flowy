@@ -3,7 +3,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function SalesLoading() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* PageHeader skeleton */}
       <div className="relative bg-background px-4 sm:px-6 py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -19,7 +18,6 @@ export default function SalesLoading() {
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
         <div className="space-y-3">
           <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
-            {/* Table header skeleton */}
             <div className="flex items-center gap-4 border-b bg-muted/40 px-4 py-3">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-4 w-24" />
@@ -32,7 +30,6 @@ export default function SalesLoading() {
               <Skeleton className="ml-auto h-4 w-16" />
             </div>
 
-            {/* Table rows skeleton */}
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 border-b px-4 py-3.5">
                 <div className="w-20 space-y-1">
@@ -54,7 +51,6 @@ export default function SalesLoading() {
             ))}
           </div>
 
-          {/* Pagination skeleton */}
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-20" />

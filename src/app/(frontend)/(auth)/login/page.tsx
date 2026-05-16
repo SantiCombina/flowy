@@ -1,6 +1,7 @@
 import { Box, Package, ShoppingCart, Users } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -29,17 +30,17 @@ const features = [
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect('/');
+  if (user) redirect('/dashboard');
 
   return (
     <main className="flex min-h-dvh">
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary p-12 text-primary-foreground">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20">
             <Box className="h-7 w-7" />
           </div>
           <span className="text-3xl font-bold tracking-tight">Flowy</span>
-        </div>
+        </Link>
 
         <div className="space-y-8">
           <div className="space-y-4">
@@ -71,12 +72,12 @@ export default async function LoginPage() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 p-6 bg-muted/20">
-        <div className="flex items-center gap-3 lg:hidden">
+        <Link href="/" className="flex items-center gap-3 lg:hidden">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <Box className="h-7 w-7 text-primary-foreground" />
           </div>
           <span className="text-3xl font-bold">Flowy</span>
-        </div>
+        </Link>
 
         <Suspense fallback={<div className="h-96 w-full max-w-sm animate-pulse rounded-lg bg-muted" />}>
           <LoginForm />

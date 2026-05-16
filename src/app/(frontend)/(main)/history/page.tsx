@@ -15,7 +15,7 @@ export default async function HistoryPage() {
   const user = await getCurrentUser();
 
   if (!user) redirect('/login');
-  if (user.role !== 'owner' && user.role !== 'admin') redirect('/');
+  if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
   const initialData = await getHistoryMovements(user.id, {
     from: subDays(new Date(), 29),

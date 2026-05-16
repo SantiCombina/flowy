@@ -48,7 +48,7 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { title: 'Dashboard', href: '/', icon: LayoutDashboard, feature: null },
+  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, feature: null },
   { title: 'Productos', href: '/products', icon: Package, feature: 'products' },
   { title: 'Vendedores', href: '/sellers', icon: Users, feature: 'sellers', roleOnly: 'owner' },
   { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments', roleOnly: 'owner' },
@@ -128,7 +128,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
           href="/"
           className="flex items-center gap-3 rounded-xl transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hover:bg-transparent"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-900/40 transition-all duration-300 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:rounded-full">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-900/40 transition-all duration-300 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:rounded-full">
             <Box className="h-5 w-5 text-white" />
           </div>
           <div className="flex min-w-0 flex-col overflow-hidden transition-[width,opacity] duration-300 ease-in-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
@@ -159,7 +159,7 @@ export function AppSidebar({ features }: AppSidebarProps) {
                         'h-10 rounded-xl px-3 gap-3 transition-all duration-200',
                         'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
                         'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-warning data-[active=true]:shadow-none',
-                        'group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!h-8',
+                        'group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:h-8!',
                       )}
                     >
                       <Link href={item.href} onClick={handleNavClick} onMouseEnter={() => handlePrefetch(item.href)}>

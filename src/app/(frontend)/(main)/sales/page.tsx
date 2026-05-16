@@ -46,7 +46,7 @@ async function SalesData({
 export default async function SalesPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
-  if (user.role !== 'seller' && user.role !== 'owner') redirect('/');
+  if (user.role !== 'seller' && user.role !== 'owner') redirect('/dashboard');
 
   const params = await searchParams;
   const initialStatusFilter =
