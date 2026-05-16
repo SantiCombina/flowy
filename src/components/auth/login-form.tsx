@@ -45,16 +45,16 @@ export function LoginForm() {
     setRedirecting(false);
     const result = await executeLogin(data);
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      setLoginError(result.serverError);
+    if (result?.data?.error) {
+      toast.error(result.data.error);
+      setLoginError(result.data.error);
       return;
     }
 
     if (result?.data?.success) {
       toast.success('Ingreso exitoso');
       setRedirecting(true);
-      await Promise.all([router.push('/'), router.refresh()]);
+      await Promise.all([router.push('/dashboard'), router.refresh()]);
     }
   }
 

@@ -15,7 +15,7 @@ import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
@@ -237,24 +237,8 @@ export function NotificationBell() {
     </>
   );
 
-  const sheetContent = (
+  const sheetBody = (
     <>
-      <div className="flex items-center justify-between px-4 py-3">
-        <p className="text-sm font-semibold">Notificaciones</p>
-        {unreadCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-info [&_svg]:hover:text-info"
-            onClick={handleMarkAllRead}
-            disabled={isMarkingAll}
-          >
-            <CheckCheck className="h-3.5 w-3.5" />
-            Marcar todo como leído
-          </Button>
-        )}
-      </div>
-      <Separator />
       <div className="flex-1 overflow-y-auto">{notificationList}</div>
       {isPushSupported && !(pushPermission === 'granted' && isSubscribed) && (
         <>
@@ -301,9 +285,23 @@ export function NotificationBell() {
     return (
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetTrigger asChild>{trigger}</SheetTrigger>
-        <SheetContent side="right" className="w-full sm:max-w-sm p-0 flex flex-col">
-          <SheetTitle className="sr-only">Notificaciones</SheetTitle>
-          {sheetContent}
+        <SheetContent side="right" className="w-full sm:max-w-sm p-0 flex flex-col gap-0">
+          <SheetHeader className="flex flex-row items-center justify-between px-4 py-3 border-b space-y-0">
+            <SheetTitle className="text-base">Notificaciones</SheetTitle>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto px-2 py-1 text-xs text-muted-foreground hover:bg-transparent hover:text-info [&_svg]:hover:text-info"
+                onClick={handleMarkAllRead}
+                disabled={isMarkingAll}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                Marcar todo
+              </Button>
+            )}
+          </SheetHeader>
+          {sheetBody}
         </SheetContent>
       </Sheet>
     );
