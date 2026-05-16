@@ -3,7 +3,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title ?? 'Flowy', {
       body: data.body ?? '',
-      icon: '/notification-icon.png',
+      icon: '/web-app-manifest-192x192.png',
       data: { url: data.url ?? '/dashboard' },
     }),
   );

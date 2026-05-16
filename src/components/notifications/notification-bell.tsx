@@ -286,7 +286,7 @@ export function NotificationBell() {
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetTrigger asChild>{trigger}</SheetTrigger>
         <SheetContent side="right" className="w-full sm:max-w-sm p-0 flex flex-col gap-0">
-          <SheetHeader className="flex flex-row items-center justify-between px-4 py-3 border-b space-y-0">
+          <SheetHeader className="flex flex-row items-center justify-between px-4 py-3 pr-10 border-b space-y-0">
             <SheetTitle className="text-base">Notificaciones</SheetTitle>
             {unreadCount > 0 && (
               <Button
