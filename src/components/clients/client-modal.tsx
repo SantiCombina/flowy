@@ -8,6 +8,16 @@ import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { useUser } from '@/components/providers/user-provider';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -20,6 +30,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
@@ -30,7 +41,7 @@ import { cn } from '@/lib/utils';
 import type { Client, Zone } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
 
-import { createZoneAction, getZonesAction } from '../zones/actions';
+import { createZoneAction, deleteZoneAction, getZonesAction } from '../zones/actions';
 
 import { createClientAction, updateClientAction } from './actions';
 
@@ -64,6 +75,9 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
 
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
+  const [zoneToDelete, setZoneToDelete] = useState<{ id: number; name: string } | null>(null);
+
+  const { executeAsync: execDeleteZone, isExecuting: isDeletingZone } = useAction(deleteZoneAction);
 
   const { data: zonesData } = useServerActionQuery({
     queryKey: queryKeys.zones.list(),
@@ -148,6 +162,22 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
     }
   };
 
+  const handleDeleteZone = async (id: number) => {
+    const result = await execDeleteZone({ id });
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+    if (result?.data?.success) {
+      invalidateQueries([queryKeys.zones.list()]);
+      if (form.getValues('zone') === id) {
+        form.setValue('zone', undefined, { shouldDirty: true });
+      }
+      setZoneToDelete(null);
+      toast.warning('Zona eliminada');
+    }
+  };
+
   const handleCreateZone = async () => {
     const name = newZoneName.trim();
     if (!name) return;
@@ -191,50 +221,85 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
   };
 
   return (
-    <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-lg">
-      <ResponsiveModalHeader>
-        <ResponsiveModalTitle>{isEditMode ? 'Editar cliente' : 'Agregar cliente'}</ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          {isEditMode ? 'Modificá los datos del cliente.' : 'Completá los datos para registrar un nuevo cliente.'}
-        </ResponsiveModalDescription>
-      </ResponsiveModalHeader>
+    <>
+      <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-lg">
+        <ResponsiveModalHeader>
+          <ResponsiveModalTitle>{isEditMode ? 'Editar cliente' : 'Agregar cliente'}</ResponsiveModalTitle>
+          <ResponsiveModalDescription>
+            {isEditMode ? 'Modificá los datos del cliente.' : 'Completá los datos para registrar un nuevo cliente.'}
+          </ResponsiveModalDescription>
+        </ResponsiveModalHeader>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <ResponsiveModalBody className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Nombre / Razón social <span className="text-destructive">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Empresa S.A." />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+            <ResponsiveModalBody className="space-y-4">
               <FormField
                 control={form.control}
-                name="cuit"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>CUIT/CUIL</FormLabel>
+                    <FormLabel>
+                      Nombre / Razón social <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="20-12345678-9"
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(formatCuit(e.target.value))}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                      />
+                      <Input {...field} placeholder="Empresa S.A." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="cuit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CUIT/CUIL</FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="20-12345678-9"
+                          value={field.value ?? ''}
+                          onChange={(e) => field.onChange(formatCuit(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono</FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="tel"
+                          placeholder="+54 9 11 1234-5678"
+                          {...field}
+                          onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="contacto@empresa.com" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -243,202 +308,226 @@ export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalP
 
               <FormField
                 control={form.control}
-                name="phone"
+                name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Teléfono</FormLabel>
+                    <FormLabel>Dirección</FormLabel>
                     <FormControl>
-                      <Input
-                        inputMode="tel"
-                        placeholder="+54 9 11 1234-5678"
-                        {...field}
-                        onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="email" placeholder="contacto@empresa.com" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Av. Corrientes 1234" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="provincia"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Provincia</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={ARGENTINA_PROVINCES.map((p) => ({ value: p.nombre, label: p.nombre }))}
-                        value={field.value ?? ''}
-                        onValueChange={(v) => handleProvinciaChange(v, field.onChange)}
-                        placeholder="Seleccionar..."
-                        searchPlaceholder="Buscar provincia..."
-                        emptyMessage="No se encontró la provincia."
-                      />
+                      <Input {...field} placeholder="Av. Corrientes 1234" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="localidad"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Localidad</FormLabel>
-                    {loadingLocalities ? (
-                      <Skeleton className="h-9 w-full rounded-md" />
-                    ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="provincia"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provincia</FormLabel>
                       <FormControl>
                         <Combobox
-                          options={localities.map((l) => ({ value: l.nombre, label: l.nombre }))}
+                          options={ARGENTINA_PROVINCES.map((p) => ({ value: p.nombre, label: p.nombre }))}
                           value={field.value ?? ''}
-                          onValueChange={field.onChange}
-                          placeholder={provinciaValue ? 'Seleccionar...' : 'Elegí una provincia'}
-                          searchPlaceholder="Buscar localidad..."
-                          emptyMessage="No se encontró la localidad."
-                          disabled={localities.length === 0}
+                          onValueChange={(v) => handleProvinciaChange(v, field.onChange)}
+                          placeholder="Seleccionar..."
+                          searchPlaceholder="Buscar provincia..."
+                          emptyMessage="No se encontró la provincia."
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="localidad"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Localidad</FormLabel>
+                      {loadingLocalities ? (
+                        <Skeleton className="h-9 w-full rounded-md" />
+                      ) : (
+                        <FormControl>
+                          <Combobox
+                            options={localities.map((l) => ({ value: l.nombre, label: l.nombre }))}
+                            value={field.value ?? ''}
+                            onValueChange={field.onChange}
+                            placeholder={provinciaValue ? 'Seleccionar...' : 'Elegí una provincia'}
+                            searchPlaceholder="Buscar localidad..."
+                            emptyMessage="No se encontró la localidad."
+                            disabled={localities.length === 0}
+                          />
+                        </FormControl>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="zone"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Zona</FormLabel>
+                      {isOwner && !isCreatingZone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCreatingZone(true);
+                            field.onChange(undefined);
+                          }}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          + Nueva zona
+                        </button>
+                      )}
+                    </div>
+                    {isCreatingZone ? (
+                      <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="relative">
+                          <Input
+                            placeholder="Nombre de la zona"
+                            value={newZoneName}
+                            onChange={(e) => setNewZoneName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (!isDuplicateZone) void handleCreateZone();
+                              }
+                              if (e.key === 'Escape') {
+                                setIsCreatingZone(false);
+                                setNewZoneName('');
+                              }
+                            }}
+                            autoFocus
+                            className={cn('pr-20', isDuplicateZone && 'border-destructive')}
+                          />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => void handleCreateZone()}
+                              disabled={!newZoneName.trim() || isDuplicateZone}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-success hover:bg-success-muted hover:text-success-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-success transition-colors"
+                              title="Crear zona"
+                            >
+                              <Check className="h-4 w-4" strokeWidth={2.5} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCreatingZone(false);
+                                setNewZoneName('');
+                              }}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              title="Cancelar"
+                            >
+                              <X className="h-4 w-4" strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        </div>
+                        {isDuplicateZone && (
+                          <p className="text-xs text-destructive mt-1">Ya existe una zona con ese nombre</p>
+                        )}
+                      </div>
+                    ) : (
+                      <FormControl>
+                        <Select
+                          onValueChange={(v) => {
+                            if (v === '__clear__') {
+                              field.onChange(undefined);
+                              return;
+                            }
+                            field.onChange(Number(v));
+                          }}
+                          value={field.value ? String(field.value) : ''}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.value && (
+                              <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
+                                ✕ Sin zona
+                              </SelectItem>
+                            )}
+                            {zones.length === 0 ? (
+                              <SelectItem value="_empty" disabled>
+                                No hay zonas creadas.
+                              </SelectItem>
+                            ) : (
+                              zones.map((zone) => (
+                                <SelectItem key={zone.id} value={String(zone.id)} className="pr-16">
+                                  <SelectItemText>{zone.name}</SelectItemText>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setZoneToDelete({ id: zone.id, name: zone.name });
+                                    }}
+                                    className="absolute right-8 p-1 rounded hover:bg-destructive/10 text-destructive transition-colors z-10"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                     )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            </ResponsiveModalBody>
 
-            <FormField
-              control={form.control}
-              name="zone"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Zona</FormLabel>
-                    {isOwner && !isCreatingZone && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCreatingZone(true);
-                          field.onChange(undefined);
-                        }}
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        + Nueva zona
-                      </button>
-                    )}
-                  </div>
-                  {isCreatingZone ? (
-                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                      <div className="relative">
-                        <Input
-                          placeholder="Nombre de la zona"
-                          value={newZoneName}
-                          onChange={(e) => setNewZoneName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (!isDuplicateZone) void handleCreateZone();
-                            }
-                            if (e.key === 'Escape') {
-                              setIsCreatingZone(false);
-                              setNewZoneName('');
-                            }
-                          }}
-                          autoFocus
-                          className={cn('pr-20', isDuplicateZone && 'border-destructive')}
-                        />
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => void handleCreateZone()}
-                            disabled={!newZoneName.trim() || isDuplicateZone}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-success hover:bg-success-muted hover:text-success-muted-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-success transition-colors"
-                            title="Crear zona"
-                          >
-                            <Check className="h-4 w-4" strokeWidth={2.5} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsCreatingZone(false);
-                              setNewZoneName('');
-                            }}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                            title="Cancelar"
-                          >
-                            <X className="h-4 w-4" strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      </div>
-                      {isDuplicateZone && (
-                        <p className="text-xs text-destructive mt-1">Ya existe una zona con ese nombre</p>
-                      )}
-                    </div>
-                  ) : (
-                    <FormControl>
-                      <Combobox
-                        options={zones.map((z) => ({ value: String(z.id), label: z.name }))}
-                        value={field.value ? String(field.value) : ''}
-                        onValueChange={(v) => field.onChange(v ? (v === '' ? null : Number(v)) : null)}
-                        placeholder="Sin zona"
-                        searchPlaceholder="Buscar zona..."
-                        emptyMessage="No se encontró la zona."
-                      />
-                    </FormControl>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </ResponsiveModalBody>
+            <ResponsiveModalFooter>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isExecuting}>
+                {isExecuting
+                  ? isEditMode
+                    ? 'Guardando…'
+                    : 'Creando…'
+                  : isEditMode
+                    ? 'Guardar cambios'
+                    : 'Crear cliente'}
+              </Button>
+            </ResponsiveModalFooter>
+          </form>
+        </Form>
 
-          <ResponsiveModalFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isExecuting}>
-              {isExecuting
-                ? isEditMode
-                  ? 'Guardando…'
-                  : 'Creando…'
-                : isEditMode
-                  ? 'Guardar cambios'
-                  : 'Crear cliente'}
-            </Button>
-          </ResponsiveModalFooter>
-        </form>
-      </Form>
-    </ResponsiveModal>
+        <AlertDialog open={!!zoneToDelete} onOpenChange={() => setZoneToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Desea eliminar zona?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Está a punto de eliminar <span className="font-semibold">{zoneToDelete?.name}</span>. Esta acción no se
+                puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => zoneToDelete && void handleDeleteZone(zoneToDelete.id)}
+                disabled={isDeletingZone}
+                variant="destructive"
+              >
+                {isDeletingZone ? 'Eliminando…' : 'Eliminar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </ResponsiveModal>
+    </>
   );
 }
