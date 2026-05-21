@@ -26,7 +26,7 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
       onClick={() => {
         if (!notification.read) onMarkRead(notification.id);
       }}
-      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+      className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 ${notification.read ? '' : 'bg-muted'}`}
     >
       <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read ? 'bg-transparent' : 'bg-primary'}`} />
       <div className="min-w-0 flex-1">
