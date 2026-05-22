@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 export default function HistoryLoading() {
   return (
@@ -16,52 +17,7 @@ export default function HistoryLoading() {
       </div>
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="space-y-3">
-          <div className="rounded-xl bg-card shadow-sm overflow-hidden border border-border/40">
-            <div className="flex items-center gap-4 border-b bg-muted/40 px-4 py-3">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="ml-auto h-4 w-16" />
-            </div>
-
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 border-b px-4 py-3.5">
-                <div className="w-20 space-y-1">
-                  <Skeleton className="h-3.5 w-16" />
-                  <Skeleton className="h-3 w-12" />
-                </div>
-                <Skeleton className="h-5 w-14 rounded-full" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-24" />
-                <div className="ml-auto">
-                  <Skeleton className="h-8 w-8 rounded-md" />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-9 w-20 rounded-md" />
-            </div>
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-4 w-32" />
-              <div className="flex items-center gap-1">
-                <Skeleton className="h-9 w-9 rounded-md" />
-                <Skeleton className="h-9 w-9 rounded-md" />
-              </div>
-            </div>
-          </div>
-        </div>
+        <TableSkeleton columns={8} rows={10} hasActions />
       </main>
     </div>
   );

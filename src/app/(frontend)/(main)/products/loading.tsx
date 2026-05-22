@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 export default function ProductsLoading() {
   return (
@@ -24,36 +25,7 @@ export default function ProductsLoading() {
           </div>
         </div>
 
-        <div className="border rounded-lg overflow-hidden">
-          <div className="flex items-center gap-4 border-b bg-muted/40 px-4 py-3">
-            <Skeleton className="h-4 w-8" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="ml-auto h-4 w-16" />
-          </div>
-
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 border-b px-4 py-3.5"
-              style={{ animationDelay: `${i * 40}ms` }}
-            >
-              <Skeleton className="h-9 w-9 rounded-md shrink-0" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <div className="ml-auto flex items-center gap-1">
-                <Skeleton className="h-7 w-7 rounded-md" />
-                <Skeleton className="h-7 w-7 rounded-md" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <TableSkeleton columns={7} rows={8} hasActions actionCount={2} />
       </main>
     </div>
   );
