@@ -91,7 +91,7 @@ export interface SaleRow {
   items: SaleItemDetail[];
 }
 
-export async function getSaleOptions(sellerId: number, ownerId: number): Promise<SaleOptions> {
+async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleOptions> {
   const payload = await getPayloadClient();
 
   const [variantsResult, inventoryResult, clientsResult] = await Promise.all([
@@ -149,6 +149,12 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
 
   return { variants, clients };
 }
+
+export const getSaleOptions = unstable_cache(
+  _getSaleOptions,
+  ['sale-options'],
+  { revalidate: 60 * 2, tags: ['sale-options'] },
+);
 
 export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
   const payload = await getPayloadClient();
