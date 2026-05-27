@@ -237,7 +237,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
   });
   const { executeAsync: submitEdit, isExecuting: isSubmitting } = useAction(editSaleFullAction);
 
-  const isLoadingOptions = isLoadingSellerOptions || isLoadingOwnerOptions;
+  const isLoadingOptions = isSeller ? isLoadingSellerOptions : isLoadingOwnerOptions;
 
   const variants = isSeller ? (sellerOptions?.variants ?? []) : (ownerOptions?.variants ?? []);
   const clients = isSeller ? (sellerOptions?.clients ?? []) : (ownerOptions?.clients ?? []);
