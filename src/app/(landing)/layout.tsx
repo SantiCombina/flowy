@@ -27,24 +27,24 @@ const schemaOrg = {
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': 'https://flowy.app/#organization',
+      '@id': 'https://www.flowy.ar/#organization',
       name: 'Flowy',
-      url: 'https://flowy.app',
-      logo: 'https://flowy.app/logo.png',
+      url: 'https://www.flowy.ar',
+      logo: 'https://www.flowy.ar/logo.png',
       description: 'Sistema de gestión de inventario y ventas para distribuidoras.',
       sameAs: [],
     },
     {
       '@type': 'WebSite',
-      '@id': 'https://flowy.app/#website',
-      url: 'https://flowy.app',
+      '@id': 'https://www.flowy.ar/#website',
+      url: 'https://www.flowy.ar',
       name: 'Flowy',
-      publisher: { '@id': 'https://flowy.app/#organization' },
+      publisher: { '@id': 'https://www.flowy.ar/#organization' },
       inLanguage: 'es-AR',
     },
     {
       '@type': 'SoftwareApplication',
-      '@id': 'https://flowy.app/#software',
+      '@id': 'https://www.flowy.ar/#software',
       name: 'Flowy',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Any',
@@ -72,10 +72,10 @@ const schemaOrg = {
   ],
 };
 
-const ogImageUrl = 'https://flowy.app/og-image.png';
+const absoluteUrl = process.env.NEXT_PUBLIC_SERVER_URL ?? 'https://www.flowy.ar';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://flowy.app'),
+  metadataBase: new URL(absoluteUrl),
   title: 'Flowy | Gestión de negocio',
   description:
     'Controlá tu stock, coordiná tu equipo de vendedores y seguí tus ventas en tiempo real. Flowy es el software diseñado para distribuidoras modernas.',
@@ -94,14 +94,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_AR',
     siteName: 'Flowy',
-    url: 'https://flowy.app',
+    url: 'https://www.flowy.ar',
     images: [
       {
-        url: ogImageUrl,
+        url: `${absoluteUrl}/og-image.png`,
         width: 1200,
         height: 630,
         alt: 'Flowy — Gestión de inventario para distribuidoras',
-        type: 'image/png',
       },
     ],
   },
@@ -109,10 +108,10 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Flowy | Gestión de inventario para distribuidoras',
     description: 'Controlá tu stock, coordiná tu equipo de vendedores y seguí tus ventas en tiempo real.',
-    images: [ogImageUrl],
+    images: [`${absoluteUrl}/og-image.png`],
   },
   alternates: {
-    canonical: 'https://flowy.app',
+    canonical: 'https://www.flowy.ar',
   },
   robots: {
     index: true,

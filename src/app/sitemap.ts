@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_URL ?? 'https://flowy.app';
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ?? 'https://www.flowy.ar';
 
   return [
     {
