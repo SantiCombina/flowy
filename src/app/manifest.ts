@@ -7,20 +7,20 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/dashboard',
     icons: [
       {
-        src: '/icon-192.png',
+        src: '/web-app-manifest-192x192.png',
         sizes: '192x192',
         type: 'image/png',
-        purpose: 'any',
+        purpose: 'maskable',
       },
       {
-        src: '/icon-512.png',
+        src: '/web-app-manifest-512x512.png',
         sizes: '512x512',
         type: 'image/png',
-        purpose: 'any',
+        purpose: 'maskable',
       },
     ],
-    theme_color: '#f6f7f9',
-    background_color: '#f6f7f9',
+    theme_color: '#ffffff',
+    background_color: '#ffffff',
     display: 'standalone',
     orientation: 'portrait',
   };
