@@ -129,7 +129,7 @@ export function CollectSaleModal({
       </div>
       <div className="flex justify-between mt-1">
         <span className="text-muted-foreground">Comisión vendedor (3%)</span>
-        <span className="text-blue-600 dark:text-blue-400">
+        <span className="text-blue-600">
           $ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
         </span>
       </div>

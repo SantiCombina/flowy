@@ -1,15 +1,12 @@
 'use client';
 
 import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps['theme']}
+      theme="light"
       className="toaster group"
       closeButton
       icons={{
@@ -36,7 +33,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           warning: '!bg-[color-mix(in_oklch,var(--warning-muted)_40%,var(--popover))] !text-[var(--warning)]',
           info: '!bg-[color-mix(in_oklch,var(--info-muted)_40%,var(--popover))] !text-[var(--info)]',
           closeButton:
-            '!left-auto !right-0 !top-0 !size-5 !rounded-full !bg-white/60 dark:!bg-black/40 !backdrop-blur-md !text-current !border-0 !ring-0 hover:!bg-white/80 dark:hover:!bg-black/60 !transition-colors !translate-none',
+            '!left-auto !right-0 !top-0 !size-5 !rounded-full !bg-white/60 !backdrop-blur-md !text-current !border-0 !ring-0 hover:!bg-white/80 !transition-colors !translate-none',
         },
       }}
       {...props}

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
-
 import '@/app/(frontend)/globals.css';
 
 const inter = Inter({
@@ -21,6 +20,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#ffffff',
   interactiveWidget: 'resizes-visual',
 };
 
@@ -55,7 +55,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
 
   return (
     <html lang="es" className={`${inter.variable} ${manrope.variable}`}>
-      <body suppressHydrationWarning>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
