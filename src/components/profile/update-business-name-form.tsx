@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { queryKeys } from '@/lib/query-keys';
 import { updateBusinessNameSchema, type UpdateBusinessNameValues } from '@/schemas/profile/update-business-name-schema';
 
 import { updateBusinessNameAction } from './actions';
@@ -17,6 +19,7 @@ interface UpdateBusinessNameFormProps {
 }
 
 export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormProps) {
+  const queryClient = useQueryClient();
   const { executeAsync, isExecuting } = useAction(updateBusinessNameAction);
 
   const form = useForm<UpdateBusinessNameValues>({
@@ -36,6 +39,7 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
 
     if (result.data?.success) {
       toast.success('Nombre del negocio actualizado correctamente.');
+      void queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
     }
   }
 

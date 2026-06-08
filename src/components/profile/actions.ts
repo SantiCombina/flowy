@@ -1,6 +1,6 @@
 'use server';
 
-import { changePassword, loginUser as loginUserService, updateSeller } from '@/app/services/users';
+import { changePassword, getOwnerById, loginUser as loginUserService, updateSeller } from '@/app/services/users';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { changePasswordSchema } from '@/schemas/profile/change-password-schema';
@@ -64,3 +64,18 @@ export const updateBusinessNameAction = actionClient
 
     return { success: true };
   });
+
+export const getCurrentUserAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+
+  if (!user) throw new Error('No autenticado');
+
+  const businessName =
+    user.role === 'owner'
+      ? (user.businessName ?? null)
+      : user.role === 'seller' && typeof user.owner === 'number'
+        ? ((await getOwnerById(user.owner))?.businessName ?? null)
+        : null;
+
+  return { businessName };
+});

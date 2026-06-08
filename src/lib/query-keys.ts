@@ -48,4 +48,7 @@ export const queryKeys = {
   variantSalesHistory: {
     forVariant: (variantId: number | undefined) => ['variantSalesHistory', variantId] as const,
   },
+  user: {
+    current: () => ['user', 'current'] as const,
+  },
 } as const;

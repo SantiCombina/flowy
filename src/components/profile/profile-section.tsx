@@ -6,7 +6,10 @@ import { useUser } from '@/components/providers/user-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 
+import { getCurrentUserAction } from './actions';
 import { ChangePasswordDialog } from './change-password-dialog';
 import { UpdateBusinessDataForm } from './update-business-data-form';
 import { UpdateBusinessNameForm } from './update-business-name-form';
@@ -41,13 +44,21 @@ export function ProfileSection({
   dni,
   cuitCuil,
   cbu,
-  businessName,
+  businessName: initialBusinessName,
   businessCuit,
   businessPhone,
   businessAddress,
   ivaCondition,
 }: ProfileSectionProps) {
   const user = useUser();
+
+  const { data: currentUser } = useServerActionQuery({
+    queryKey: queryKeys.user.current(),
+    queryFn: () => getCurrentUserAction(),
+    staleTime: 60_000,
+  });
+
+  const businessName = currentUser?.businessName ?? initialBusinessName ?? user?.businessName ?? null;
 
   const initials = user.name
     .split(' ')
@@ -83,13 +94,13 @@ export function ProfileSection({
                   {user.role === 'owner' && (
                     <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Building2 className="h-3.5 w-3.5" />
-                      {user.businessName?.trim() || 'Sin nombre de negocio'}
+                      {businessName?.trim() || 'Sin nombre de negocio'}
                     </p>
                   )}
-                  {user.role === 'seller' && user.businessName && (
+                  {user.role === 'seller' && businessName && (
                     <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Building2 className="h-3.5 w-3.5" />
-                      {user.businessName}
+                      {businessName}
                     </p>
                   )}
                 </div>
@@ -151,7 +162,7 @@ export function ProfileSection({
             </Card>
           )}
 
-          {user.role === 'seller' && user.businessName && (
+          {user.role === 'seller' && businessName && (
             <Card className="border-dashed">
               <CardContent className="flex items-center gap-3 pt-6">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -159,7 +170,7 @@ export function ProfileSection({
                 </div>
                 <div>
                   <p className="text-sm font-medium">Trabajando para</p>
-                  <p className="text-sm text-muted-foreground">{user.businessName}</p>
+                  <p className="text-sm text-muted-foreground">{businessName}</p>
                 </div>
               </CardContent>
             </Card>
