@@ -31,7 +31,8 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="relative py-24 sm:py-32">
+    <section className="relative py-24 sm:py-32">
+      <div id="features" className="scroll-mt-16" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <span className="animate-fade-up inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">

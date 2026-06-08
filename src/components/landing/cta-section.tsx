@@ -18,7 +18,8 @@ export function CtaSection() {
   }
 
   return (
-    <section id="contacto" className="relative py-24 sm:py-32">
+    <section className="relative py-24 sm:py-32">
+      <div id="contacto" className="scroll-mt-16" />
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-1/2 left-1/2 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky/5 blur-3xl" />

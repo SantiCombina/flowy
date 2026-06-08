@@ -1,17 +1,18 @@
 'use client';
 
-import { Box, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { FlowyLogo } from '@/components/brand/flowy-logo';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
-  { href: '#features', label: 'Funciones' },
-  { href: '#como-funciona', label: 'Cómo funciona' },
-  { href: '#contacto', label: 'Contacto' },
+  { target: 'features', label: 'Funciones' },
+  { target: 'como-funciona', label: 'Cómo funciona' },
+  { target: 'contacto', label: 'Contacto' },
 ];
 
 interface NavbarProps {
@@ -31,12 +32,21 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  function handleAnchorClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
-    e.preventDefault();
+  function scrollToSection(targetId: string) {
+    const wasMobileOpen = mobileOpen;
     setMobileOpen(false);
-    const target = document.querySelector(href);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
+
+    const doScroll = () => {
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    if (wasMobileOpen) {
+      setTimeout(doScroll, 300);
+    } else {
+      doScroll();
     }
   }
 
@@ -51,25 +61,18 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
         aria-label="Navegación principal"
         className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-900/30">
-            <Box className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-lg font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
-            Flowy
-          </span>
-        </Link>
+        <FlowyLogo iconSize="md" textSize="lg" />
 
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={(e) => handleAnchorClick(e, link.href)}
+            <Button
+              key={link.target}
+              variant="ghost"
+              onClick={() => scrollToSection(link.target)}
               className="text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
               {link.label}
-            </a>
+            </Button>
           ))}
         </div>
 
@@ -86,10 +89,8 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
                   Accedé
                 </Link>
               </span>
-              <Button asChild className="rounded-full">
-                <a href="#contacto" onClick={(e) => handleAnchorClick(e, '#contacto')}>
-                  Solicitá una demo
-                </a>
+              <Button className="rounded-full" onClick={() => scrollToSection('contacto')}>
+                Solicitá una demo
               </Button>
             </>
           )}
@@ -105,14 +106,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
             <SheetContent side="right" className="w-70 p-0">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border p-4">
-                  <Link href="/" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-orange-400 to-orange-600">
-                      <Box className="h-4 w-4 text-white" />
-                    </div>
-                    <span className="text-base font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-                      Flowy
-                    </span>
-                  </Link>
+                  <FlowyLogo iconSize="sm" textSize="md" onClick={() => setMobileOpen(false)} />
                   <SheetClose asChild>
                     <Button variant="ghost" size="icon" aria-label="Cerrar menú">
                       <X className="h-5 w-5" />
@@ -121,14 +115,14 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
                 </div>
                 <div className="flex flex-1 flex-col gap-1 p-4">
                   {navLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      onClick={(e) => handleAnchorClick(e, link.href)}
-                      className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+                    <Button
+                      key={link.target}
+                      variant="ghost"
+                      onClick={() => scrollToSection(link.target)}
+                      className="justify-start px-3 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
                     >
                       {link.label}
-                    </a>
+                    </Button>
                   ))}
                 </div>
                 <div className="flex flex-col gap-3 border-t border-border p-4">
@@ -140,10 +134,8 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
                     </Button>
                   ) : (
                     <>
-                      <Button className="w-full rounded-full" asChild>
-                        <a href="#contacto" onClick={(e) => handleAnchorClick(e, '#contacto')}>
-                          Solicitá una demo
-                        </a>
+                      <Button className="w-full rounded-full" onClick={() => scrollToSection('contacto')}>
+                        Solicitá una demo
                       </Button>
                       <p className="text-center text-sm text-muted-foreground">
                         ¿Ya tenés cuenta?{' '}
