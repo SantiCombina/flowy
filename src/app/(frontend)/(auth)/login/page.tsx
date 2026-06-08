@@ -1,4 +1,4 @@
-import { Box, Package, ShoppingCart, Users } from 'lucide-react';
+import { Package, ShoppingCart, Users } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -36,10 +36,10 @@ export default async function LoginPage() {
     <main className="flex min-h-dvh">
       <div className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-primary p-12 text-primary-foreground">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-foreground/20">
-            <Box className="h-7 w-7" />
-          </div>
-          <span className="text-3xl font-bold tracking-tight">Flowy</span>
+          <Image src="/isotipo.png" alt="Flowy" width={48} height={48} className="shrink-0" priority />
+          <span className="text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+            Flowy
+          </span>
         </Link>
 
         <div className="space-y-8">
@@ -66,17 +66,17 @@ export default async function LoginPage() {
           <p className="text-xs text-primary-foreground">© 2026 Flowy</p>
           <a href="https://forge.ar" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
             <span className="text-xs text-primary-foreground">Un desarrollo de</span>
-            <Image src="/Forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto" />
+            <Image src="/forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto" />
           </a>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 p-6 bg-muted/20">
         <Link href="/" className="flex items-center gap-3 lg:hidden">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <Box className="h-7 w-7 text-primary-foreground" />
-          </div>
-          <span className="text-3xl font-bold">Flowy</span>
+          <Image src="/isotipo.png" alt="Flowy" width={48} height={48} className="shrink-0" priority />
+          <span className="text-3xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
+            Flowy
+          </span>
         </Link>
 
         <Suspense fallback={<div className="h-96 w-full max-w-sm animate-pulse rounded-lg bg-muted" />}>
