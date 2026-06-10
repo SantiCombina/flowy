@@ -27,7 +27,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -44,7 +43,7 @@ type FeatureKey = keyof FeatureFlags | null;
 interface NavItem {
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   feature: FeatureKey;
   roleOnly?: 'admin' | 'owner' | 'seller';
 }
@@ -134,74 +133,73 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="px-6 py-6 group-data-[collapsible=icon]:px-2 relative z-10">
-        <Link
-          href="/"
-          className="flex items-center gap-3 rounded-xl transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hover:bg-transparent"
-        >
-          <Image
-            src="/isotipo.png"
-            alt="Flowy"
-            width={isCollapsed ? 32 : 36}
-            height={isCollapsed ? 32 : 36}
-            className="shrink-0"
-            priority
-          />
-          <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
-            <span
-              className="text-sm font-bold tracking-tight text-sidebar-foreground whitespace-nowrap"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              Flowy
-            </span>
-            <span className="truncate text-xs text-sidebar-foreground/55 whitespace-nowrap">
-              {businessName?.trim() || 'Mi negocio'}
-            </span>
-          </div>
-        </Link>
-      </SidebarHeader>
+      <div className="relative h-full w-full flex flex-col">
+        <SidebarHeader className="absolute top-0 left-0 right-0 z-10 px-3 py-6">
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-xl transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:gap-0"
+          >
+            <Image
+              src="/isotipo.png"
+              alt="Flowy"
+              width={32}
+              height={32}
+              className="w-8 h-8 min-w-8 shrink-0"
+              priority
+            />
+            <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+              <span
+                className="text-sm font-bold tracking-tight text-sidebar-foreground whitespace-nowrap"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Flowy
+              </span>
+              <span className="truncate text-xs text-sidebar-foreground/55 whitespace-nowrap">
+                {businessName?.trim() || 'Mi negocio'}
+              </span>
+            </div>
+          </Link>
+        </SidebarHeader>
 
-      <SidebarContent className="px-6 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
-        <SidebarGroup className="p-0 w-full">
-          <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/70 transition-all duration-300 ease-in-out group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:h-0 group-data-[collapsible=icon]:mb-0 overflow-hidden">
-            Menú
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <nav aria-label="Navegación principal">
-              <SidebarMenu className="gap-0.5 group-data-[collapsible=icon]:gap-2">
-                {filteredMainNav.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={getIsActive(item)}
-                      tooltip={item.title}
-                      size="default"
-                      className={cn(
-                        'h-10 rounded-xl px-3 gap-3',
-                        'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
-                        'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-warning data-[active=true]:shadow-none',
-                        'group-data-[collapsible=icon]:rounded-full! group-data-[collapsible=icon]:h-8!',
-                      )}
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={handleNavClick}
-                        onMouseEnter={() => handlePrefetch(item.href)}
-                        className="flex items-center gap-3 w-full"
+        <SidebarContent className="px-2">
+          <SidebarGroup className="p-0 w-full my-auto">
+            <SidebarGroupContent>
+              <nav aria-label="Navegación principal">
+                <SidebarMenu className="gap-1.5">
+                  {filteredMainNav.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={getIsActive(item)}
+                        tooltip={item.title}
+                        size="default"
+                        className={cn(
+                          'h-10 rounded-xl p-2.5 gap-3',
+                          'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                          'data-[active=true]:bg-[oklch(0.30_0.03_50)] data-[active=true]:text-warning data-[active=true]:shadow-none',
+                          'group-data-[collapsible=icon]:w-10! group-data-[collapsible=icon]:p-2.5!',
+                        )}
                       >
-                        <item.icon className="h-4.5 w-4.5 shrink-0" />
-                        <span className="font-medium whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
-                          {item.title}
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </nav>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                        <Link
+                          href={item.href}
+                          onClick={handleNavClick}
+                          onMouseEnter={() => handlePrefetch(item.href)}
+                          className="flex items-center gap-3 w-full group-data-[collapsible=icon]:gap-0"
+                        >
+                          <item.icon className="size-5! shrink-0" strokeWidth={2.5} />
+                          <span className="font-medium whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+                            {item.title}
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </nav>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </div>
 
       {!isMobile && (
         <button

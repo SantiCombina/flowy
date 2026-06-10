@@ -121,10 +121,7 @@ export function CtaSection() {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-foreground">Email</div>
-                  <a
-                    href="mailto:contacto@flowy.ar"
-                    className="text-sm text-primary transition-colors hover:underline"
-                  >
+                  <a href="mailto:contacto@flowy.ar" className="text-sm text-primary transition-colors hover:underline">
                     contacto@flowy.ar
                   </a>
                 </div>

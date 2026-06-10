@@ -150,11 +150,10 @@ async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleO
   return { variants, clients };
 }
 
-export const getSaleOptions = unstable_cache(
-  _getSaleOptions,
-  ['sale-options'],
-  { revalidate: 60 * 2, tags: ['sale-options'] },
-);
+export const getSaleOptions = unstable_cache(_getSaleOptions, ['sale-options'], {
+  revalidate: 60 * 2,
+  tags: ['sale-options'],
+});
 
 export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
   const payload = await getPayloadClient();
