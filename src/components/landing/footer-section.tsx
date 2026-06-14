@@ -26,25 +26,25 @@ function scrollToSection(targetId: string) {
 
 export function FooterSection() {
   return (
-    <footer className="border-t border-border/50 bg-foreground text-background">
+    <footer className="bg-[oklch(0.13_0.02_260)] border-t border-white/5">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-3">
           <div className="flex flex-col gap-4">
-            <FlowyLogo iconSize="md" textSize="md" />
-            <p className="max-w-xs text-sm leading-relaxed text-background/60">
+            <FlowyLogo iconSize="md" textSize="md" textClass="text-white" />
+            <p className="max-w-xs text-sm leading-relaxed text-white/60">
               Sistema de gestión de inventario y ventas diseñado para distribuidoras modernas.
             </p>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background/80">Links</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white/70">Links</h4>
             <ul className="mt-4 space-y-2">
               {quickLinks.map((link) => (
                 <li key={link.label}>
                   <Button
                     variant="link"
                     onClick={() => scrollToSection(link.target)}
-                    className="h-auto p-0 text-sm text-background/60 transition-colors hover:text-background"
+                    className="h-auto p-0 text-sm text-white/60 transition-colors hover:text-white"
                   >
                     {link.label}
                   </Button>
@@ -54,11 +54,11 @@ export function FooterSection() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-background/80">Legal</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white/70">Legal</h4>
             <ul className="mt-4 space-y-2">
               {legalLinks.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-sm text-background/60 transition-colors hover:text-background">
+                  <Link href={link.href} className="text-sm text-white/60 transition-colors hover:text-white">
                     {link.label}
                   </Link>
                 </li>
@@ -67,11 +67,22 @@ export function FooterSection() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-background/10 pt-8 sm:flex-row">
-          <p className="text-xs text-background/50">© 2026 Flowy</p>
-          <a href="https://forge.ar" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-            <span className="text-xs text-background/50">Un desarrollo de</span>
-            <Image src="/forge.png" alt="Forge" width={56} height={16} className="h-6 w-auto opacity-60" />
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 sm:flex-row">
+          <p className="text-xs text-white/60">© 2026 Flowy</p>
+          <a
+            href="https://forge.ar"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-1.5"
+          >
+            <span className="text-xs text-white/60">Un desarrollo de</span>
+            <Image
+              src="/forge.png"
+              alt="Forge"
+              width={56}
+              height={16}
+              className="h-6 w-auto opacity-60 transition-opacity group-hover:opacity-80"
+            />
           </a>
         </div>
       </div>

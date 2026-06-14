@@ -10,6 +10,7 @@ interface FlowyLogoProps {
   href?: string;
   showText?: boolean;
   onClick?: () => void;
+  textClass?: string;
 }
 
 const iconPx = { sm: 32, md: 36, lg: 40 };
@@ -21,6 +22,7 @@ export function FlowyLogo({
   href = '/',
   showText = true,
   onClick,
+  textClass,
 }: FlowyLogoProps) {
   const textSizeClasses = {
     sm: 'text-base',
@@ -35,7 +37,7 @@ export function FlowyLogo({
       <Image src="/isotipo.png" alt="Flowy" width={px} height={px} className="shrink-0" priority />
       {showText && (
         <span
-          className={cn('font-bold tracking-tight text-foreground', textSizeClasses[textSize])}
+          className={cn('font-bold tracking-tight', textClass ?? 'text-foreground', textSizeClasses[textSize])}
           style={{ fontFamily: 'var(--font-display)' }}
         >
           Flowy

@@ -1,12 +1,12 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { FlowyLogo } from '@/components/brand/flowy-logo';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
@@ -53,15 +53,15 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 transition-all duration-300',
-        scrolled ? 'border-b border-border/50 bg-background/80 backdrop-blur-xl shadow-sm' : 'bg-transparent',
+        'sticky top-0 z-50 transition-colors duration-300',
+        scrolled ? 'bg-white/70 backdrop-blur-xl shadow-sm' : 'bg-[oklch(0.13_0.02_260)]',
       )}
     >
       <nav
         aria-label="Navegación principal"
         className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
-        <FlowyLogo iconSize="md" textSize="lg" />
+        <FlowyLogo iconSize="md" textSize="lg" textClass={scrolled ? undefined : 'text-white'} />
 
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
@@ -69,7 +69,10 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
               key={link.target}
               variant="ghost"
               onClick={() => scrollToSection(link.target)}
-              className="text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
+              className={cn(
+                'text-sm font-medium transition-colors',
+                scrolled ? 'text-foreground/70 hover:text-foreground' : 'text-white/70 hover:text-white',
+              )}
             >
               {link.label}
             </Button>
@@ -83,13 +86,23 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
             </Button>
           ) : (
             <>
-              <span className="text-sm text-muted-foreground">
+              <span className={cn('text-sm', scrolled ? 'text-foreground/60' : 'text-white/60')}>
                 ¿Ya tenés cuenta?{' '}
-                <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+                <Link
+                  href="/login"
+                  className={cn(
+                    'font-medium underline-offset-4 hover:underline',
+                    scrolled ? 'text-foreground' : 'text-white',
+                  )}
+                >
                   Accedé
                 </Link>
               </span>
-              <Button className="rounded-full" onClick={() => scrollToSection('contacto')}>
+              <Button
+                className="rounded-full"
+                variant={scrolled ? 'default' : 'secondary'}
+                onClick={() => scrollToSection('contacto')}
+              >
                 Solicitá una demo
               </Button>
             </>
@@ -100,18 +113,14 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Abrir menú">
-                <Menu className="h-5 w-5" />
+                <Menu className={cn('h-5 w-5', scrolled ? 'text-foreground' : 'text-white')} />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-70 p-0">
+              <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between border-b border-border p-4">
                   <FlowyLogo iconSize="sm" textSize="md" onClick={() => setMobileOpen(false)} />
-                  <SheetClose asChild>
-                    <Button variant="ghost" size="icon" aria-label="Cerrar menú">
-                      <X className="h-5 w-5" />
-                    </Button>
-                  </SheetClose>
                 </div>
                 <div className="flex flex-1 flex-col gap-1 p-4">
                   {navLinks.map((link) => (
@@ -137,7 +146,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
                       <Button className="w-full rounded-full" onClick={() => scrollToSection('contacto')}>
                         Solicitá una demo
                       </Button>
-                      <p className="text-center text-sm text-muted-foreground">
+                      <p className="text-center text-sm text-foreground/60">
                         ¿Ya tenés cuenta?{' '}
                         <Link
                           href="/login"

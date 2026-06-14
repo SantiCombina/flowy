@@ -114,6 +114,8 @@ html {
   background-clip: text;
 }
 
+
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
