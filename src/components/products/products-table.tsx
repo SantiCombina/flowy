@@ -30,9 +30,9 @@ import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
 
 import { deleteProductAction, getProductDemandSummaryAction } from './actions';
-import { StockMovementModal } from './stock-movement-modal';
+import { StockMovementModal } from './modals/stock-movement-modal';
 
-const ProductDemandSheet = dynamic(() => import('./product-demand-sheet').then((m) => m.ProductDemandSheet), {
+const ProductDemandSheet = dynamic(() => import('./modals/product-demand-sheet').then((m) => m.ProductDemandSheet), {
   ssr: false,
 });
 

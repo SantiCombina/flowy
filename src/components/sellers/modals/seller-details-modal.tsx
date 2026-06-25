@@ -21,7 +21,8 @@ import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
-import { getCommissionDetailAction } from './commission-actions';
+import { getCommissionDetailAction } from '../commission-actions';
+
 import { RegisterCommissionPaymentModal } from './register-commission-payment-modal';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {

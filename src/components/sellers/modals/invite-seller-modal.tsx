@@ -21,7 +21,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 import { inviteSellerSchema, type InviteSellerValues } from '@/schemas/sellers/invite-seller-schema';
 
-import { inviteSellerAction } from './actions';
+import { inviteSellerAction } from '../actions';
 
 interface InviteSellerModalProps {
   isOpen: boolean;

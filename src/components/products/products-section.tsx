@@ -28,8 +28,8 @@ import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
-import { BulkPriceSheet } from './bulk-price-sheet';
-import { ProductModal } from './product-modal-new/index';
+import { BulkPriceSheet } from './modals/bulk-price-sheet';
+import { ProductModal } from './modals/product-modal-new/index';
 import { ProductsTable } from './products-table';
 
 interface RefData {

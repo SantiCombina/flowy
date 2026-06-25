@@ -21,7 +21,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
-import { dispatchStockAction } from './actions';
+import { dispatchStockAction } from '../actions';
 
 interface DispatchStockModalProps {
   isOpen: boolean;

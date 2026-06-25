@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 
-import { registerStockMovementAction } from './stock-actions';
+import { registerStockMovementAction } from '../stock-actions';
 
 interface StockMovementModalProps {
   isOpen: boolean;

@@ -24,7 +24,7 @@ import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 import { editSellerSchema, type EditSellerValues } from '@/schemas/sellers/edit-seller-schema';
 
-import { updateSellerAction } from './actions';
+import { updateSellerAction } from '../actions';
 
 interface EditSellerModalProps {
   isOpen: boolean;

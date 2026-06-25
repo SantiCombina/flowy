@@ -11,7 +11,7 @@ interface MacbookMockUpProps {
 export function MacbookMockUp({ className, src, alt }: MacbookMockUpProps) {
   return (
     <div className={cn('relative z-1 mx-auto w-80 max-w-full sm:w-96 lg:w-155', className)}>
-      <div className="relative mx-auto w-[262px] overflow-hidden rounded-[14px] border-2 border-[rgb(200,202,203)] px-1.75 pt-1.75 pb-4 sm:w-[315px] lg:w-[530px] lg:rounded-[18px] lg:px-2 lg:pt-2 lg:pb-5 [background:rgb(13,13,13)]">
+      <div className="relative mx-auto w-65.5 overflow-hidden rounded-[14px] border-2 border-[rgb(200,202,203)] px-1.75 pt-1.75 pb-4 sm:w-78.75 lg:w-132.5 lg:rounded-[18px] lg:px-2 lg:pt-2 lg:pb-5 [background:rgb(13,13,13)]">
         <div className="relative w-full overflow-hidden rounded-t-xl border-2 border-[rgb(18,18,18)] lg:rounded-t-[10px] aspect-video">
           <Image
             src={src}

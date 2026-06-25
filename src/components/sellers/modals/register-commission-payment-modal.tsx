@@ -34,7 +34,7 @@ import {
   type RegisterCommissionPaymentValues,
 } from '@/schemas/commissions/register-payment-schema';
 
-import { registerCommissionPaymentAction } from './commission-actions';
+import { registerCommissionPaymentAction } from '../commission-actions';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   transfer: 'Transferencia',

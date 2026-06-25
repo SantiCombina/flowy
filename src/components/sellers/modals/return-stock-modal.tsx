@@ -21,7 +21,7 @@ import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
-import { getMobileSellerInventoryAction, returnStockAction } from './actions';
+import { getMobileSellerInventoryAction, returnStockAction } from '../actions';
 
 interface ReturnStockModalProps {
   isOpen: boolean;

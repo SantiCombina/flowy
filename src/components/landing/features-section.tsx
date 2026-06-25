@@ -37,7 +37,7 @@ const cardStyles = [
 
 export function FeaturesSection() {
   return (
-    <section className="relative py-24 sm:py-32 bg-[oklch(0.98_0.005_90)]">
+    <section className="relative py-24 sm:py-32 bg-neutral-50">
       <div id="features" className="scroll-mt-16" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

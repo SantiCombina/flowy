@@ -17,7 +17,7 @@ import {
   createPresentationAction,
   updatePresentationAction,
   deletePresentationAction,
-} from '../../entity-actions';
+} from '../../../entity-actions';
 import type { EntityType, EntityDialogState } from '../types';
 
 interface UseEntityDialogProps {

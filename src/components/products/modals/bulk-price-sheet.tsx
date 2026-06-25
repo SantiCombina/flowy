@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
-import { bulkUpdateVariantPricesAction } from './actions';
+import { bulkUpdateVariantPricesAction } from '../actions';
 
 interface BulkPriceSheetProps {
   isOpen: boolean;

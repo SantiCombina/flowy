@@ -17,8 +17,8 @@ import {
   updateVariantAction,
   deleteVariantAction,
   getProductByIdAction,
-} from '../../actions';
-import { deleteMediaAction } from '../../media-actions';
+} from '../../../actions';
+import { deleteMediaAction } from '../../../media-actions';
 
 interface PayloadMediaResponse {
   doc: { id: number; url?: string | null };

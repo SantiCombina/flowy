@@ -16,11 +16,11 @@ import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { getSellersAction } from './actions';
-import { DispatchStockModal } from './dispatch-stock-modal';
-import { EditSellerModal } from './edit-seller-modal';
-import { InviteSellerModal } from './invite-seller-modal';
-import { ReturnStockModal } from './return-stock-modal';
-import { SellerDetailsModal } from './seller-details-modal';
+import { DispatchStockModal } from './modals/dispatch-stock-modal';
+import { EditSellerModal } from './modals/edit-seller-modal';
+import { InviteSellerModal } from './modals/invite-seller-modal';
+import { ReturnStockModal } from './modals/return-stock-modal';
+import { SellerDetailsModal } from './modals/seller-details-modal';
 import { SellersTable } from './sellers-table';
 
 interface SellersSectionProps {

@@ -11,7 +11,7 @@ import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatCurrency } from '@/lib/utils';
 
-import { getVariantSalesHistoryAction } from './actions';
+import { getVariantSalesHistoryAction } from '../actions';
 
 interface ProductDemandSheetProps {
   variant: PopulatedProductVariant | null;
@@ -148,7 +148,7 @@ export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps
               </div>
 
               <div
-                className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-[both]"
+                className="animate-in fade-in slide-in-from-bottom-2 duration-500 animate-fill-mode-both"
                 style={{ animationDelay: '180ms' }}
               >
                 <div className="mb-3">
@@ -244,7 +244,7 @@ function MetricCard({ icon: Icon, label, value, empty = false, currentRaw, previ
 
   return (
     <div
-      className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-[both]"
+      className="animate-in fade-in slide-in-from-bottom-3 duration-500 animate-fill-mode-both"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="rounded-xl bg-card px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors shadow-sm">
