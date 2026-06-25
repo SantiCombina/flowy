@@ -7,6 +7,7 @@ import '@/app/(landing)/globals.css';
 import { FooterSection } from '@/components/landing/footer-section';
 import { Navbar } from '@/components/landing/navbar';
 import { SchemaOrgScript } from '@/components/landing/schema-org-script';
+import { WhatsAppButton } from '@/components/landing/whatsapp-button';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -130,6 +131,7 @@ export default async function LandingLayout({ children }: { children: React.Reac
         <Navbar isAuthenticated={isAuthenticated} />
         <main>{children}</main>
         <FooterSection />
+        <WhatsAppButton />
       </body>
     </html>
   );

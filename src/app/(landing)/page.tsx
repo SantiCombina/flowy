@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { CtaSection } from '@/components/landing/cta-section';
+import { ContactSection } from '@/components/landing/contact-section';
 import { FeaturesSection } from '@/components/landing/features-section';
 import { HeroSection } from '@/components/landing/hero-section';
 import { HowItWorksSection } from '@/components/landing/how-it-works-section';
@@ -26,7 +26,7 @@ export default async function LandingPage() {
       <FeaturesSection />
       <HowItWorksSection />
       <SocialProofSection />
-      <CtaSection />
+      <ContactSection />
     </>
   );
 }
