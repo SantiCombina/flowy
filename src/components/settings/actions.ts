@@ -30,6 +30,7 @@ export const getSettingsAction = actionClient.action(async () => {
       assignmentsColumns: settings.assignmentsColumns?.map((c) => c.column) ?? [],
       historyColumns: settings.historyColumns?.map((c) => c.column) ?? [],
       sellersColumns: settings.sellersColumns?.map((c) => c.column) ?? [],
+      budgetsColumns: settings.budgetsColumns?.map((c) => c.column) ?? [],
       itemsPerPage: settings.itemsPerPage ?? '10',
     },
   };

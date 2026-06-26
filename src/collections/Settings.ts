@@ -127,6 +127,21 @@ export const Settings: CollectionConfig = {
         },
       ],
     },
+    {
+      name: 'budgetsColumns',
+      type: 'array',
+      admin: {
+        description: 'Columnas visibles en la tabla de presupuestos',
+      },
+      defaultValue: DEFAULT_COLUMNS.budgets,
+      fields: [
+        {
+          name: 'column',
+          type: 'text',
+          required: true,
+        },
+      ],
+    },
 
     {
       name: 'itemsPerPage',

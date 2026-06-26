@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   ClipboardList,
   Contact,
+  FileText,
   History,
   LayoutDashboard,
   Package,
@@ -16,6 +17,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { getBudgetsAction } from '@/components/budgets/actions';
 import { getHistoryAction } from '@/components/history/actions';
 import { getVariantsAction } from '@/components/products/actions';
 import { getCurrentUserAction } from '@/components/profile/actions';
@@ -55,6 +57,7 @@ const mainNavItems: NavItem[] = [
   { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments', roleOnly: 'owner' },
   { title: 'Historial', href: '/history', icon: History, feature: 'history', roleOnly: 'owner' },
   { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
+  { title: 'Presupuestos', href: '/budgets', icon: FileText, feature: 'budgets' },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
   { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
 ];
@@ -90,6 +93,13 @@ export function AppSidebar({ features }: AppSidebarProps) {
           queryKey: queryKeys.products.list('', 1),
           queryFn: () => getVariantsAction({ options: { limit: 50, page: 1, sort: 'product' } }),
           staleTime: 30_000,
+        });
+        break;
+      case '/budgets':
+        void queryClient.prefetchQuery({
+          queryKey: queryKeys.budgets.list(),
+          queryFn: () => getBudgetsAction(),
+          staleTime: 10_000,
         });
         break;
       case '/sales':

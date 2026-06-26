@@ -79,6 +79,7 @@ export interface Config {
     'product-custom-fields': ProductCustomField;
     clients: Client;
     zones: Zone;
+    budgets: Budget;
     sales: Sale;
     'commission-payments': CommissionPayment;
     settings: Setting;
@@ -105,6 +106,7 @@ export interface Config {
     'product-custom-fields': ProductCustomFieldsSelect<false> | ProductCustomFieldsSelect<true>;
     clients: ClientsSelect<false> | ClientsSelect<true>;
     zones: ZonesSelect<false> | ZonesSelect<true>;
+    budgets: BudgetsSelect<false> | BudgetsSelect<true>;
     sales: SalesSelect<false> | SalesSelect<true>;
     'commission-payments': CommissionPaymentsSelect<false> | CommissionPaymentsSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
@@ -463,6 +465,33 @@ export interface Zone {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "budgets".
+ */
+export interface Budget {
+  id: number;
+  seller: number | User;
+  owner: number | User;
+  client?: (number | null) | Client;
+  /**
+   * Teléfono usado al enviar el presupuesto
+   */
+  clientPhone?: string | null;
+  date: string;
+  validUntil?: string | null;
+  items: {
+    variant: number | ProductVariant;
+    quantity: number;
+    unitPrice: number;
+    id?: string | null;
+  }[];
+  total: number;
+  status: 'pending' | 'approved' | 'rejected' | 'converted';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "sales".
  */
 export interface Sale {
@@ -575,6 +604,15 @@ export interface Setting {
    * Columnas visibles en la tabla de vendedores
    */
   sellersColumns?:
+    | {
+        column: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Columnas visibles en la tabla de presupuestos
+   */
+  budgetsColumns?:
     | {
         column: string;
         id?: string | null;
@@ -760,6 +798,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'zones';
         value: number | Zone;
+      } | null)
+    | ({
+        relationTo: 'budgets';
+        value: number | Budget;
       } | null)
     | ({
         relationTo: 'sales';
@@ -1019,6 +1061,31 @@ export interface ZonesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "budgets_select".
+ */
+export interface BudgetsSelect<T extends boolean = true> {
+  seller?: T;
+  owner?: T;
+  client?: T;
+  clientPhone?: T;
+  date?: T;
+  validUntil?: T;
+  items?:
+    | T
+    | {
+        variant?: T;
+        quantity?: T;
+        unitPrice?: T;
+        id?: T;
+      };
+  total?: T;
+  status?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "sales_select".
  */
 export interface SalesSelect<T extends boolean = true> {
@@ -1102,6 +1169,12 @@ export interface SettingsSelect<T extends boolean = true> {
         id?: T;
       };
   sellersColumns?:
+    | T
+    | {
+        column?: T;
+        id?: T;
+      };
+  budgetsColumns?:
     | T
     | {
         column?: T;

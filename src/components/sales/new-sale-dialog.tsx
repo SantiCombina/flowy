@@ -519,7 +519,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                 )}
               </ResponsiveModalBody>
 
-              <ResponsiveModalFooter className="justify-between">
+              <ResponsiveModalFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground">Total</span>
                   <span className="text-base font-semibold text-primary">$ {formatTotal(total)}</span>

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 
 export const updateTableColumnsSchema = z.object({
-  tableName: z.enum(['products', 'clients', 'sales', 'assignments', 'history', 'sellers'], {
+  tableName: z.enum(['products', 'clients', 'sales', 'assignments', 'history', 'sellers', 'budgets'], {
     required_error: 'El nombre de la tabla es requerido.',
     invalid_type_error: 'El nombre de la tabla debe ser un valor válido.',
   }),
@@ -71,6 +71,13 @@ export const updateSettingsSchema = z.object({
     )
     .optional(),
   sellersColumns: z
+    .array(
+      z.string({
+        invalid_type_error: 'Cada columna debe ser una cadena de texto.',
+      }),
+    )
+    .optional(),
+  budgetsColumns: z
     .array(
       z.string({
         invalid_type_error: 'Cada columna debe ser una cadena de texto.',

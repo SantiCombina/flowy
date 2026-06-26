@@ -498,7 +498,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                 )}
               </ResponsiveModalBody>
 
-              <ResponsiveModalFooter className="justify-between">
+              <ResponsiveModalFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-base font-semibold">
                   Total: <span className="text-primary">$ {formatTotal(total)}</span>
                 </p>

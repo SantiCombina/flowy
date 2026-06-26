@@ -50,6 +50,7 @@ export interface SaleVariantOption {
 export interface SaleClientOption {
   id: number;
   name: string;
+  phone?: string;
 }
 
 export interface SaleOptions {
@@ -145,6 +146,7 @@ async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleO
   const clients: SaleClientOption[] = clientsResult.docs.map((client) => ({
     id: client.id,
     name: client.name,
+    phone: client.phone ?? undefined,
   }));
 
   return { variants, clients };

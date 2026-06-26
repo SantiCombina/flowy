@@ -17,6 +17,11 @@ export const queryKeys = {
     list: () => ['sales'] as const,
     options: (role: 'seller' | 'owner', sellerId?: number) => ['saleOptions', { role, sellerId }] as const,
   },
+  budgets: {
+    list: () => ['budgets'] as const,
+    options: () => ['budgetOptions'] as const,
+    detail: (id: number | undefined) => ['budgets', 'detail', id] as const,
+  },
   sellers: {
     list: () => ['sellers'] as const,
     commissions: {

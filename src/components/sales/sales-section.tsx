@@ -856,9 +856,9 @@ function SalesSectionComponent({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={() => deleteConfirmId !== null && void handleDelete(deleteConfirmId)}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Eliminando…' : 'Eliminar'}
             </AlertDialogAction>

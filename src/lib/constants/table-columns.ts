@@ -5,6 +5,7 @@ export const TABLE_COLUMNS = {
   assignments: ['date', 'seller', 'status', 'items', 'notes'],
   history: ['date', 'product', 'type', 'quantity', 'reason', 'reference'],
   sellers: ['name', 'email', 'phone', 'commissionBalance', 'createdAt'],
+  budgets: ['date', 'seller', 'client', 'phone', 'items', 'total', 'validUntil', 'status'],
 } as const;
 
 export type TableName = keyof typeof TABLE_COLUMNS;
@@ -18,6 +19,7 @@ export const DEFAULT_COLUMNS: Record<TableName, string[]> = {
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],
   sellers: ['name', 'email', 'commissionBalance'],
+  budgets: ['date', 'seller', 'client', 'items', 'total', 'status'],
 };
 
 export const MINIMUM_COLUMNS: Record<TableName, string[]> = {
@@ -27,6 +29,7 @@ export const MINIMUM_COLUMNS: Record<TableName, string[]> = {
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],
   sellers: ['name', 'commissionBalance'],
+  budgets: ['date', 'total'],
 };
 
 export const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
@@ -68,6 +71,7 @@ export const COLUMN_LABELS: Record<string, string> = {
   commissionBalance: 'Saldo comisión',
   zone: 'Zona',
   debt: 'Deuda',
+  validUntil: 'Vencimiento',
 };
 
 export const TABLE_LABELS: Record<TableName, string> = {
@@ -77,4 +81,5 @@ export const TABLE_LABELS: Record<TableName, string> = {
   assignments: 'Asignaciones',
   history: 'Historial',
   sellers: 'Vendedores',
+  budgets: 'Presupuestos',
 };

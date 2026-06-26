@@ -5,6 +5,7 @@ export interface FeatureFlags {
   clients: boolean;
   history: boolean;
   sales: boolean;
+  budgets: boolean;
   settings: boolean;
 }
 
@@ -16,6 +17,7 @@ export function getFeatureFlags(): FeatureFlags {
     clients: process.env.FEATURE_CLIENTS === 'true',
     history: process.env.FEATURE_HISTORY === 'true',
     sales: process.env.FEATURE_SALES === 'true',
+    budgets: process.env.FEATURE_BUDGETS === 'true',
     settings: process.env.FEATURE_SETTINGS === 'true',
   };
 }

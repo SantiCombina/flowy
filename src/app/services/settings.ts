@@ -15,6 +15,7 @@ interface SettingsColumns {
   assignmentsColumns?: { column: string }[];
   historyColumns?: { column: string }[];
   sellersColumns?: { column: string }[];
+  budgetsColumns?: { column: string }[];
 }
 
 export type ColumnsConfig = Record<TableName, string[]>;
@@ -159,5 +160,6 @@ export function getAllColumnsConfig(settings: Setting | null): ColumnsConfig {
     assignments: getVisibleColumns(settings, 'assignments'),
     history: getVisibleColumns(settings, 'history'),
     sellers: getVisibleColumns(settings, 'sellers'),
+    budgets: getVisibleColumns(settings, 'budgets'),
   };
 }

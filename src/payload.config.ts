@@ -9,6 +9,7 @@ import { buildConfig } from 'payload';
 import sharp from 'sharp';
 
 import { Brands } from './collections/Brands';
+import { Budgets } from './collections/Budgets';
 import { Categories } from './collections/Categories';
 import { Clients } from './collections/Clients';
 import { CommissionPayments } from './collections/CommissionPayments';
@@ -56,6 +57,7 @@ export default buildConfig({
     ProductCustomFields,
     Clients,
     Zones,
+    Budgets,
     Sales,
     CommissionPayments,
     Settings,

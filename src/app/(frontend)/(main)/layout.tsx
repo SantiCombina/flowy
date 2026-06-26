@@ -38,6 +38,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
     assignmentsColumns: rawSettings.assignmentsColumns?.map((c) => c.column) ?? [],
     historyColumns: rawSettings.historyColumns?.map((c) => c.column) ?? [],
     sellersColumns: rawSettings.sellersColumns?.map((c) => c.column) ?? [],
+    budgetsColumns: rawSettings.budgetsColumns?.map((c) => c.column) ?? [],
     itemsPerPage: rawSettings.itemsPerPage ?? '10',
   };
 

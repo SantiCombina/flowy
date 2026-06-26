@@ -14,6 +14,7 @@ export interface SettingsData {
   assignmentsColumns: string[];
   historyColumns: string[];
   sellersColumns: string[];
+  budgetsColumns: string[];
   itemsPerPage: string;
 }
 
@@ -25,6 +26,7 @@ interface SettingsState {
   assignmentsColumns: string[];
   historyColumns: string[];
   sellersColumns: string[];
+  budgetsColumns: string[];
   itemsPerPage: string;
   isLoading: boolean;
   error: string | null;
@@ -48,6 +50,7 @@ const DEFAULT_COLUMNS = {
   assignments: ['date', 'seller', 'status'],
   history: ['date', 'product', 'type', 'quantity'],
   sellers: ['name', 'email'],
+  budgets: ['date', 'seller', 'client', 'items', 'total', 'status'],
 };
 
 interface SettingsProviderProps {
@@ -69,6 +72,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
         assignmentsColumns: sanitize(initialSettings.assignmentsColumns, 'assignments'),
         historyColumns: sanitize(initialSettings.historyColumns, 'history'),
         sellersColumns: sanitize(initialSettings.sellersColumns, 'sellers'),
+        budgetsColumns: sanitize(initialSettings.budgetsColumns, 'budgets'),
         itemsPerPage: initialSettings.itemsPerPage,
         isLoading: false,
         error: null,
@@ -82,6 +86,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
       assignmentsColumns: DEFAULT_COLUMNS.assignments,
       historyColumns: DEFAULT_COLUMNS.history,
       sellersColumns: DEFAULT_COLUMNS.sellers,
+      budgetsColumns: DEFAULT_COLUMNS.budgets,
       itemsPerPage: '10',
       isLoading: false,
       error: null,
@@ -180,6 +185,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
           assignmentsColumns: settings.assignmentsColumns,
           historyColumns: settings.historyColumns,
           sellersColumns: settings.sellersColumns,
+          budgetsColumns: settings.budgetsColumns,
           itemsPerPage: settings.itemsPerPage,
           isLoading: false,
         }));
