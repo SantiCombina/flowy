@@ -18,7 +18,6 @@ export function HeroSection() {
 
       <div className="mx-auto flex min-h-dvh max-w-7xl flex-col items-center justify-center px-4 pt-40 pb-16 sm:px-6 lg:flex-row lg:items-center lg:gap-12 lg:px-8 lg:py-24">
         <div className="flex flex-col items-center text-center lg:flex-1 lg:items-start lg:text-left">
-
           <ScrollReveal delay={0.1}>
             <h1
               className="text-balance text-5xl font-black leading-[1.1] tracking-tighter text-foreground sm:text-6xl lg:text-7xl"

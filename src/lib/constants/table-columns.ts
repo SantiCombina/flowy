@@ -32,9 +32,9 @@ export const MINIMUM_COLUMNS: Record<TableName, string[]> = {
   budgets: ['date', 'total'],
 };
 
-export const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
+export const ITEMS_PER_PAGE_OPTIONS = [25, 50, 100] as const;
 export type ItemsPerPageOption = (typeof ITEMS_PER_PAGE_OPTIONS)[number];
-export const DEFAULT_ITEMS_PER_PAGE: ItemsPerPageOption = 10;
+export const DEFAULT_ITEMS_PER_PAGE: ItemsPerPageOption = 25;
 
 export const COLUMN_LABELS: Record<string, string> = {
   name: 'Nombre',

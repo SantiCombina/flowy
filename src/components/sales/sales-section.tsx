@@ -1,6 +1,6 @@
 'use client';
 
-import { endOfDay, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import {
   ArrowDown,
   ArrowUp,
@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Inbox,
   Pencil,
+  RefreshCw,
   Trash2,
   Truck,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import { toast } from 'sonner';
 import type { SaleRow } from '@/app/services/sales';
 import { PageHeader } from '@/components/layout/page-header';
 import { ActionMenu } from '@/components/ui/action-menu';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,12 +44,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useSalesUrlSync } from '@/hooks/use-sales-url-sync';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
-import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
+import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
 import { deleteSaleAction, getSalesAction, markAsDeliveredAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
@@ -89,29 +92,6 @@ function PaymentStatusBadge({ status }: { status: 'pending' | 'partially_collect
 function DeliveryStatusBadge({ status }: { status: 'pending' | 'delivered' }) {
   if (status === 'delivered') return <Badge variant="success">Entregado</Badge>;
   return <Badge variant="pending">Pendiente</Badge>;
-}
-
-function getSortValue(sale: SaleRow, key: SortKey, isSeller: boolean): string | number {
-  switch (key) {
-    case 'date':
-      return sale.date;
-    case 'seller':
-      return sale.sellerName ?? '';
-    case 'client':
-      return sale.clientName ?? '';
-    case 'items':
-      return sale.itemCount;
-    case 'total':
-      return sale.total;
-    case 'paymentMethod':
-      return sale.paymentMethod ? (PAYMENT_METHOD_LABELS[sale.paymentMethod] ?? sale.paymentMethod) : '';
-    case 'paymentStatus':
-      return isSeller ? sale.paymentStatus : sale.ownerPaymentStatus;
-    case 'deliveryStatus':
-      return sale.deliveryStatus;
-    case 'zone':
-      return sale.clientZoneName ?? '';
-  }
 }
 
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey | null; sortDir: 'asc' | 'desc' }) {
@@ -157,7 +137,13 @@ const SortableHead = memo(function SortableHead({
 });
 
 interface SalesSectionProps {
-  initialSales: { success: true; sales: SaleRow[] };
+  initialFilters: GetSalesListValues;
+  initialResult: {
+    sales: SaleRow[];
+    totalCount: number;
+    totalPages: number;
+    page: number;
+  };
   zones: Zone[];
   showSellerColumn: boolean;
   canCollect: boolean;
@@ -167,7 +153,8 @@ interface SalesSectionProps {
 }
 
 function SalesSectionComponent({
-  initialSales,
+  initialFilters,
+  initialResult,
   zones,
   showSellerColumn,
   canCollect,
@@ -182,28 +169,29 @@ function SalesSectionComponent({
   const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
 
-  const { data } = useServerActionQuery({
-    queryKey: queryKeys.sales.list(),
-    queryFn: () => getSalesAction(),
-    initialData: initialSales,
+  const [filters, setFilters] = useState<GetSalesListValues>(() => {
+    if (initialStatusFilter && initialStatusFilter !== 'all' && !initialFilters.paymentStatus) {
+      return { ...initialFilters, paymentStatus: initialStatusFilter, page: 1 };
+    }
+    return initialFilters;
+  });
+
+  useSalesUrlSync(filters, setFilters);
+
+  const { data, isPending, isError, error, refetch } = useServerActionQuery({
+    queryKey: queryKeys.sales.list(filters),
+    queryFn: () => getSalesAction(filters),
+    initialData: { success: true, ...initialResult },
+    placeholderData: (previousData) => previousData,
     staleTime: 10_000,
   });
 
-  const salesData = data?.sales ?? initialSales.sales;
+  const salesData = data?.sales ?? initialResult.sales;
+  const totalCount = data?.totalCount ?? initialResult.totalCount;
+  const totalPages = data?.totalPages ?? initialResult.totalPages;
+  const currentPage = data?.page ?? initialResult.page;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:sales:limit', 10);
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    if (initialStatusFilter && initialStatusFilter !== 'all') {
-      initial.paymentStatus = initialStatusFilter;
-    }
-    return initial;
-  });
-  const [dateRange, setDateRange] = useState<DateRangeValue | undefined>(undefined);
   const [collectingModal, setCollectingModal] = useState<{
     saleId: number;
     total: number;
@@ -217,9 +205,9 @@ function SalesSectionComponent({
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
   const handleCollectSuccess = useCallback(() => {
-    invalidateQueries([queryKeys.sales.list()]);
+    invalidateQueries([queryKeys.sales.list(filters)]);
     setCollectingModal(null);
-  }, [invalidateQueries, setCollectingModal]);
+  }, [invalidateQueries, filters, setCollectingModal]);
 
   const handleMarkDelivered = async (saleId: number) => {
     const result = await executeMarkDelivered({ saleId });
@@ -231,14 +219,14 @@ function SalesSectionComponent({
 
     if (result?.data?.success) {
       toast.success('Venta marcada como entregada.');
-      invalidateQueries([queryKeys.sales.list()]);
+      invalidateQueries([queryKeys.sales.list(filters)]);
     }
   };
 
   const handleEditSuccess = () => {
     toast.success('Venta editada');
     setEditingSale(null);
-    invalidateQueries([queryKeys.sales.list()]);
+    invalidateQueries([queryKeys.sales.list(filters)]);
   };
 
   const handleDelete = async (saleId: number) => {
@@ -252,7 +240,7 @@ function SalesSectionComponent({
 
     if (result?.data?.success) {
       toast.warning('Venta eliminada');
-      invalidateQueries([queryKeys.sales.list()]);
+      invalidateQueries([queryKeys.sales.list(filters)]);
     }
   };
 
@@ -261,91 +249,40 @@ function SalesSectionComponent({
   };
 
   const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key as SortKey);
-      setSortDir('asc');
-    }
-    setPage(1);
+    setFilters((prev) => {
+      const nextSort = key as SortKey;
+      if (prev.sort === nextSort) {
+        return { ...prev, sortDir: prev.sortDir === 'asc' ? 'desc' : 'asc', page: 1 };
+      }
+      return { ...prev, sort: nextSort, sortDir: 'asc', page: 1 };
+    });
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setColumnFilters((prev) => {
-      if (!value) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }
-      return { ...prev, [key]: value };
-    });
-    setPage(1);
+  const handleFilterChange = (key: keyof GetSalesListValues, value: string | number | undefined) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
-  const sortedSales = useMemo(() => {
-    if (!sortKey) return salesData;
-    return [...salesData].sort((a, b) => {
-      const va = getSortValue(a, sortKey, isSeller);
-      const vb = getSortValue(b, sortKey, isSeller);
-      if (typeof va === 'number' && typeof vb === 'number') {
-        return sortDir === 'asc' ? va - vb : vb - va;
-      }
-      const sa = String(va).toLowerCase();
-      const sb = String(vb).toLowerCase();
-      if (sa < sb) return sortDir === 'asc' ? -1 : 1;
-      if (sa > sb) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [salesData, sortKey, sortDir, isSeller]);
+  const handleDateRangeChange = (range: DateRangeValue | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : undefined,
+      dateTo: range ? format(range.to, 'yyyy-MM-dd') : undefined,
+      page: 1,
+    }));
+  };
 
-  const filteredSales = useMemo(() => {
-    let result = sortedSales;
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  };
 
-    if (columnFilters.paymentStatus) {
-      if (columnFilters.paymentStatus === 'pending') {
-        result = result.filter((s) => {
-          const st = isSeller ? s.paymentStatus : s.ownerPaymentStatus;
-          return st === 'pending' || st === 'partially_collected';
-        });
-      } else {
-        result = result.filter(
-          (s) => (isSeller ? s.paymentStatus : s.ownerPaymentStatus) === columnFilters.paymentStatus,
-        );
-      }
-    }
+  const handleLimitChange = (limit: number) => {
+    setFilters((prev) => ({ ...prev, limit: limit as GetSalesListValues['limit'], page: 1 }));
+  };
 
-    if (columnFilters.zone) {
-      const zoneId = Number(columnFilters.zone);
-      result = result.filter((s) => s.clientZoneId === zoneId);
-    }
-
-    if (columnFilters.paymentMethod) {
-      if (columnFilters.paymentMethod === '__credit__') {
-        result = result.filter((s) => !s.paymentMethod);
-      } else {
-        result = result.filter((s) => s.paymentMethod === columnFilters.paymentMethod);
-      }
-    }
-
-    if (columnFilters.deliveryStatus) {
-      result = result.filter((s) => s.deliveryStatus === columnFilters.deliveryStatus);
-    }
-
-    if (dateRange) {
-      const from = startOfDay(dateRange.from);
-      const to = endOfDay(dateRange.to);
-      result = result.filter((s) => {
-        const d = new Date(s.date);
-        return d >= from && d <= to;
-      });
-    }
-
-    return result;
-  }, [sortedSales, columnFilters, isSeller, dateRange]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
-  const safePage = Math.min(page, totalPages);
-  const paginatedSales = filteredSales.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
+  const dateRangeValue = useMemo<DateRangeValue | undefined>(() => {
+    if (!filters.dateFrom || !filters.dateTo) return undefined;
+    return { from: new Date(filters.dateFrom), to: new Date(filters.dateTo) };
+  }, [filters.dateFrom, filters.dateTo]);
 
   const showSeller = showSellerColumn && visibleColumns.includes('seller');
 
@@ -368,6 +305,19 @@ function SalesSectionComponent({
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
+          {isError && (
+            <Alert variant="destructive">
+              <AlertTitle>Error al cargar ventas</AlertTitle>
+              <AlertDescription className="flex items-center gap-2">
+                {error?.message ?? 'Ocurrió un error inesperado.'}
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reintentar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="rounded-xl bg-card shadow-md overflow-hidden">
             <Table>
               <TableHeader>
@@ -376,14 +326,11 @@ function SalesSectionComponent({
                     <ColumnHeaderDateFilter
                       title="Fecha"
                       sortKey="date"
-                      currentSortKey={sortKey}
-                      sortDir={sortDir}
+                      currentSortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
-                      value={dateRange}
-                      onChange={(range) => {
-                        setDateRange(range);
-                        setPage(1);
-                      }}
+                      value={dateRangeValue}
+                      onChange={handleDateRangeChange}
                       className="w-px"
                     />
                   )}
@@ -391,8 +338,8 @@ function SalesSectionComponent({
                     <SortableHead
                       column="seller"
                       label="Vendedor"
-                      sortKey={sortKey}
-                      sortDir={sortDir}
+                      sortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                     />
                   )}
@@ -400,8 +347,8 @@ function SalesSectionComponent({
                     <SortableHead
                       column="client"
                       label="Cliente"
-                      sortKey={sortKey}
-                      sortDir={sortDir}
+                      sortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                     />
                   )}
@@ -409,15 +356,15 @@ function SalesSectionComponent({
                     <ColumnHeaderFilter
                       title="Zona"
                       sortKey="zone"
-                      currentSortKey={sortKey}
-                      sortDir={sortDir}
+                      currentSortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                       filterOptions={[
                         { value: '', label: 'Todas' },
                         ...zones.map((z) => ({ value: String(z.id), label: z.name })),
                       ]}
-                      filterValue={columnFilters.zone ?? ''}
-                      onFilterChange={(v) => handleFilterChange('zone', v)}
+                      filterValue={filters.zone !== undefined ? String(filters.zone) : ''}
+                      onFilterChange={(v) => handleFilterChange('zone', v ? parseInt(v, 10) : undefined)}
                       className="w-px"
                     />
                   )}
@@ -426,8 +373,8 @@ function SalesSectionComponent({
                       column="items"
                       label="Ítems"
                       className="w-px text-center"
-                      sortKey={sortKey}
-                      sortDir={sortDir}
+                      sortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                     />
                   )}
@@ -436,8 +383,8 @@ function SalesSectionComponent({
                       column="total"
                       label="Total"
                       className="w-px text-right"
-                      sortKey={sortKey}
-                      sortDir={sortDir}
+                      sortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                     />
                   )}
@@ -445,8 +392,8 @@ function SalesSectionComponent({
                     <ColumnHeaderFilter
                       title="Pago"
                       sortKey="paymentMethod"
-                      currentSortKey={sortKey}
-                      sortDir={sortDir}
+                      currentSortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                       filterOptions={[
                         { value: '', label: 'Todos' },
@@ -455,8 +402,8 @@ function SalesSectionComponent({
                         { value: 'check', label: 'Cheque' },
                         { value: '__credit__', label: 'A crédito' },
                       ]}
-                      filterValue={columnFilters.paymentMethod ?? ''}
-                      onFilterChange={(v) => handleFilterChange('paymentMethod', v)}
+                      filterValue={filters.paymentMethod ?? ''}
+                      onFilterChange={(v) => handleFilterChange('paymentMethod', v || undefined)}
                       className="w-px"
                     />
                   )}
@@ -464,32 +411,32 @@ function SalesSectionComponent({
                     <ColumnHeaderFilter
                       title="Estado"
                       sortKey="paymentStatus"
-                      currentSortKey={sortKey}
-                      sortDir={sortDir}
+                      currentSortKey={filters.sort ?? null}
+                      sortDir={filters.sortDir ?? 'desc'}
                       onSort={handleSort}
                       filterOptions={[
                         { value: '', label: 'Todos' },
                         { value: 'pending', label: 'Pendiente' },
                         { value: 'collected', label: 'Cobrado' },
                       ]}
-                      filterValue={columnFilters.paymentStatus ?? ''}
-                      onFilterChange={(v) => handleFilterChange('paymentStatus', v)}
+                      filterValue={filters.paymentStatus ?? ''}
+                      onFilterChange={(v) => handleFilterChange('paymentStatus', v || undefined)}
                       className="w-px"
                     />
                   )}
                   <ColumnHeaderFilter
                     title="Entrega"
                     sortKey="deliveryStatus"
-                    currentSortKey={sortKey}
-                    sortDir={sortDir}
+                    currentSortKey={filters.sort ?? null}
+                    sortDir={filters.sortDir ?? 'desc'}
                     onSort={handleSort}
                     filterOptions={[
                       { value: '', label: 'Todas' },
                       { value: 'pending', label: 'Pendiente' },
                       { value: 'delivered', label: 'Entregado' },
                     ]}
-                    filterValue={columnFilters.deliveryStatus ?? ''}
-                    onFilterChange={(v) => handleFilterChange('deliveryStatus', v)}
+                    filterValue={filters.deliveryStatus ?? ''}
+                    onFilterChange={(v) => handleFilterChange('deliveryStatus', v || undefined)}
                     className="w-px"
                   />
                   {hasActions && <TableHead className="w-px" />}
@@ -497,7 +444,13 @@ function SalesSectionComponent({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedSales.length === 0 ? (
+                {isPending && salesData.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={totalCols}>
+                      <EmptyState icon={Inbox} title="Cargando ventas" description="" />
+                    </TableCell>
+                  </TableRow>
+                ) : salesData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={totalCols}>
                       <EmptyState
@@ -508,7 +461,7 @@ function SalesSectionComponent({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedSales.map((sale) => {
+                  salesData.map((sale) => {
                     const isExpanded = expandedId === sale.id;
                     const displayStatus = getStatus(sale);
                     const displayAmountPaid = getAmountPaid(sale);
@@ -742,13 +695,7 @@ function SalesSectionComponent({
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Filas por página</span>
-              <Select
-                value={String(itemsPerPage)}
-                onValueChange={(v) => {
-                  setItemsPerPage(Number(v));
-                  setPage(1);
-                }}
-              >
+              <Select value={String(filters.limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
                 <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
@@ -764,16 +711,16 @@ function SalesSectionComponent({
 
             <div className="flex items-center gap-2 sm:gap-3">
               <span>
-                {filteredSales.length === 0 ? (
+                {totalCount === 0 ? (
                   '0 resultados'
                 ) : (
                   <>
                     <span className="sm:hidden">
-                      {safePage}/{totalPages}
+                      {currentPage}/{totalPages}
                     </span>
                     <span className="hidden sm:inline">
-                      {(safePage - 1) * itemsPerPage + 1}–{Math.min(safePage * itemsPerPage, filteredSales.length)} de{' '}
-                      {filteredSales.length}
+                      {(currentPage - 1) * filters.limit + 1}–{Math.min(currentPage * filters.limit, totalCount)} de{' '}
+                      {totalCount}
                     </span>
                   </>
                 )}
@@ -782,8 +729,8 @@ function SalesSectionComponent({
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={safePage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isPending}
                   aria-label="Página anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -791,8 +738,8 @@ function SalesSectionComponent({
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={safePage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || isPending}
                   aria-label="Página siguiente"
                 >
                   <ChevronRight className="h-4 w-4" />

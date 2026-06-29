@@ -104,8 +104,8 @@ export function AppSidebar({ features }: AppSidebarProps) {
         break;
       case '/sales':
         void queryClient.prefetchQuery({
-          queryKey: queryKeys.sales.list(),
-          queryFn: () => getSalesAction(),
+          queryKey: queryKeys.sales.list({ page: 1, limit: 25, sort: 'date', sortDir: 'desc' }),
+          queryFn: () => getSalesAction({ page: 1, limit: 25, sort: 'date', sortDir: 'desc' }),
           staleTime: 10_000,
         });
         break;

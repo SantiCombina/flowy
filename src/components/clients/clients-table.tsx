@@ -18,7 +18,7 @@ import {
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { COLUMN_LABELS, DEFAULT_ITEMS_PER_PAGE, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
@@ -40,8 +40,8 @@ interface ClientsTableProps {
   onProvinciaFilterChange?: (value: string) => void;
   showSellerColumn?: boolean;
   onEdit?: (client: Client) => void;
-  itemsPerPage?: number;
-  onItemsPerPageChange?: (n: number) => void;
+  itemsPerPage?: ItemsPerPageOption;
+  onItemsPerPageChange?: (n: ItemsPerPageOption) => void;
 }
 
 export function ClientsTable({
@@ -59,7 +59,7 @@ export function ClientsTable({
   onProvinciaFilterChange,
   showSellerColumn = false,
   onEdit,
-  itemsPerPage = 10,
+  itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   onItemsPerPageChange,
 }: ClientsTableProps) {
   const { getVisibleColumns } = useSettings();

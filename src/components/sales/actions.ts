@@ -7,9 +7,9 @@ import {
   createSale,
   deleteSale,
   editSaleFull,
+  getPaginatedSales,
   getSaleOptions,
   getSaleOptionsForOwner,
-  getSales,
   markAsDelivered,
   registerPayment,
 } from '@/app/services/sales';
@@ -20,6 +20,7 @@ import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
 import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
 import { markAsDeliveredSchema } from '@/schemas/sales/mark-as-delivered-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
+import { getSalesListSchema } from '@/schemas/sales/sales-list-schema';
 
 export const getSaleOptionsAction = actionClient.action(async () => {
   const user = await getCurrentUser();
@@ -172,21 +173,37 @@ export const markAsDeliveredAction = actionClient.schema(markAsDeliveredSchema).
   return { success: true };
 });
 
-export const getSalesAction = actionClient.action(async () => {
+export const getSalesAction = actionClient.schema(getSalesListSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user) {
     throw new Error('No autorizado');
   }
 
+  const filters = {
+    dateFrom: parsedInput.dateFrom,
+    dateTo: parsedInput.dateTo,
+    paymentStatus: parsedInput.paymentStatus,
+    zone: parsedInput.zone,
+    paymentMethod: parsedInput.paymentMethod,
+    deliveryStatus: parsedInput.deliveryStatus,
+  };
+
+  const options = {
+    page: parsedInput.page,
+    limit: parsedInput.limit,
+    sort: parsedInput.sort,
+    sortDir: parsedInput.sortDir,
+  };
+
   if (user.role === 'seller') {
-    const sales = await getSales({ sellerId: user.id });
-    return { success: true, sales };
+    const result = await getPaginatedSales({ sellerId: user.id }, filters, options);
+    return { success: true, ...result };
   }
 
   if (user.role === 'owner') {
-    const sales = await getSales({ ownerId: user.id });
-    return { success: true, sales };
+    const result = await getPaginatedSales({ ownerId: user.id }, filters, options);
+    return { success: true, ...result };
   }
 
   throw new Error('No autorizado');

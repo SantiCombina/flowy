@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 
 interface ItemsPerPageConfigProps {
   initialValue: ItemsPerPageOption;
@@ -33,7 +33,7 @@ export function ItemsPerPageConfig({ initialValue, onSave }: ItemsPerPageConfigP
       <span className="text-sm text-muted-foreground">Mostrar</span>
       <Select value={value.toString()} onValueChange={handleChange} disabled={isSaving}>
         <SelectTrigger aria-label="Elementos por página" className="w-25">
-          <SelectValue placeholder="10" />
+          <SelectValue placeholder={DEFAULT_ITEMS_PER_PAGE.toString()} />
         </SelectTrigger>
         <SelectContent>
           {ITEMS_PER_PAGE_OPTIONS.map((option) => (

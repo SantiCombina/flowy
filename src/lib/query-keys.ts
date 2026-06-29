@@ -1,3 +1,5 @@
+import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
+
 export type MovementType =
   | 'entry'
   | 'exit'
@@ -12,9 +14,13 @@ export const queryKeys = {
   products: {
     list: (search: string, page: number) => ['products', { search, page }] as const,
     detail: (id: number | undefined) => ['products', 'detail', id] as const,
+    demand: () => ['products', 'demand'] as const,
   },
   sales: {
-    list: () => ['sales'] as const,
+    list: (params?: GetSalesListValues) => {
+      if (params) return ['sales', 'list', params] as const;
+      return ['sales'] as const;
+    },
     options: (role: 'seller' | 'owner', sellerId?: number) => ['saleOptions', { role, sellerId }] as const,
   },
   budgets: {

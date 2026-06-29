@@ -27,7 +27,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/settings-context';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
+import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDate, formatDateParts } from '@/lib/utils';
@@ -129,7 +129,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', 25);
+  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', DEFAULT_ITEMS_PER_PAGE);
 
   const [sortKey, setSortKey] = useState<SortKey | null>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -430,7 +430,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
               <Select
                 value={String(itemsPerPage)}
                 onValueChange={(v) => {
-                  setItemsPerPage(Number(v));
+                  setItemsPerPage(Number(v) as ItemsPerPageOption);
                   setPage(1);
                 }}
               >

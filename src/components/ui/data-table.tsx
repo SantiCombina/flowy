@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 import { cn } from '@/lib/utils';
 
 export interface FilterOption {
@@ -35,15 +36,14 @@ interface DataTableProps<T> {
   keyExtractor: (item: T) => string | number;
   isLoading?: boolean;
   emptyMessage?: string;
-  defaultItemsPerPage?: number;
-  onItemsPerPageChange?: (itemsPerPage: number) => void;
+  defaultItemsPerPage?: ItemsPerPageOption;
+  onItemsPerPageChange?: (itemsPerPage: ItemsPerPageOption) => void;
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
   hasSelection?: boolean;
 }
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 25, 50, 100] as const;
 const SKELETON_ROWS = 5;
 
 function DataTableComponent<T>({
@@ -52,7 +52,7 @@ function DataTableComponent<T>({
   keyExtractor,
   isLoading = false,
   emptyMessage = 'No hay datos',
-  defaultItemsPerPage = 10,
+  defaultItemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   onItemsPerPageChange,
   selectable = false,
   selectedKeys,
@@ -60,7 +60,7 @@ function DataTableComponent<T>({
   hasSelection = false,
 }: DataTableProps<T>) {
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
+  const [itemsPerPage, setItemsPerPage] = useState<ItemsPerPageOption>(defaultItemsPerPage);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -74,7 +74,7 @@ function DataTableComponent<T>({
     setPage(1);
   };
 
-  const handleItemsPerPageChange = (n: number) => {
+  const handleItemsPerPageChange = (n: ItemsPerPageOption) => {
     setItemsPerPage(n);
     setPage(1);
     onItemsPerPageChange?.(n);
@@ -260,7 +260,10 @@ function DataTableComponent<T>({
           {onItemsPerPageChange && (
             <>
               <span className="hidden sm:inline">Filas por página</span>
-              <Select value={String(itemsPerPage)} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
+              <Select
+                value={String(itemsPerPage)}
+                onValueChange={(v) => handleItemsPerPageChange(Number(v) as ItemsPerPageOption)}
+              >
                 <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>

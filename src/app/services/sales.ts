@@ -370,6 +370,174 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
   return sale as Sale;
 }
 
+export interface SalesListFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  paymentStatus?: 'pending' | 'collected';
+  zone?: number;
+  paymentMethod?: 'cash' | 'transfer' | 'check' | '__credit__';
+  deliveryStatus?: 'pending' | 'delivered';
+}
+
+export interface SalesListOptions {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+function buildSortDirection(sortDir: 'asc' | 'desc' | undefined): '' | '-' {
+  return sortDir === 'asc' ? '' : '-';
+}
+
+function buildSortField(sort: string | undefined, isSeller: boolean, sortDirValue: 'asc' | 'desc' | undefined): string {
+  if (!sort) return '-date';
+
+  const direction = buildSortDirection(sortDirValue);
+
+  switch (sort) {
+    case 'date':
+      return `${direction}date`;
+    case 'total':
+      return `${direction}total`;
+    case 'paymentMethod':
+      return `${direction}paymentMethod`;
+    case 'paymentStatus':
+      return isSeller ? `${direction}paymentStatus` : `${direction}ownerPaymentStatus`;
+    case 'deliveryStatus':
+      return `${direction}deliveryStatus`;
+    case 'seller':
+      return `${direction}seller.name`;
+    case 'client':
+      return `${direction}client.name`;
+    case 'zone':
+      return `${direction}client.zone.name`;
+    case 'items':
+      return `${direction}id`;
+    default:
+      return '-date';
+  }
+}
+
+export async function getPaginatedSales(
+  scope: { sellerId: number } | { ownerId: number },
+  filters: SalesListFilters,
+  options: SalesListOptions,
+): Promise<{ sales: SaleRow[]; totalCount: number; totalPages: number; page: number }> {
+  const payload = await getPayloadClient();
+  const isSeller = 'sellerId' in scope;
+
+  const conditions: Where[] = [
+    isSeller ? { seller: { equals: scope.sellerId } } : { owner: { equals: scope.ownerId } },
+  ];
+
+  if (filters.dateFrom) {
+    conditions.push({ date: { greater_than_equal: filters.dateFrom } });
+  }
+
+  if (filters.dateTo) {
+    conditions.push({ date: { less_than_equal: filters.dateTo } });
+  }
+
+  if (filters.paymentStatus) {
+    const field = isSeller ? 'paymentStatus' : 'ownerPaymentStatus';
+    if (filters.paymentStatus === 'pending') {
+      conditions.push({ [field]: { in: ['pending', 'partially_collected'] } });
+    } else {
+      conditions.push({ [field]: { equals: 'collected' } });
+    }
+  }
+
+  if (filters.zone !== undefined) {
+    conditions.push({ 'client.zone': { equals: filters.zone } });
+  }
+
+  if (filters.paymentMethod) {
+    if (filters.paymentMethod === '__credit__') {
+      conditions.push({ paymentMethod: { equals: null } });
+    } else {
+      conditions.push({ paymentMethod: { equals: filters.paymentMethod } });
+    }
+  }
+
+  if (filters.deliveryStatus) {
+    conditions.push({ deliveryStatus: { equals: filters.deliveryStatus } });
+  }
+
+  const whereClause: Where = conditions.length === 1 ? conditions[0]! : { and: conditions };
+
+  const limit = options.limit ?? 25;
+  const page = options.page ?? 1;
+  const sort = buildSortField(options.sort, isSeller, options.sortDir);
+
+  const result = await payload.find({
+    collection: 'sales',
+    where: whereClause,
+    sort,
+    depth: 2,
+    limit,
+    page,
+    overrideAccess: true,
+  });
+
+  const sales = (result.docs as Sale[]).map((sale: Sale) => {
+    const seller = typeof sale.seller === 'object' ? sale.seller : null;
+    const sellerId = resolveId(sale.seller) ?? 0;
+    const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
+    const clientZone = client?.zone && typeof client.zone === 'object' ? client.zone : null;
+
+    const items: SaleItemDetail[] = sale.items.map((item) => {
+      const variant = typeof item.variant === 'object' ? item.variant : null;
+      const variantId = resolveId(item.variant) ?? 0;
+      const product = variant && typeof variant.product === 'object' ? variant.product : null;
+      const presentation =
+        variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+      const productName = product?.name ?? 'Producto desconocido';
+      const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
+
+      return {
+        variantId,
+        variantName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.quantity * item.unitPrice,
+        stockSource: (item.stockSource ?? 'warehouse') as 'warehouse' | 'personal',
+      };
+    });
+
+    return {
+      id: sale.id,
+      date: sale.date,
+      sellerId,
+      sellerName: seller?.name ?? 'Vendedor desconocido',
+      clientId: client?.id ?? undefined,
+      clientName: client?.name ?? undefined,
+      clientZoneId: clientZone?.id ?? undefined,
+      clientZoneName: clientZone?.name ?? undefined,
+      notes: sale.notes ?? undefined,
+      itemCount: sale.items.length,
+      total: sale.total,
+      paymentMethod: sale.paymentMethod ?? null,
+      paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      amountPaid: sale.amountPaid ?? 0,
+      collectedAt: sale.collectedAt ?? undefined,
+      checkDueDate: sale.checkDueDate ?? undefined,
+      ownerPaymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      ownerAmountPaid: sale.ownerAmountPaid ?? 0,
+      ownerCollectedAt: sale.ownerCollectedAt ?? undefined,
+      deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
+      deliveredAt: sale.deliveredAt ?? undefined,
+      items,
+    };
+  });
+
+  const totalCount = result.totalDocs;
+  const totalPages = result.totalPages;
+
+  return { sales, totalCount, totalPages, page };
+}
+
 export async function getSales(filters: {
   sellerId?: number;
   ownerId?: number;

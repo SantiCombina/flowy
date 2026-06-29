@@ -41,7 +41,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
+import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
@@ -182,7 +182,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:budgets:limit', 10);
+  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:budgets:limit', DEFAULT_ITEMS_PER_PAGE);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -540,7 +540,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
               <Select
                 value={String(itemsPerPage)}
                 onValueChange={(v) => {
-                  setItemsPerPage(Number(v));
+                  setItemsPerPage(Number(v) as ItemsPerPageOption);
                   setPage(1);
                 }}
               >

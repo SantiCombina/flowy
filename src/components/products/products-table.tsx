@@ -4,11 +4,10 @@ import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Tr
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
-import type { VariantDemandSummary } from '@/app/services/sales';
 import { ActionMenu } from '@/components/ui/action-menu';
 import {
   AlertDialog,
@@ -25,7 +24,8 @@ import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { COLUMN_LABELS } from '@/lib/constants/table-columns';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { COLUMN_LABELS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
 
@@ -88,15 +88,14 @@ function ProductsTableComponent({
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [variantForMovement, setVariantForMovement] = useState<PopulatedProductVariant | null>(null);
   const [variantForDemand, setVariantForDemand] = useState<PopulatedProductVariant | null>(null);
-  const [demandMap, setDemandMap] = useState<Record<number, VariantDemandSummary>>({});
 
-  useEffect(() => {
-    void getProductDemandSummaryAction().then((result) => {
-      if (result?.data?.success) {
-        setDemandMap(result.data.demand);
-      }
-    });
-  }, []);
+  const { data: demandData } = useServerActionQuery({
+    queryKey: queryKeys.products.demand(),
+    queryFn: () => getProductDemandSummaryAction(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const demandMap = demandData?.success ? demandData.demand : undefined;
 
   const handleDelete = async () => {
     if (!productToDelete) return;
@@ -255,9 +254,9 @@ function ProductsTableComponent({
         key: 'lastSold',
         header: COLUMN_LABELS.lastSold,
         sortable: true,
-        sortValue: (v) => demandMap[v.id]?.lastSoldAt ?? '',
+        sortValue: (v) => demandMap?.[v.id]?.lastSoldAt ?? '',
         cell: (variant) => {
-          const lastSoldAt = demandMap[variant.id]?.lastSoldAt;
+          const lastSoldAt = demandMap?.[variant.id]?.lastSoldAt;
           if (!lastSoldAt) return <span className="text-muted-foreground text-sm">Sin ventas</span>;
           return (
             <span className="text-sm">
@@ -316,8 +315,8 @@ function ProductsTableComponent({
 
   const keyExtractor = useCallback((v: PopulatedProductVariant) => `${v.id}-${v.product.id}`, []);
   const handleItemsPerPageChange = useCallback(
-    (n: number) => {
-      void updateItemsPerPage(n as Parameters<typeof updateItemsPerPage>[0]);
+    (n: ItemsPerPageOption) => {
+      void updateItemsPerPage(n);
     },
     [updateItemsPerPage],
   );

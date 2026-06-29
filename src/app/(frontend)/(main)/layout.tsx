@@ -1,14 +1,15 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { getSettings } from '@/app/services/settings';
+import { SettingsFetcher } from '@/app/(frontend)/(main)/settings-fetcher';
 import { getOwnerById } from '@/app/services/users';
 import { AppLayout } from '@/components/layout/app-layout';
 import { PushRegistration } from '@/components/notifications/push-registration';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { UserProvider } from '@/components/providers/user-provider';
 import { Toaster } from '@/components/ui/sonner';
-import { SettingsProvider, type SettingsData } from '@/contexts/settings-context';
+import { SettingsProvider } from '@/contexts/settings-context';
 import { getFeatureFlags } from '@/lib/features';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -28,19 +29,15 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const businessName = user.role === 'owner' ? (user.businessName ?? null) : (ownerForSeller?.businessName ?? null);
 
-  const rawSettings = await getSettings(user.id);
-
-  const initialSettings: SettingsData = {
-    id: rawSettings.id,
-    productsColumns: rawSettings.productsColumns?.map((c) => c.column) ?? [],
-    clientsColumns: rawSettings.clientsColumns?.map((c) => c.column) ?? [],
-    salesColumns: rawSettings.salesColumns?.map((c) => c.column) ?? [],
-    assignmentsColumns: rawSettings.assignmentsColumns?.map((c) => c.column) ?? [],
-    historyColumns: rawSettings.historyColumns?.map((c) => c.column) ?? [],
-    sellersColumns: rawSettings.sellersColumns?.map((c) => c.column) ?? [],
-    budgetsColumns: rawSettings.budgetsColumns?.map((c) => c.column) ?? [],
-    itemsPerPage: rawSettings.itemsPerPage ?? '10',
-  };
+  const fallback = (
+    <SettingsProvider initialSettings={null}>
+      <QueryProvider>
+        <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
+          {children}
+        </AppLayout>
+      </QueryProvider>
+    </SettingsProvider>
+  );
 
   return (
     <UserProvider
@@ -52,15 +49,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         businessName,
       }}
     >
-      <SettingsProvider initialSettings={initialSettings}>
-        <QueryProvider>
-          <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
-            {children}
-          </AppLayout>
-        </QueryProvider>
+      <Suspense fallback={fallback}>
+        <SettingsFetcher userId={user.id}>
+          <QueryProvider>
+            <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
+              {children}
+            </AppLayout>
+          </QueryProvider>
+        </SettingsFetcher>
         <PushRegistration />
         <Toaster />
-      </SettingsProvider>
+      </Suspense>
     </UserProvider>
   );
 }

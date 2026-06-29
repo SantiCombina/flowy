@@ -4,7 +4,13 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import { toast } from 'sonner';
 
 import { getSettingsAction, updateTableColumnsAction, updateItemsPerPageAction } from '@/components/settings/actions';
-import { TABLE_COLUMNS, type TableName, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import {
+  DEFAULT_ITEMS_PER_PAGE,
+  ITEMS_PER_PAGE_OPTIONS,
+  TABLE_COLUMNS,
+  type TableName,
+  type ItemsPerPageOption,
+} from '@/lib/constants/table-columns';
 
 export interface SettingsData {
   id: number;
@@ -87,7 +93,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
       historyColumns: DEFAULT_COLUMNS.history,
       sellersColumns: DEFAULT_COLUMNS.sellers,
       budgetsColumns: DEFAULT_COLUMNS.budgets,
-      itemsPerPage: '10',
+      itemsPerPage: DEFAULT_ITEMS_PER_PAGE.toString(),
       isLoading: false,
       error: null,
     };
@@ -112,8 +118,9 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
 
   const getItemsPerPage = useCallback((): ItemsPerPageOption => {
     const value = parseInt(state.itemsPerPage, 10);
-    const validValues: ItemsPerPageOption[] = [10, 25, 50, 100];
-    return validValues.includes(value as ItemsPerPageOption) ? (value as ItemsPerPageOption) : 10;
+    return ITEMS_PER_PAGE_OPTIONS.includes(value as ItemsPerPageOption)
+      ? (value as ItemsPerPageOption)
+      : DEFAULT_ITEMS_PER_PAGE;
   }, [state.itemsPerPage]);
 
   const updateTableColumns = useCallback(async (tableName: TableName, columns: string[]) => {
@@ -186,7 +193,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
           historyColumns: settings.historyColumns,
           sellersColumns: settings.sellersColumns,
           budgetsColumns: settings.budgetsColumns,
-          itemsPerPage: settings.itemsPerPage,
+          itemsPerPage: settings.itemsPerPage ?? DEFAULT_ITEMS_PER_PAGE.toString(),
           isLoading: false,
         }));
       } else {

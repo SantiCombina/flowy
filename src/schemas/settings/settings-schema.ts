@@ -26,7 +26,7 @@ export const updateTableColumnsSchema = z.object({
 export type UpdateTableColumnsValues = z.infer<typeof updateTableColumnsSchema>;
 
 export const updateItemsPerPageSchema = z.object({
-  itemsPerPage: z.enum(ITEMS_PER_PAGE_OPTIONS.map((v) => v.toString()) as [string, string, string, string], {
+  itemsPerPage: z.enum(ITEMS_PER_PAGE_OPTIONS.map((v) => v.toString()) as [string, string, string], {
     required_error: 'Los elementos por página son requeridos.',
     invalid_type_error: 'Los elementos por página deben ser un valor válido.',
   }),

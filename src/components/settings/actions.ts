@@ -6,8 +6,10 @@ import {
   updateSettings as updateSettingsService,
   getAllColumnsConfig,
 } from '@/app/services/settings';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
+import type { Setting } from '@/payload-types';
 
 import { updateTableColumnsSchema, updateItemsPerPageSchema, validateColumnsForTable } from './schemas';
 
@@ -31,7 +33,7 @@ export const getSettingsAction = actionClient.action(async () => {
       historyColumns: settings.historyColumns?.map((c) => c.column) ?? [],
       sellersColumns: settings.sellersColumns?.map((c) => c.column) ?? [],
       budgetsColumns: settings.budgetsColumns?.map((c) => c.column) ?? [],
-      itemsPerPage: settings.itemsPerPage ?? '10',
+      itemsPerPage: settings.itemsPerPage ?? (DEFAULT_ITEMS_PER_PAGE.toString() as Setting['itemsPerPage']),
     },
   };
 });
@@ -67,7 +69,7 @@ export const updateItemsPerPageAction = actionClient
     }
 
     const settings = await updateSettingsService(user.id, {
-      itemsPerPage: parsedInput.itemsPerPage as '10' | '25' | '50' | '100',
+      itemsPerPage: parsedInput.itemsPerPage as Setting['itemsPerPage'],
     });
 
     return {
