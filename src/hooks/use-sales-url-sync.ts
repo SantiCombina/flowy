@@ -18,6 +18,7 @@ function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 function parseOptionalDate(value: string | null): string | undefined {
+  if (value === '') return '';
   return value && DATE_REGEX.test(value) ? value : undefined;
 }
 
@@ -65,12 +66,20 @@ export function useSalesUrlSync(state: GetSalesListValues, setState: (state: Get
       }
     };
 
+    const setDateParam = (key: string, value: string | undefined) => {
+      if (value === undefined) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    };
+
     setOrDelete('page', state.page === 1 ? undefined : state.page);
     setOrDelete('limit', state.limit === 25 ? undefined : state.limit);
     setOrDelete('sort', state.sort);
     setOrDelete('sortDir', state.sortDir);
-    setOrDelete('dateFrom', state.dateFrom);
-    setOrDelete('dateTo', state.dateTo);
+    setDateParam('dateFrom', state.dateFrom);
+    setDateParam('dateTo', state.dateTo);
     setOrDelete('paymentStatus', state.paymentStatus);
     setOrDelete('zone', state.zone);
     setOrDelete('paymentMethod', state.paymentMethod);

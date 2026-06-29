@@ -12,7 +12,7 @@ const SORT_COLUMNS = [
   'zone',
 ] as const;
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_REGEX = /^(\d{4}-\d{2}-\d{2})?$/;
 
 export const getSalesListSchema = z.object({
   page: z
@@ -48,7 +48,8 @@ export const getSalesListSchema = z.object({
     .trim()
     .max(10, 'La fecha de inicio no puede superar los 10 caracteres.')
     .regex(DATE_REGEX, 'La fecha de inicio debe tener formato YYYY-MM-DD.')
-    .optional(),
+    .optional()
+    .transform((value) => value || undefined),
   dateTo: z
     .string({
       invalid_type_error: 'La fecha de fin debe ser una cadena de texto.',
@@ -56,7 +57,8 @@ export const getSalesListSchema = z.object({
     .trim()
     .max(10, 'La fecha de fin no puede superar los 10 caracteres.')
     .regex(DATE_REGEX, 'La fecha de fin debe tener formato YYYY-MM-DD.')
-    .optional(),
+    .optional()
+    .transform((value) => value || undefined),
   paymentStatus: z
     .enum(['pending', 'collected'], {
       invalid_type_error: 'El estado de cobro no es válido.',

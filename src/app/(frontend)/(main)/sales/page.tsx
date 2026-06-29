@@ -42,6 +42,7 @@ function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 function parseOptionalDate(value: string | null): string | undefined {
+  if (value === '') return '';
   return value && DATE_REGEX.test(value) ? value : undefined;
 }
 
@@ -90,7 +91,7 @@ export default async function SalesPage({
 
   const dateFrom = parseOptionalDate(getFirstParam(params.dateFrom));
   const dateTo = parseOptionalDate(getFirstParam(params.dateTo));
-  const defaultRange = dateFrom && dateTo ? null : getDefaultDateRange();
+  const defaultRange = dateFrom === undefined && dateTo === undefined ? getDefaultDateRange() : null;
 
   const initialFilters: GetSalesListValues = {
     page: parsePage(getFirstParam(params.page)),
@@ -98,8 +99,8 @@ export default async function SalesPage({
     sort: parseEnum<NonNullable<GetSalesListValues['sort']>>(getFirstParam(params.sort), SORT_VALUES) || 'date',
     sortDir:
       parseEnum<NonNullable<GetSalesListValues['sortDir']>>(getFirstParam(params.sortDir), SORT_DIR_VALUES) || 'desc',
-    dateFrom: dateFrom ?? defaultRange!.dateFrom,
-    dateTo: dateTo ?? defaultRange!.dateTo,
+    dateFrom: dateFrom ?? defaultRange?.dateFrom ?? '',
+    dateTo: dateTo ?? defaultRange?.dateTo ?? '',
     paymentStatus,
     zone: parseOptionalPositiveInt(getFirstParam(params.zone)),
     paymentMethod: parseEnum<NonNullable<GetSalesListValues['paymentMethod']>>(

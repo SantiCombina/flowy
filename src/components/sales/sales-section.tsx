@@ -280,8 +280,8 @@ function SalesSectionComponent({
   const handleDateRangeChange = (range: DateRangeValue | undefined) => {
     setFilters((prev) => ({
       ...prev,
-      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : undefined,
-      dateTo: range ? format(range.to, 'yyyy-MM-dd') : undefined,
+      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : '',
+      dateTo: range ? format(range.to, 'yyyy-MM-dd') : '',
       page: 1,
     }));
   };
