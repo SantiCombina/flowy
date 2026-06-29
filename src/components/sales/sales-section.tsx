@@ -178,10 +178,25 @@ function SalesSectionComponent({
 
   useSalesUrlSync(filters, setFilters);
 
+  const isInitialQuery = useMemo(() => {
+    return (
+      filters.page === initialFilters.page &&
+      filters.limit === initialFilters.limit &&
+      filters.sort === initialFilters.sort &&
+      filters.sortDir === initialFilters.sortDir &&
+      filters.dateFrom === initialFilters.dateFrom &&
+      filters.dateTo === initialFilters.dateTo &&
+      filters.paymentStatus === initialFilters.paymentStatus &&
+      filters.zone === initialFilters.zone &&
+      filters.paymentMethod === initialFilters.paymentMethod &&
+      filters.deliveryStatus === initialFilters.deliveryStatus
+    );
+  }, [filters, initialFilters]);
+
   const { data, isPending, isError, error, refetch } = useServerActionQuery({
     queryKey: queryKeys.sales.list(filters),
     queryFn: () => getSalesAction(filters),
-    initialData: { success: true, ...initialResult },
+    initialData: isInitialQuery ? { success: true, ...initialResult } : undefined,
     placeholderData: (previousData) => previousData,
     staleTime: 10_000,
   });
