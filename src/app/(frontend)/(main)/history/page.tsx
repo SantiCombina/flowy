@@ -1,4 +1,4 @@
-import { subDays, startOfDay, endOfDay } from 'date-fns';
+import { endOfMonth, startOfMonth } from 'date-fns';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
@@ -18,7 +18,7 @@ export default async function HistoryPage() {
   if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
   const now = new Date();
-  const initialDateRange = { from: startOfDay(subDays(now, 29)), to: endOfDay(now) };
+  const initialDateRange = { from: startOfMonth(now), to: endOfMonth(now) };
 
   const initialData = await getHistoryMovements(user.id, {
     from: initialDateRange.from,

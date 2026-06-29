@@ -134,6 +134,136 @@ export async function getBudgets(ownerId: number): Promise<BudgetRow[]> {
   });
 }
 
+export interface BudgetListFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'converted';
+}
+
+export interface BudgetListOptions {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  sortDir?: 'asc' | 'desc';
+}
+
+function buildSortDirection(sortDir: 'asc' | 'desc' | undefined): '' | '-' {
+  return sortDir === 'asc' ? '' : '-';
+}
+
+function buildSortField(sort: string | undefined, sortDirValue: 'asc' | 'desc' | undefined): string {
+  if (!sort) return '-date';
+
+  const direction = buildSortDirection(sortDirValue);
+
+  switch (sort) {
+    case 'date':
+      return `${direction}date`;
+    case 'total':
+      return `${direction}total`;
+    case 'status':
+      return `${direction}status`;
+    case 'seller':
+      return `${direction}seller.name`;
+    case 'client':
+      return `${direction}client.name`;
+    case 'items':
+      return `${direction}id`;
+    default:
+      return '-date';
+  }
+}
+
+export async function getPaginatedBudgets(
+  ownerId: number,
+  filters: BudgetListFilters,
+  options: BudgetListOptions,
+): Promise<{
+  budgets: BudgetRow[];
+  totalCount: number;
+  totalPages: number;
+  page: number;
+}> {
+  const payload = await getPayloadClient();
+
+  const conditions: Where[] = [{ owner: { equals: ownerId } }];
+
+  if (filters.dateFrom) {
+    conditions.push({ date: { greater_than_equal: filters.dateFrom } });
+  }
+
+  if (filters.dateTo) {
+    conditions.push({ date: { less_than_equal: filters.dateTo } });
+  }
+
+  if (filters.status) {
+    conditions.push({ status: { equals: filters.status } });
+  }
+
+  const whereClause: Where = conditions.length === 1 ? conditions[0]! : { and: conditions };
+
+  const limit = options.limit ?? 25;
+  const page = options.page ?? 1;
+  const sort = buildSortField(options.sort, options.sortDir);
+
+  const result = await payload.find({
+    collection: 'budgets',
+    where: whereClause,
+    sort,
+    depth: 2,
+    limit,
+    page,
+    overrideAccess: true,
+  });
+
+  const budgets = (result.docs as Budget[]).map((budget) => {
+    const seller = typeof budget.seller === 'object' ? budget.seller : null;
+    const client = budget.client && typeof budget.client === 'object' ? budget.client : null;
+
+    const items: BudgetItemDetail[] = budget.items.map((item) => {
+      const variant = typeof item.variant === 'object' ? item.variant : null;
+      const variantId = resolveId(item.variant) ?? 0;
+      const product = variant && typeof variant.product === 'object' ? variant.product : null;
+      const presentation =
+        variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+      const productName = product?.name ?? 'Producto desconocido';
+      const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
+
+      return {
+        variantId,
+        variantName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.quantity * item.unitPrice,
+      };
+    });
+
+    return {
+      id: budget.id,
+      date: budget.date,
+      sellerId: resolveId(budget.seller) ?? 0,
+      sellerName: seller?.name ?? 'Vendedor desconocido',
+      clientId: client?.id ?? undefined,
+      clientName: client?.name ?? undefined,
+      clientPhone: budget.clientPhone ?? undefined,
+      itemCount: budget.items.length,
+      total: budget.total,
+      status: budget.status,
+      validUntil: budget.validUntil ?? undefined,
+      notes: budget.notes ?? undefined,
+      items,
+    };
+  });
+
+  return {
+    budgets,
+    totalCount: result.totalDocs,
+    totalPages: result.totalPages,
+    page,
+  };
+}
+
 export async function getBudgetById(budgetId: number): Promise<Budget | null> {
   const payload = await getPayloadClient();
 
@@ -263,7 +393,9 @@ export async function getBudgetConvertData(budgetId: number, sellerId: number): 
     }),
     payload.find({
       collection: 'mobile-seller-inventory',
-      where: { and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }] },
+      where: {
+        and: [{ seller: { equals: sellerId } }, { variant: { in: variantIds } }],
+      },
       limit: variantIds.length,
       overrideAccess: true,
     }),

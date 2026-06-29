@@ -7,13 +7,14 @@ import {
   getBudgetById,
   getBudgetConvertData,
   createBudget,
-  getBudgets,
+  getPaginatedBudgets,
   updateBudgetStatus,
   updateBudget,
   deleteBudget,
 } from '@/app/services/budgets';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
+import { getBudgetsListSchema } from '@/schemas/budgets/budget-list-schema';
 import { budgetSchema } from '@/schemas/budgets/budget-schema';
 
 export const getBudgetOptionsAction = actionClient.action(async () => {
@@ -53,7 +54,7 @@ export const createBudgetAction = actionClient.schema(budgetSchema).action(async
   return { success: true };
 });
 
-export const getBudgetsAction = actionClient.action(async () => {
+export const getBudgetsAction = actionClient.schema(getBudgetsListSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user) {
@@ -66,9 +67,22 @@ export const getBudgetsAction = actionClient.action(async () => {
     throw new Error('No se pudo determinar el dueño del negocio');
   }
 
-  const budgets = await getBudgets(ownerId);
+  const filters = {
+    dateFrom: parsedInput.dateFrom,
+    dateTo: parsedInput.dateTo,
+    status: parsedInput.status,
+  };
 
-  return { success: true, budgets };
+  const options = {
+    page: parsedInput.page,
+    limit: parsedInput.limit,
+    sort: parsedInput.sort,
+    sortDir: parsedInput.sortDir,
+  };
+
+  const result = await getPaginatedBudgets(ownerId, filters, options);
+
+  return { success: true, ...result };
 });
 
 export const getBudgetByIdAction = actionClient

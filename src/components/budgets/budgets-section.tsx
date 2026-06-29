@@ -1,6 +1,6 @@
 'use client';
 
-import { isPast } from 'date-fns';
+import { format, isPast } from 'date-fns';
 import {
   ArrowDown,
   ArrowUp,
@@ -11,17 +11,19 @@ import {
   FileText,
   Inbox,
   Pencil,
+  RefreshCw,
   ShoppingCart,
   Trash2,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, memo, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { BudgetRow } from '@/app/services/budgets';
 import { PageHeader } from '@/components/layout/page-header';
 import { useUser } from '@/components/providers/user-provider';
 import { ActionMenu } from '@/components/ui/action-menu';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,17 +36,21 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
+import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
+import { useBudgetsUrlSync } from '@/hooks/use-budgets-url-sync';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
-import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
+import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
+import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 
 import { deleteBudgetAction, getBudgetsAction } from './actions';
 import { BudgetConvertDialog } from './budget-convert-dialog';
@@ -52,7 +58,10 @@ import { NewBudgetButton } from './new-budget-button';
 import { NewBudgetDialog } from './new-budget-dialog';
 
 function formatPrice(value: number): string {
-  return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function getWhatsAppLink(budget: BudgetRow, businessName: string | null): string {
@@ -100,23 +109,6 @@ function StatusBadge({ status }: { status: BudgetRow['status'] }) {
 
 type SortKey = 'date' | 'seller' | 'client' | 'items' | 'total' | 'status';
 
-function getSortValue(budget: BudgetRow, key: SortKey): string | number {
-  switch (key) {
-    case 'date':
-      return budget.date;
-    case 'seller':
-      return budget.sellerName ?? '';
-    case 'client':
-      return budget.clientName ?? '';
-    case 'items':
-      return budget.itemCount;
-    case 'total':
-      return budget.total;
-    case 'status':
-      return budget.status;
-  }
-}
-
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey | null; sortDir: 'asc' | 'desc' }) {
   if (sortKey !== column) return <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/70" />;
   return sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
@@ -160,32 +152,54 @@ const SortableHead = memo(function SortableHead({
 });
 
 interface BudgetsSectionProps {
-  initialBudgets: { success: true; budgets: BudgetRow[] };
+  initialFilters: GetBudgetsListValues;
+  initialResult: {
+    budgets: BudgetRow[];
+    totalCount: number;
+    totalPages: number;
+    page: number;
+  };
+  showSellerColumn: boolean;
+  isSeller: boolean;
 }
 
-function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
+function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColumn, isSeller }: BudgetsSectionProps) {
   const user = useUser();
-  const isOwner = user?.role === 'owner';
+  const isOwner = !isSeller;
+  const { getVisibleColumns } = useSettings();
+  const visibleColumns = getVisibleColumns('budgets');
   const { invalidateQueries } = useInvalidateQueries();
 
-  const { data } = useServerActionQuery({
-    queryKey: queryKeys.budgets.list(),
-    queryFn: () => getBudgetsAction(),
-    initialData: initialBudgets,
+  const [filters, setFilters] = useState<GetBudgetsListValues>(() => initialFilters);
+
+  useBudgetsUrlSync(filters, setFilters);
+
+  const isInitialQuery = useMemo(() => {
+    return (
+      filters.page === initialFilters.page &&
+      filters.limit === initialFilters.limit &&
+      filters.sort === initialFilters.sort &&
+      filters.sortDir === initialFilters.sortDir &&
+      filters.dateFrom === initialFilters.dateFrom &&
+      filters.dateTo === initialFilters.dateTo &&
+      filters.status === initialFilters.status
+    );
+  }, [filters, initialFilters]);
+
+  const { data, isPending, isError, error, refetch } = useServerActionQuery({
+    queryKey: queryKeys.budgets.list(filters),
+    queryFn: () => getBudgetsAction(filters),
+    initialData: isInitialQuery ? { success: true, ...initialResult } : undefined,
+    placeholderData: (previousData) => previousData,
     staleTime: 10_000,
   });
 
-  const budgetsData = data?.budgets ?? initialBudgets.budgets;
-
-  const { getVisibleColumns } = useSettings();
-  const visibleColumns = getVisibleColumns('budgets');
+  const budgetsData = data?.budgets ?? initialResult.budgets;
+  const totalCount = data?.totalCount ?? initialResult.totalCount;
+  const totalPages = data?.totalPages ?? initialResult.totalPages;
+  const currentPage = data?.page ?? initialResult.page;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:budgets:limit', DEFAULT_ITEMS_PER_PAGE);
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [convertingBudgetId, setConvertingBudgetId] = useState<number | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
@@ -211,9 +225,9 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
     setEditingBudgetId(undefined);
   };
 
-  const handleDialogSuccess = () => {
-    invalidateQueries([queryKeys.budgets.list()]);
-  };
+  const handleDialogSuccess = useCallback(() => {
+    invalidateQueries([queryKeys.budgets.list(filters)]);
+  }, [invalidateQueries, filters]);
 
   const handleDelete = async (budgetId: number) => {
     const result = await executeDelete({ budgetId });
@@ -226,7 +240,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
 
     if (result?.data?.success) {
       toast.warning('Presupuesto eliminado');
-      invalidateQueries([queryKeys.budgets.list()]);
+      invalidateQueries([queryKeys.budgets.list(filters)]);
     }
   };
 
@@ -239,44 +253,55 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key as SortKey);
-      setSortDir('asc');
-    }
-    setPage(1);
-  };
-
-  const sortedBudgets = useMemo(() => {
-    if (!sortKey) return budgetsData;
-    return [...budgetsData].sort((a, b) => {
-      const va = getSortValue(a, sortKey);
-      const vb = getSortValue(b, sortKey);
-      if (typeof va === 'number' && typeof vb === 'number') {
-        return sortDir === 'asc' ? va - vb : vb - va;
+  const handleSort = useCallback((key: string) => {
+    setFilters((prev) => {
+      const nextSort = key as SortKey;
+      if (prev.sort === nextSort) {
+        return {
+          ...prev,
+          sortDir: prev.sortDir === 'asc' ? 'desc' : 'asc',
+          page: 1,
+        };
       }
-      const sa = String(va).toLowerCase();
-      const sb = String(vb).toLowerCase();
-      if (sa < sb) return sortDir === 'asc' ? -1 : 1;
-      if (sa > sb) return sortDir === 'asc' ? 1 : -1;
-      return 0;
+      return { ...prev, sort: nextSort, sortDir: 'asc', page: 1 };
     });
-  }, [budgetsData, sortKey, sortDir]);
+  }, []);
 
-  const filteredBudgets = useMemo(() => {
-    if (statusFilter === 'all') return sortedBudgets;
-    return sortedBudgets.filter((b) => b.status === statusFilter);
-  }, [sortedBudgets, statusFilter]);
+  const handleFilterChange = useCallback((key: keyof GetBudgetsListValues, value: string | undefined) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+  }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBudgets.length / itemsPerPage));
-  const safePage = Math.min(page, totalPages);
-  const paginatedBudgets = filteredBudgets.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
+  const handleDateRangeChange = useCallback((range: DateRangeValue | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : undefined,
+      dateTo: range ? format(range.to, 'yyyy-MM-dd') : undefined,
+      page: 1,
+    }));
+  }, []);
 
-  const visibleOptionalCount = (
-    ['date', 'seller', 'client', 'phone', 'items', 'total', 'validUntil', 'status'] as const
-  ).filter((k) => visibleColumns.includes(k)).length;
+  const handlePageChange = useCallback((page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  }, []);
+
+  const handleLimitChange = useCallback((limit: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      limit: limit as GetBudgetsListValues['limit'],
+      page: 1,
+    }));
+  }, []);
+
+  const dateRangeValue = useMemo<DateRangeValue | undefined>(() => {
+    if (!filters.dateFrom || !filters.dateTo) return undefined;
+    return { from: new Date(filters.dateFrom), to: new Date(filters.dateTo) };
+  }, [filters.dateFrom, filters.dateTo]);
+
+  const showSeller = showSellerColumn && visibleColumns.includes('seller');
+
+  const visibleOptionalCount = (['date', 'client', 'phone', 'items', 'total', 'validUntil', 'status'] as const).filter(
+    (k) => visibleColumns.includes(k),
+  ).length;
   const totalCols = visibleOptionalCount + 2;
 
   return (
@@ -284,37 +309,52 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
       <PageHeader
         title="Presupuestos"
         description="Cotizaciones y presupuestos para clientes"
-        actions={<NewBudgetButton onOpen={handleOpenNew} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <ColumnVisibilityDropdown tableName="budgets" excludeColumns={showSellerColumn ? [] : ['seller']} />
+            <NewBudgetButton onOpen={handleOpenNew} />
+          </div>
+        }
       />
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center gap-2 pt-1">
-          <div className="ml-auto">
-            <ColumnVisibilityDropdown tableName="budgets" />
-          </div>
-        </div>
         <div className="space-y-3">
+          {isError && (
+            <Alert variant="destructive">
+              <AlertTitle>Error al cargar presupuestos</AlertTitle>
+              <AlertDescription className="flex items-center gap-2">
+                {error?.message ?? 'Ocurrió un error inesperado.'}
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reintentar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="rounded-xl bg-card shadow-md overflow-hidden">
             <div className="overflow-x-auto">
               <Table className="min-w-200">
                 <TableHeader>
                   <TableRow>
                     {visibleColumns.includes('date') && (
-                      <SortableHead
-                        column="date"
-                        label="Fecha"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                      <ColumnHeaderDateFilter
+                        title="Fecha"
+                        sortKey="date"
+                        currentSortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
+                        value={dateRangeValue}
+                        onChange={handleDateRangeChange}
                         className="w-px"
                       />
                     )}
-                    {visibleColumns.includes('seller') && (
+                    {showSeller && (
                       <SortableHead
                         column="seller"
                         label="Vendedor"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                        sortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
                       />
                     )}
@@ -322,8 +362,8 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                       <SortableHead
                         column="client"
                         label="Cliente"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                        sortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
                       />
                     )}
@@ -333,8 +373,8 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                         column="items"
                         label="Ítems"
                         className="w-px text-center"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                        sortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
                       />
                     )}
@@ -343,20 +383,29 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                         column="total"
                         label="Total"
                         className="w-px text-right"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                        sortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
                       />
                     )}
                     {visibleColumns.includes('validUntil') && <TableHead className="w-px">Vencimiento</TableHead>}
                     {visibleColumns.includes('status') && (
-                      <SortableHead
-                        column="status"
-                        label="Estado"
-                        className="w-px"
-                        sortKey={sortKey}
-                        sortDir={sortDir}
+                      <ColumnHeaderFilter
+                        title="Estado"
+                        sortKey="status"
+                        currentSortKey={filters.sort ?? null}
+                        sortDir={filters.sortDir ?? 'desc'}
                         onSort={handleSort}
+                        filterOptions={[
+                          { value: '', label: 'Todos' },
+                          { value: 'pending', label: 'Pendiente' },
+                          { value: 'approved', label: 'Aprobado' },
+                          { value: 'rejected', label: 'Rechazado' },
+                          { value: 'converted', label: 'Convertido' },
+                        ]}
+                        filterValue={filters.status ?? ''}
+                        onFilterChange={(v) => handleFilterChange('status', v || undefined)}
+                        className="w-px"
                       />
                     )}
                     <TableHead className="w-px" />
@@ -364,7 +413,13 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedBudgets.length === 0 ? (
+                  {isPending && budgetsData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={totalCols}>
+                        <EmptyState icon={Inbox} title="Cargando presupuestos" description="" />
+                      </TableCell>
+                    </TableRow>
+                  ) : budgetsData.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={totalCols}>
                         <EmptyState
@@ -375,7 +430,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedBudgets.map((budget) => {
+                    budgetsData.map((budget) => {
                       const isExpired =
                         budget.status === 'pending' && budget.validUntil && isPast(new Date(budget.validUntil));
                       const isExpanded = expandedId === budget.id;
@@ -403,9 +458,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                                 })()}
                               </TableCell>
                             )}
-                            {visibleColumns.includes('seller') && (
-                              <TableCell className="font-medium">{budget.sellerName}</TableCell>
-                            )}
+                            {showSeller && <TableCell className="font-medium">{budget.sellerName}</TableCell>}
                             {visibleColumns.includes('client') && (
                               <TableCell className="text-muted-foreground">
                                 {budget.clientName ?? 'Sin registrar'}
@@ -537,13 +590,7 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Filas por página</span>
-              <Select
-                value={String(itemsPerPage)}
-                onValueChange={(v) => {
-                  setItemsPerPage(Number(v) as ItemsPerPageOption);
-                  setPage(1);
-                }}
-              >
+              <Select value={String(filters.limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
                 <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>
@@ -555,39 +602,20 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">Filtrar:</span>
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger aria-label="Filtrar por estado" className="h-9 w-auto px-3">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="approved">Aprobado</SelectItem>
-                  <SelectItem value="rejected">Rechazado</SelectItem>
-                  <SelectItem value="converted">Convertido</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
               <span>
-                {filteredBudgets.length === 0 ? (
+                {totalCount === 0 ? (
                   '0 resultados'
                 ) : (
                   <>
                     <span className="sm:hidden">
-                      {safePage}/{totalPages}
+                      {currentPage}/{totalPages}
                     </span>
                     <span className="hidden sm:inline">
-                      {(safePage - 1) * itemsPerPage + 1}–{Math.min(safePage * itemsPerPage, filteredBudgets.length)} de{' '}
-                      {filteredBudgets.length}
+                      {(currentPage - 1) * filters.limit + 1}–{Math.min(currentPage * filters.limit, totalCount)} de{' '}
+                      {totalCount}
                     </span>
                   </>
                 )}
@@ -596,8 +624,8 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={safePage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1 || isPending}
                   aria-label="Página anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -605,8 +633,8 @@ function BudgetsSectionComponent({ initialBudgets }: BudgetsSectionProps) {
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={safePage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= totalPages || isPending}
                   aria-label="Página siguiente"
                 >
                   <ChevronRight className="h-4 w-4" />

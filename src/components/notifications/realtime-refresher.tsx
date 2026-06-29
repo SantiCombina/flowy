@@ -17,6 +17,7 @@ const EVENT_TO_KEYS: Record<string, string[][]> = {
   stock_returned: [['products']],
   stock_low: [['products']],
   stock_adjusted: [['products']],
+  budget_created: [['budgets']],
 };
 
 export function RealtimeRefresher({ channel, events }: RealtimeRefresherProps) {

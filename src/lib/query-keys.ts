@@ -1,3 +1,4 @@
+import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
 export type MovementType =
@@ -24,7 +25,10 @@ export const queryKeys = {
     options: (role: 'seller' | 'owner', sellerId?: number) => ['saleOptions', { role, sellerId }] as const,
   },
   budgets: {
-    list: () => ['budgets'] as const,
+    list: (params?: GetBudgetsListValues) => {
+      if (params) return ['budgets', 'list', params] as const;
+      return ['budgets'] as const;
+    },
     options: () => ['budgetOptions'] as const,
     detail: (id: number | undefined) => ['budgets', 'detail', id] as const,
   },

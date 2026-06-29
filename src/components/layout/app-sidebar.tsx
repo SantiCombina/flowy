@@ -1,6 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import {
   ClipboardList,
   Contact,
@@ -51,15 +52,49 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, feature: null },
+  {
+    title: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+    feature: null,
+  },
   { title: 'Productos', href: '/products', icon: Package, feature: 'products' },
-  { title: 'Vendedores', href: '/sellers', icon: Users, feature: 'sellers', roleOnly: 'owner' },
-  { title: 'Asignaciones', href: '/assignments', icon: ClipboardList, feature: 'assignments', roleOnly: 'owner' },
-  { title: 'Historial', href: '/history', icon: History, feature: 'history', roleOnly: 'owner' },
+  {
+    title: 'Vendedores',
+    href: '/sellers',
+    icon: Users,
+    feature: 'sellers',
+    roleOnly: 'owner',
+  },
+  {
+    title: 'Asignaciones',
+    href: '/assignments',
+    icon: ClipboardList,
+    feature: 'assignments',
+    roleOnly: 'owner',
+  },
+  {
+    title: 'Historial',
+    href: '/history',
+    icon: History,
+    feature: 'history',
+    roleOnly: 'owner',
+  },
   { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
-  { title: 'Presupuestos', href: '/budgets', icon: FileText, feature: 'budgets' },
+  {
+    title: 'Presupuestos',
+    href: '/budgets',
+    icon: FileText,
+    feature: 'budgets',
+  },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
-  { title: 'Mi Inventario', href: '/mobile-inventory', icon: PackageSearch, feature: null, roleOnly: 'seller' },
+  {
+    title: 'Mi Inventario',
+    href: '/mobile-inventory',
+    icon: PackageSearch,
+    feature: null,
+    roleOnly: 'seller',
+  },
 ];
 
 interface AppSidebarProps {
@@ -91,21 +126,45 @@ export function AppSidebar({ features }: AppSidebarProps) {
       case '/products':
         void queryClient.prefetchQuery({
           queryKey: queryKeys.products.list('', 1),
-          queryFn: () => getVariantsAction({ options: { limit: 50, page: 1, sort: 'product' } }),
+          queryFn: () =>
+            getVariantsAction({
+              options: { limit: 50, page: 1, sort: 'product' },
+            }),
           staleTime: 30_000,
         });
         break;
-      case '/budgets':
+      case '/budgets': {
+        const now = new Date();
+        const budgetFilters = {
+          page: 1,
+          limit: 25,
+          sort: 'date' as const,
+          sortDir: 'desc' as const,
+          dateFrom: format(startOfMonth(now), 'yyyy-MM-dd'),
+          dateTo: format(endOfMonth(now), 'yyyy-MM-dd'),
+        };
         void queryClient.prefetchQuery({
-          queryKey: queryKeys.budgets.list(),
-          queryFn: () => getBudgetsAction(),
+          queryKey: queryKeys.budgets.list(budgetFilters),
+          queryFn: () => getBudgetsAction(budgetFilters),
           staleTime: 10_000,
         });
         break;
+      }
       case '/sales':
         void queryClient.prefetchQuery({
-          queryKey: queryKeys.sales.list({ page: 1, limit: 25, sort: 'date', sortDir: 'desc' }),
-          queryFn: () => getSalesAction({ page: 1, limit: 25, sort: 'date', sortDir: 'desc' }),
+          queryKey: queryKeys.sales.list({
+            page: 1,
+            limit: 25,
+            sort: 'date',
+            sortDir: 'desc',
+          }),
+          queryFn: () =>
+            getSalesAction({
+              page: 1,
+              limit: 25,
+              sort: 'date',
+              sortDir: 'desc',
+            }),
           staleTime: 10_000,
         });
         break;
