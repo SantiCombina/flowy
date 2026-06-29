@@ -120,21 +120,27 @@ const SortableHead = memo(function SortableHead({
 
 interface HistorySectionProps {
   initialData: { success: true } & HistoryResult;
+  initialDateRange: { from: Date; to: Date };
 }
 
-function HistorySectionComponent({ initialData }: HistorySectionProps) {
+function HistorySectionComponent({ initialData, initialDateRange }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
 
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(initialDateRange);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', DEFAULT_ITEMS_PER_PAGE);
 
   const [sortKey, setSortKey] = useState<SortKey | null>('createdAt');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const isInitialQuery =
+    dateRange !== undefined &&
+    dateRange.from.getTime() === initialDateRange.from.getTime() &&
+    dateRange.to.getTime() === initialDateRange.to.getTime() &&
+    selectedTypes.length === 0;
 
   const { data, isPending } = useServerActionQuery({
     queryKey: queryKeys.history.filtered(dateRange, selectedTypes),
@@ -144,7 +150,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
         ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
         limit: 500,
       }),
-    initialData: !hasInteracted ? initialData : undefined,
+    initialData: isInitialQuery ? initialData : undefined,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -154,7 +160,6 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
 
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
     setDateRange(range);
-    setHasInteracted(true);
     setPage(1);
   }
 
@@ -241,7 +246,6 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                       onFilterChange={(types) => {
                         const movementTypes = types as MovementType[];
                         setSelectedTypes(movementTypes);
-                        setHasInteracted(true);
                         setPage(1);
                       }}
                       className="w-px"

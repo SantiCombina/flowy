@@ -1,4 +1,4 @@
-import { subDays } from 'date-fns';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
@@ -17,9 +17,12 @@ export default async function HistoryPage() {
   if (!user) redirect('/login');
   if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
+  const now = new Date();
+  const initialDateRange = { from: startOfDay(subDays(now, 29)), to: endOfDay(now) };
+
   const initialData = await getHistoryMovements(user.id, {
-    from: subDays(new Date(), 29),
-    to: new Date(),
+    from: initialDateRange.from,
+    to: initialDateRange.to,
     page: 1,
     limit: 25,
   });
@@ -30,7 +33,7 @@ export default async function HistoryPage() {
         channel={`private-owner-${user.id}`}
         events={['stock_adjusted', 'stock_dispatched', 'stock_returned', 'sale_created']}
       />
-      <HistorySection initialData={{ success: true, ...initialData }} />
+      <HistorySection initialData={{ success: true, ...initialData }} initialDateRange={initialDateRange} />
     </>
   );
 }
