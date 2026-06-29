@@ -128,6 +128,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', DEFAULT_ITEMS_PER_PAGE);
 
@@ -143,7 +144,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
         ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
         limit: 500,
       }),
-    initialData: !dateRange && selectedTypes.length === 0 ? initialData : undefined,
+    initialData: !hasInteracted ? initialData : undefined,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -153,6 +154,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
 
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
     setDateRange(range);
+    setHasInteracted(true);
     setPage(1);
   }
 
@@ -239,6 +241,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                       onFilterChange={(types) => {
                         const movementTypes = types as MovementType[];
                         setSelectedTypes(movementTypes);
+                        setHasInteracted(true);
                         setPage(1);
                       }}
                       className="w-px"
