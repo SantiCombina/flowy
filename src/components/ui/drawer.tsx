@@ -16,7 +16,7 @@ const DrawerOverlay = React.forwardRef<HTMLDivElement, React.ComponentProps<type
       ref={ref}
       data-slot="drawer-overlay"
       className={cn(
-        'fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+        'fixed inset-0 z-50 bg-black/50 pointer-events-auto data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
         className,
       )}
       {...props}
@@ -28,7 +28,9 @@ DrawerOverlay.displayName = 'DrawerOverlay';
 const DrawerContent = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof DrawerPrimitive.Content>>(
   ({ className, children, ...props }, ref) => (
     <DrawerPortal>
-      <DrawerOverlay />
+      <DrawerClose asChild>
+        <DrawerOverlay />
+      </DrawerClose>
       <DrawerPrimitive.Content
         ref={ref}
         data-slot="drawer-content"

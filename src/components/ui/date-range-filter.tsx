@@ -162,7 +162,7 @@ export function DateRangeFilterContent({ value, onChange }: DateRangeFilterConte
         {calendarContent}
       </div>
       {value && (
-        <div className="border-t p-3 flex justify-end">
+        <div className={cn('border-t p-3 flex justify-end bg-background z-10', isMobile && 'sticky bottom-0')}>
           <Button variant="ghost" size="sm" onClick={() => onChange(undefined)}>
             Limpiar filtro
           </Button>

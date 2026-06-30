@@ -97,13 +97,13 @@ export function ColumnHeaderDateFilter({
                 showCloseButton={false}
               >
                 <SheetTitle className="sr-only">Filtrar por fecha</SheetTitle>
-                <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted" />
-                <div className="px-4 pt-1 pb-2">
+                <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted shrink-0" />
+                <div className="px-4 pt-1 pb-2 shrink-0">
                   <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                     Filtrar por fecha
                   </p>
                 </div>
-                {content}
+                <div className="shrink-0">{content}</div>
               </SheetContent>
             </Sheet>
           </>
