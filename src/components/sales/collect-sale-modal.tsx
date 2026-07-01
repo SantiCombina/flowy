@@ -63,7 +63,7 @@ export function CollectSaleModal({
   const { executeAsync: executeOwner, isExecuting: isExecutingOwner } = useAction(markSaleAsCollectedAction);
   const { executeAsync: executeSeller, isExecuting: isExecutingSeller } = useAction(markSaleAsCollectedBySellerAction);
   const isExecuting = isExecutingOwner || isExecutingSeller;
-  const remaining = total - amountPaid;
+  const remaining = Number((total - amountPaid).toFixed(2));
 
   const sellerForm = useForm<CollectSaleBySellerValues>({
     resolver: zodResolver(collectSaleBySellerSchema),
@@ -75,12 +75,17 @@ export function CollectSaleModal({
     defaultValues: { saleId, amount: remaining },
   });
 
-  const commission = calculateCommission(amountPaid);
   const watchedAmountSeller = useWatch({ control: sellerForm.control, name: 'amount' });
   const watchedAmountOwner = useWatch({ control: ownerForm.control, name: 'amount' });
   const watchedAmount = isSeller ? watchedAmountSeller : watchedAmountOwner;
+  const commissionBase = Number.isFinite(watchedAmount) && watchedAmount > 0 ? watchedAmount : 0;
+  const alreadyEarnedCommission = calculateCommission(amountPaid);
+  const newCommission = calculateCommission(commissionBase);
+  const commission = alreadyEarnedCommission + newCommission;
   const watchedPaymentMethod = useWatch({ control: sellerForm.control, name: 'paymentMethod' });
-  const afterPayment = Number.isFinite(watchedAmount) && watchedAmount > 0 ? remaining - watchedAmount : null;
+  const afterPayment =
+    Number.isFinite(watchedAmount) && watchedAmount > 0 ? Number((remaining - watchedAmount).toFixed(2)) : null;
+  const isOverRemaining = Number.isFinite(watchedAmount) && Number(watchedAmount.toFixed(2)) > remaining;
 
   useEffect(() => {
     if (isOpen) {
@@ -128,28 +133,42 @@ export function CollectSaleModal({
         <span>$ {total.toLocaleString('es-AR')}</span>
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-muted-foreground">Comisión vendedor (3%)</span>
+        <span className="text-muted-foreground">Comisión de este cobro (3%)</span>
         <span className="text-blue-600">
-          $ {commission.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+          $ {newCommission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
         </span>
       </div>
       {amountPaid > 0 && (
-        <div className="flex justify-between mt-1">
-          <span className="text-muted-foreground">Ya cobrado</span>
-          <span>$ {amountPaid.toLocaleString('es-AR')}</span>
-        </div>
+        <>
+          <div className="flex justify-between mt-1">
+            <span className="text-muted-foreground">Ya cobrado</span>
+            <span>$ {amountPaid.toLocaleString('es-AR')}</span>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-muted-foreground">Comisión acumulada</span>
+            <span className="text-blue-600">
+              $ {commission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+        </>
       )}
       <Separator className="my-2" />
       <div className="flex justify-between font-semibold">
         <span>Total</span>
         <span>$ {remaining.toLocaleString('es-AR')}</span>
       </div>
-      {afterPayment !== null && (
+      {afterPayment !== null && !isOverRemaining && (
         <div
           className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-success' : 'text-warning'}`}
         >
           <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
           <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
+        </div>
+      )}
+      {isOverRemaining && (
+        <div className="flex justify-between mt-2 text-xs font-medium text-destructive">
+          <span>El monto supera lo pendiente</span>
+          <span>$ {remaining.toLocaleString('es-AR')}</span>
         </div>
       )}
     </div>
@@ -260,7 +279,7 @@ export function CollectSaleModal({
               <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isExecuting}>
+              <Button type="submit" disabled={isExecuting || isOverRemaining}>
                 {isExecuting ? 'Registrando…' : 'Registrar cobro'}
               </Button>
             </ResponsiveModalFooter>
@@ -291,7 +310,7 @@ export function CollectSaleModal({
               <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isExecuting}>
+              <Button type="submit" disabled={isExecuting || isOverRemaining}>
                 {isExecuting ? 'Registrando…' : 'Registrar cobro'}
               </Button>
             </ResponsiveModalFooter>
