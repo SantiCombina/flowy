@@ -1,11 +1,14 @@
-import { endOfMonth, format, startOfMonth } from 'date-fns';
-import type { Metadata } from 'next';
+import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getPaginatedSales } from '@/app/services/sales';
 import { getZones } from '@/app/services/zones';
+import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { SalesSection } from '@/components/sales/sales-section';
+import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { getCurrentUser } from '@/lib/payload';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
@@ -42,7 +45,6 @@ function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 function parseOptionalDate(value: string | null): string | undefined {
-  if (value === '') return '';
   return value && DATE_REGEX.test(value) ? value : undefined;
 }
 
@@ -60,16 +62,8 @@ function getFirstParam(value: string | string[] | undefined): string | null {
   return value ?? null;
 }
 
-function getDefaultDateRange(): { dateFrom: string; dateTo: string } {
-  const now = new Date();
-  return {
-    dateFrom: format(startOfMonth(now), 'yyyy-MM-dd'),
-    dateTo: format(endOfMonth(now), 'yyyy-MM-dd'),
-  };
-}
-
-export default async function SalesPage({
-  searchParams,
+async function SalesDataFetcher({
+  searchParams: paramsPromise,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -77,10 +71,11 @@ export default async function SalesPage({
   if (!user) redirect('/login');
   if (user.role !== 'seller' && user.role !== 'owner') redirect('/dashboard');
 
-  const params = await searchParams;
   const isSeller = user.role === 'seller';
   const ownerId = isSeller ? (typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0)) : user.id;
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
+
+  const params = await paramsPromise;
 
   const paymentStatusFromLegacy = getFirstParam(params.status);
   const paymentStatus =
@@ -91,7 +86,6 @@ export default async function SalesPage({
 
   const dateFrom = parseOptionalDate(getFirstParam(params.dateFrom));
   const dateTo = parseOptionalDate(getFirstParam(params.dateTo));
-  const defaultRange = dateFrom === undefined && dateTo === undefined ? getDefaultDateRange() : null;
 
   const initialFilters: GetSalesListValues = {
     page: parsePage(getFirstParam(params.page)),
@@ -99,8 +93,8 @@ export default async function SalesPage({
     sort: parseEnum<NonNullable<GetSalesListValues['sort']>>(getFirstParam(params.sort), SORT_VALUES) || 'date',
     sortDir:
       parseEnum<NonNullable<GetSalesListValues['sortDir']>>(getFirstParam(params.sortDir), SORT_DIR_VALUES) || 'desc',
-    dateFrom: dateFrom ?? defaultRange?.dateFrom ?? '',
-    dateTo: dateTo ?? defaultRange?.dateTo ?? '',
+    dateFrom: dateFrom ?? '',
+    dateTo: dateTo ?? '',
     paymentStatus,
     zone: parseOptionalPositiveInt(getFirstParam(params.zone)),
     paymentMethod: parseEnum<NonNullable<GetSalesListValues['paymentMethod']>>(
@@ -147,6 +141,31 @@ export default async function SalesPage({
         isSeller={isSeller}
         initialStatusFilter={paymentStatus}
       />
+    </>
+  );
+}
+
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <>
+      <PageHeader
+        title="Ventas"
+        description="Registro y seguimiento de ventas"
+        actions={<ColumnVisibilityDropdown tableName="sales" />}
+      />
+      <Suspense
+        fallback={
+          <main className="min-w-0 flex-1 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TableSkeleton columns={9} hasActions />
+          </main>
+        }
+      >
+        <SalesDataFetcher searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }

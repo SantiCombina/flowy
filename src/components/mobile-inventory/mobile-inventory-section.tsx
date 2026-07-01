@@ -3,7 +3,6 @@
 import { Package } from 'lucide-react';
 
 import type { MobileInventoryItem } from '@/app/services/mobile-seller';
-import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -16,8 +15,6 @@ export function MobileInventorySection({ inventory }: MobileInventorySectionProp
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Mi Inventario" description="Stock que llevás en tu vehículo" />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
         {inventory.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">

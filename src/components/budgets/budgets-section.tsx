@@ -20,7 +20,6 @@ import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { BudgetRow } from '@/app/services/budgets';
-import { PageHeader } from '@/components/layout/page-header';
 import { useUser } from '@/components/providers/user-provider';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -38,7 +37,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
 import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
-import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -306,20 +304,9 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Presupuestos"
-        description="Cotizaciones y presupuestos para clientes"
-        actions={
-          <div className="flex items-center gap-2">
-            <ColumnVisibilityDropdown tableName="budgets" excludeColumns={showSellerColumn ? [] : ['seller']} />
-            <NewBudgetButton onOpen={handleOpenNew} />
-          </div>
-        }
-      />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
-          {isError && (
+          {isError && budgetsData.length === 0 && (
             <Alert variant="destructive">
               <AlertTitle>Error al cargar presupuestos</AlertTitle>
               <AlertDescription className="flex items-center gap-2">
@@ -331,6 +318,10 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
               </AlertDescription>
             </Alert>
           )}
+
+          <div className="flex justify-end">
+            <NewBudgetButton onOpen={handleOpenNew} />
+          </div>
 
           <div className="rounded-xl bg-card shadow-md overflow-hidden">
             <div className="overflow-x-auto">

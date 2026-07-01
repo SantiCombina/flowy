@@ -478,6 +478,25 @@ export async function getPaginatedSales(
     limit,
     page,
     overrideAccess: true,
+    select: {
+      id: true,
+      date: true,
+      seller: { select: { name: true } } as unknown as true,
+      client: { select: { id: true, name: true, zone: { select: { id: true, name: true } } } } as unknown as true,
+      items: true,
+      total: true,
+      paymentMethod: true,
+      paymentStatus: true,
+      amountPaid: true,
+      collectedAt: true,
+      checkDueDate: true,
+      ownerPaymentStatus: true,
+      ownerAmountPaid: true,
+      ownerCollectedAt: true,
+      deliveryStatus: true,
+      deliveredAt: true,
+      notes: true,
+    },
   });
 
   const sales = (result.docs as Sale[]).map((sale: Sale) => {

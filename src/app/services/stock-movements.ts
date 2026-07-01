@@ -169,6 +169,18 @@ export async function getHistoryMovements(ownerId: number, filters: HistoryFilte
     limit,
     depth: 2,
     overrideAccess: true,
+    select: {
+      id: true,
+      createdAt: true,
+      type: true,
+      quantity: true,
+      previousStock: true,
+      newStock: true,
+      reason: true,
+      variant: { select: { code: true, product: { select: { name: true } } } } as unknown as true,
+      mobileSeller: { select: { name: true } } as unknown as true,
+      createdBy: { select: { name: true } } as unknown as true,
+    },
   });
 
   const docs: HistoryMovement[] = result.docs.map((m) => {

@@ -16,11 +16,9 @@ import { Fragment, memo, useState } from 'react';
 import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
 import { getHistoryAction } from '@/components/history/actions';
 import { MovementTypeBadge } from '@/components/history/movement-type-badge';
-import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
 import { ColumnHeaderMultiFilter } from '@/components/ui/column-header-multi-filter';
-import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -120,14 +118,13 @@ const SortableHead = memo(function SortableHead({
 
 interface HistorySectionProps {
   initialData: { success: true } & HistoryResult;
-  initialDateRange: { from: Date; to: Date };
 }
 
-function HistorySectionComponent({ initialData, initialDateRange }: HistorySectionProps) {
+function HistorySectionComponent({ initialData }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
 
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(initialDateRange);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
   const [selectedTypes, setSelectedTypes] = useState<MovementType[]>([]);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:history:limit', DEFAULT_ITEMS_PER_PAGE);
@@ -136,21 +133,22 @@ function HistorySectionComponent({ initialData, initialDateRange }: HistorySecti
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const isInitialQuery =
-    dateRange !== undefined &&
-    dateRange.from.getTime() === initialDateRange.from.getTime() &&
-    dateRange.to.getTime() === initialDateRange.to.getTime() &&
-    selectedTypes.length === 0;
+  const noFiltersActive = dateRange === undefined && selectedTypes.length === 0;
 
   const { data, isPending } = useServerActionQuery({
     queryKey: queryKeys.history.filtered(dateRange, selectedTypes),
     queryFn: () =>
       getHistoryAction({
-        ...(dateRange ? { from: dateRange.from.toISOString(), to: dateRange.to.toISOString() } : {}),
+        ...(dateRange
+          ? {
+              from: dateRange.from.toISOString(),
+              to: dateRange.to.toISOString(),
+            }
+          : {}),
         ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
         limit: 500,
       }),
-    initialData: isInitialQuery ? initialData : undefined,
+    initialData: noFiltersActive ? initialData : undefined,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
@@ -206,12 +204,7 @@ function HistorySectionComponent({ initialData, initialDateRange }: HistorySecti
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="Historial" description="Registro de movimientos de inventario" />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center justify-end p-1">
-          <ColumnVisibilityDropdown tableName="history" />
-        </div>
         <div className="space-y-3">
           <div
             className={cn(
@@ -241,7 +234,10 @@ function HistorySectionComponent({ initialData, initialDateRange }: HistorySecti
                       currentSortKey={sortKey}
                       sortDir={sortDir}
                       onSort={(key) => handleSort(key as SortKey)}
-                      filterOptions={ALL_TYPES.map((type) => ({ value: type, label: TYPE_LABELS[type] }))}
+                      filterOptions={ALL_TYPES.map((type) => ({
+                        value: type,
+                        label: TYPE_LABELS[type],
+                      }))}
                       filterValue={selectedTypes}
                       onFilterChange={(types) => {
                         const movementTypes = types as MovementType[];

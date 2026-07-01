@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const SORT_COLUMNS = ['date', 'seller', 'client', 'items', 'total', 'status'] as const;
 
-const DATE_REGEX = /^(\d{4}-\d{2}-\d{2})?$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export const getBudgetsListSchema = z.object({
   page: z

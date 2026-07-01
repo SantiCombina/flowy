@@ -64,6 +64,7 @@ export const Sales: CollectionConfig = {
       name: 'date',
       type: 'date',
       required: true,
+      index: true,
       admin: {
         date: {
           pickerAppearance: 'dayAndTime',
@@ -73,6 +74,7 @@ export const Sales: CollectionConfig = {
     {
       name: 'paymentMethod',
       type: 'select',
+      index: true,
       options: [
         { label: 'Efectivo', value: 'cash' },
         { label: 'Transferencia', value: 'transfer' },
@@ -139,6 +141,7 @@ export const Sales: CollectionConfig = {
       name: 'paymentStatus',
       type: 'select',
       required: true,
+      index: true,
       label: 'Estado de cobro (vendedor)',
       defaultValue: 'pending',
       options: [
@@ -167,6 +170,7 @@ export const Sales: CollectionConfig = {
       name: 'ownerPaymentStatus',
       type: 'select',
       required: true,
+      index: true,
       label: 'Estado de cobro (owner)',
       defaultValue: 'pending',
       options: [
@@ -199,6 +203,7 @@ export const Sales: CollectionConfig = {
       name: 'deliveryStatus',
       type: 'select',
       required: true,
+      index: true,
       label: 'Estado de entrega',
       defaultValue: 'pending',
       options: [

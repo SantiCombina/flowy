@@ -7,7 +7,6 @@ import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
-import { PageHeader } from '@/components/layout/page-header';
 import { useUserOptional } from '@/components/providers/user-provider';
 import {
   AlertDialog,
@@ -20,7 +19,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
@@ -185,34 +183,8 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Productos"
-        description="Gestión del catálogo de productos"
-        actions={
-          <div className="flex items-center gap-2 pt-1">
-            {canCreateProduct && !isPending && totalDocs > 0 && (
-              <div
-                className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
-                title="Valor del inventario (página actual)"
-              >
-                <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
-                <span className="text-sm font-semibold text-foreground">
-                  $ {inventoryValue.toLocaleString('es-AR')}
-                </span>
-              </div>
-            )}
-            {canCreateProduct && (
-              <Button onClick={handleOpenCreateModal}>
-                <Plus className="h-4 w-4" />
-                Nuevo producto
-              </Button>
-            )}
-          </div>
-        }
-      />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -223,9 +195,21 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <div className="ml-auto">
-            <ColumnVisibilityDropdown tableName="products" />
-          </div>
+          {canCreateProduct && !isPending && totalDocs > 0 && (
+            <div
+              className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+              title="Valor del inventario (página actual)"
+            >
+              <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
+              <span className="text-sm font-semibold text-foreground">$ {inventoryValue.toLocaleString('es-AR')}</span>
+            </div>
+          )}
+          {canCreateProduct && (
+            <Button onClick={handleOpenCreateModal}>
+              <Plus className="h-4 w-4" />
+              Nuevo producto
+            </Button>
+          )}
         </div>
 
         {queryError && (

@@ -3,9 +3,7 @@
 import { Plus, Search, Users } from 'lucide-react';
 import { useState } from 'react';
 
-import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
-import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { Input } from '@/components/ui/input';
 import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
@@ -68,25 +66,8 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Clientes"
-        description="Gestión de clientes del negocio"
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex h-9 items-center gap-2 rounded-full border bg-background px-4 shadow-sm">
-              <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="text-sm font-semibold text-foreground">{clients.length} clientes</span>
-            </div>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Agregar cliente
-            </Button>
-          </div>
-        }
-      />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -97,9 +78,19 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="ml-auto">
-            <ColumnVisibilityDropdown tableName="clients" />
+
+          <div
+            className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+            title="Clientes registrados"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="text-sm font-semibold text-foreground">{clients.length} clientes</span>
           </div>
+
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Agregar cliente
+          </Button>
         </div>
 
         <ClientsTable

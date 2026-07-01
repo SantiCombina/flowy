@@ -214,6 +214,18 @@ export async function getPaginatedBudgets(
     limit,
     page,
     overrideAccess: true,
+    select: {
+      id: true,
+      date: true,
+      seller: { select: { name: true } } as unknown as true,
+      client: { select: { id: true, name: true } } as unknown as true,
+      clientPhone: true,
+      items: true,
+      total: true,
+      status: true,
+      validUntil: true,
+      notes: true,
+    },
   });
 
   const budgets = (result.docs as Budget[]).map((budget) => {

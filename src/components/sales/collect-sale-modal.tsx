@@ -134,9 +134,7 @@ export function CollectSaleModal({
       </div>
       <div className="flex justify-between mt-1">
         <span className="text-muted-foreground">Comisión de este cobro (3%)</span>
-        <span className="text-blue-600">
-          $ {newCommission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-        </span>
+        <span className="text-blue-600">$ {newCommission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
       </div>
       {amountPaid > 0 && (
         <>
@@ -146,9 +144,7 @@ export function CollectSaleModal({
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-muted-foreground">Comisión acumulada</span>
-            <span className="text-blue-600">
-              $ {commission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-            </span>
+            <span className="text-blue-600">$ {commission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
           </div>
         </>
       )}

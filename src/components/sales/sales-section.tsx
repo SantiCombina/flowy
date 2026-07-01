@@ -20,7 +20,6 @@ import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
-import { PageHeader } from '@/components/layout/page-header';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -37,7 +36,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
 import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
-import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -76,7 +74,10 @@ type SortKey =
   | 'zone';
 
 function formatPrice(value: number): string {
-  return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function isCheckOverdue(checkDueDate: string): boolean {
@@ -267,7 +268,11 @@ function SalesSectionComponent({
     setFilters((prev) => {
       const nextSort = key as SortKey;
       if (prev.sort === nextSort) {
-        return { ...prev, sortDir: prev.sortDir === 'asc' ? 'desc' : 'asc', page: 1 };
+        return {
+          ...prev,
+          sortDir: prev.sortDir === 'asc' ? 'desc' : 'asc',
+          page: 1,
+        };
       }
       return { ...prev, sort: nextSort, sortDir: 'asc', page: 1 };
     });
@@ -291,7 +296,11 @@ function SalesSectionComponent({
   };
 
   const handleLimitChange = (limit: number) => {
-    setFilters((prev) => ({ ...prev, limit: limit as GetSalesListValues['limit'], page: 1 }));
+    setFilters((prev) => ({
+      ...prev,
+      limit: limit as GetSalesListValues['limit'],
+      page: 1,
+    }));
   };
 
   const dateRangeValue = useMemo<DateRangeValue | undefined>(() => {
@@ -312,15 +321,9 @@ function SalesSectionComponent({
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title="Ventas"
-        description="Registro y seguimiento de ventas"
-        actions={<ColumnVisibilityDropdown tableName="sales" excludeColumns={showSellerColumn ? [] : ['seller']} />}
-      />
-
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
-          {isError && (
+          {isError && salesData.length === 0 && (
             <Alert variant="destructive">
               <AlertTitle>Error al cargar ventas</AlertTitle>
               <AlertDescription className="flex items-center gap-2">
@@ -376,7 +379,10 @@ function SalesSectionComponent({
                       onSort={handleSort}
                       filterOptions={[
                         { value: '', label: 'Todas' },
-                        ...zones.map((z) => ({ value: String(z.id), label: z.name })),
+                        ...zones.map((z) => ({
+                          value: String(z.id),
+                          label: z.name,
+                        })),
                       ]}
                       filterValue={filters.zone !== undefined ? String(filters.zone) : ''}
                       onFilterChange={(v) => handleFilterChange('zone', v ? parseInt(v, 10) : undefined)}

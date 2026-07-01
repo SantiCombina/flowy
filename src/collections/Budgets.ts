@@ -76,6 +76,7 @@ export const Budgets: CollectionConfig = {
       name: 'date',
       type: 'date',
       required: true,
+      index: true,
       admin: {
         date: {
           pickerAppearance: 'dayAndTime',
@@ -128,6 +129,7 @@ export const Budgets: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
+      index: true,
       defaultValue: 'pending',
       options: [
         { label: 'Pendiente', value: 'pending' },

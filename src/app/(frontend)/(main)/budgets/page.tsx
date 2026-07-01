@@ -1,17 +1,14 @@
-import { endOfMonth, format, startOfMonth } from 'date-fns';
-import type { Metadata } from 'next';
+import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { getPaginatedBudgets } from '@/app/services/budgets';
 import { BudgetsSection } from '@/components/budgets/budgets-section';
+import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
-import {
-  budgetsUrlConstants,
-  parseEnum,
-  parseLimit,
-  parseOptionalDate,
-  parsePage,
-} from '@/lib/budgets-url-utils';
+import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { budgetsUrlConstants, parseEnum, parseLimit, parseOptionalDate, parsePage } from '@/lib/budgets-url-utils';
 import { getCurrentUser } from '@/lib/payload';
 import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 
@@ -24,16 +21,8 @@ function getFirstParam(value: string | string[] | undefined): string | null {
   return value ?? null;
 }
 
-function getDefaultDateRange(): { dateFrom: string; dateTo: string } {
-  const now = new Date();
-  return {
-    dateFrom: format(startOfMonth(now), 'yyyy-MM-dd'),
-    dateTo: format(endOfMonth(now), 'yyyy-MM-dd'),
-  };
-}
-
-export default async function BudgetsPage({
-  searchParams,
+async function BudgetsDataFetcher({
+  searchParams: paramsPromise,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -41,28 +30,30 @@ export default async function BudgetsPage({
   if (!user) redirect('/login');
   if (user.role !== 'seller' && user.role !== 'owner') redirect('/dashboard');
 
-  const params = await searchParams;
   const isSeller = user.role === 'seller';
   const ownerId = isSeller ? (typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0)) : user.id;
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
+  const params = await paramsPromise;
+
   const dateFrom = parseOptionalDate(getFirstParam(params.dateFrom));
   const dateTo = parseOptionalDate(getFirstParam(params.dateTo));
-  const defaultRange = dateFrom === undefined && dateTo === undefined ? getDefaultDateRange() : null;
 
   const initialFilters: GetBudgetsListValues = {
     page: parsePage(getFirstParam(params.page)),
     limit: parseLimit(getFirstParam(params.limit)),
     sort:
-      parseEnum<NonNullable<GetBudgetsListValues['sort']>>(getFirstParam(params.sort), budgetsUrlConstants.SORT_VALUES) ||
-      'date',
+      parseEnum<NonNullable<GetBudgetsListValues['sort']>>(
+        getFirstParam(params.sort),
+        budgetsUrlConstants.SORT_VALUES,
+      ) || 'date',
     sortDir:
       parseEnum<NonNullable<GetBudgetsListValues['sortDir']>>(
         getFirstParam(params.sortDir),
         budgetsUrlConstants.SORT_DIR_VALUES,
       ) || 'desc',
-    dateFrom: dateFrom ?? defaultRange?.dateFrom,
-    dateTo: dateTo ?? defaultRange?.dateTo,
+    dateFrom: dateFrom ?? undefined,
+    dateTo: dateTo ?? undefined,
     status: parseEnum<NonNullable<GetBudgetsListValues['status']>>(
       getFirstParam(params.status),
       budgetsUrlConstants.STATUS_VALUES,
@@ -93,6 +84,31 @@ export default async function BudgetsPage({
         showSellerColumn={!isSeller}
         isSeller={isSeller}
       />
+    </>
+  );
+}
+
+export default async function BudgetsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <>
+      <PageHeader
+        title="Presupuestos"
+        description="Cotizaciones y presupuestos para clientes"
+        actions={<ColumnVisibilityDropdown tableName="budgets" />}
+      />
+      <Suspense
+        fallback={
+          <main className="min-w-0 flex-1 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TableSkeleton columns={8} />
+          </main>
+        }
+      >
+        <BudgetsDataFetcher searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }

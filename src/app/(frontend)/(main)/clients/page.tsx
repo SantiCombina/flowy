@@ -4,7 +4,9 @@ import { Suspense } from 'react';
 
 import { getClientDebts, getClients } from '@/app/services/clients';
 import { ClientsSection } from '@/components/clients/clients-section';
-import { ClientsSkeleton } from '@/components/clients/clients-skeleton';
+import { PageHeader } from '@/components/layout/page-header';
+import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { getCurrentUser } from '@/lib/payload';
 import { serializeForClient } from '@/lib/serialization';
 
@@ -41,8 +43,21 @@ async function ClientsContent() {
 
 export default async function ClientsPage() {
   return (
-    <Suspense fallback={<ClientsSkeleton />}>
-      <ClientsContent />
-    </Suspense>
+    <>
+      <PageHeader
+        title="Clientes"
+        description="Gestión de clientes del negocio"
+        actions={<ColumnVisibilityDropdown tableName="clients" />}
+      />
+      <Suspense
+        fallback={
+          <main className="min-w-0 flex-1 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TableSkeleton columns={6} rows={8} hasActions />
+          </main>
+        }
+      >
+        <ClientsContent />
+      </Suspense>
+    </>
   );
 }

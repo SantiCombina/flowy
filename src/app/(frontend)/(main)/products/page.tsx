@@ -4,12 +4,13 @@ import { Suspense } from 'react';
 
 import { getBrands, getCategories, getPresentations, getQualities } from '@/app/services/entities';
 import { getVariantsWithProducts } from '@/app/services/products';
+import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ProductsSection } from '@/components/products/products-section';
+import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { getCurrentUser } from '@/lib/payload';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
-
-import ProductsLoading from './loading';
 
 export const metadata: Metadata = {
   title: 'Productos',
@@ -40,7 +41,7 @@ async function ProductsContent({ ownerId, canManageProducts }: { ownerId: number
   );
 }
 
-export default async function ProductsPage() {
+async function ProductsPageInner() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
@@ -54,8 +55,27 @@ export default async function ProductsPage() {
   return (
     <>
       <RealtimeRefresher channel={channel} events={['stock_adjusted', 'stock_low', 'sale_created']} />
-      <Suspense fallback={<ProductsLoading />}>
-        <ProductsContent ownerId={ownerId} canManageProducts={canManageProducts} />
+      <ProductsContent ownerId={ownerId} canManageProducts={canManageProducts} />
+    </>
+  );
+}
+
+export default async function ProductsPage() {
+  return (
+    <>
+      <PageHeader
+        title="Productos"
+        description="Gestión del catálogo de productos"
+        actions={<ColumnVisibilityDropdown tableName="products" />}
+      />
+      <Suspense
+        fallback={
+          <main className="min-w-0 flex-1 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TableSkeleton columns={7} rows={8} hasActions actionCount={2} />
+          </main>
+        }
+      >
+        <ProductsPageInner />
       </Suspense>
     </>
   );

@@ -35,6 +35,7 @@ export const StockMovements: CollectionConfig = {
       name: 'type',
       type: 'select',
       required: true,
+      index: true,
       label: 'Tipo de movimiento',
       options: [
         {

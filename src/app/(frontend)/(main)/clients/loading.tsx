@@ -11,21 +11,13 @@ export default function ClientsLoading() {
             <Skeleton className="mt-1.5 h-4 w-64" />
           </div>
           <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Skeleton className="hidden sm:block h-9 w-44 rounded-full" />
-            <Skeleton className="h-9 w-36 rounded-md" />
+            <Skeleton className="h-9 w-9 rounded-md" />
           </div>
         </div>
       </div>
 
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-full max-w-sm rounded-md" />
-          <div className="ml-auto">
-            <Skeleton className="h-9 w-9 rounded-md" />
-          </div>
-        </div>
-
-        <TableSkeleton columns={9} rows={8} hasActions />
+        <TableSkeleton columns={6} rows={8} hasActions />
       </main>
     </div>
   );
