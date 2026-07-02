@@ -1,7 +1,5 @@
 const VALID_LIMITS = [25, 50, 100] as const;
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 const SORT_VALUES = new Set<string>(['date', 'seller', 'client', 'items', 'total', 'status']);
 const SORT_DIR_VALUES = new Set<string>(['asc', 'desc']);
 const STATUS_VALUES = new Set<string>(['pending', 'approved', 'rejected', 'converted']);
@@ -17,7 +15,7 @@ export function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 export function parseOptionalDate(value: string | null): string | undefined {
-  return value && DATE_REGEX.test(value) ? value : undefined;
+  return value && value.trim().length > 0 ? value : undefined;
 }
 
 export function parseEnum<T extends string>(value: string | null, valid: Set<string>): T | undefined {
@@ -26,7 +24,6 @@ export function parseEnum<T extends string>(value: string | null, valid: Set<str
 
 export const budgetsUrlConstants = {
   VALID_LIMITS,
-  DATE_REGEX,
   SORT_VALUES,
   SORT_DIR_VALUES,
   STATUS_VALUES,

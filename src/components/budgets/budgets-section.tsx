@@ -1,6 +1,6 @@
 'use client';
 
-import { format, isPast } from 'date-fns';
+import { endOfDay, isPast, parseISO, startOfDay } from 'date-fns';
 import {
   ArrowDown,
   ArrowUp,
@@ -272,8 +272,8 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
   const handleDateRangeChange = useCallback((range: DateRangeValue | undefined) => {
     setFilters((prev) => ({
       ...prev,
-      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : undefined,
-      dateTo: range ? format(range.to, 'yyyy-MM-dd') : undefined,
+      dateFrom: range ? startOfDay(range.from).toISOString() : undefined,
+      dateTo: range ? endOfDay(range.to).toISOString() : undefined,
       page: 1,
     }));
   }, []);
@@ -292,7 +292,7 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
 
   const dateRangeValue = useMemo<DateRangeValue | undefined>(() => {
     if (!filters.dateFrom || !filters.dateTo) return undefined;
-    return { from: new Date(filters.dateFrom), to: new Date(filters.dateTo) };
+    return { from: parseISO(filters.dateFrom), to: parseISO(filters.dateTo) };
   }, [filters.dateFrom, filters.dateTo]);
 
   const showSeller = showSellerColumn && visibleColumns.includes('seller');

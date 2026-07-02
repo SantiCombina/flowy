@@ -32,8 +32,6 @@ const PAYMENT_STATUS_VALUES = new Set<string>(['pending', 'collected']);
 const PAYMENT_METHOD_VALUES = new Set<string>(['cash', 'transfer', 'check', '__credit__']);
 const DELIVERY_STATUS_VALUES = new Set<string>(['pending', 'delivered']);
 const VALID_LIMITS = [25, 50, 100] as const;
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 function parsePage(value: string | null): number {
   const parsed = parseInt(value ?? '1', 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
@@ -45,7 +43,7 @@ function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 function parseOptionalDate(value: string | null): string | undefined {
-  return value && DATE_REGEX.test(value) ? value : undefined;
+  return value && value.trim().length > 0 ? value : undefined;
 }
 
 function parseOptionalPositiveInt(value: string | null): number | undefined {
