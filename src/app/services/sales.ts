@@ -1,11 +1,12 @@
 'use server';
 
-import { revalidateTag, unstable_cache } from 'next/cache';
+import { unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
+import { pusherServer } from '@/lib/pusher-server';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
@@ -358,14 +359,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     body: `Nueva venta de ${sellerName} por ${formatCurrency(total)}`,
     metadata: { saleId: sale.id, total, sellerId },
   });
-
-  try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
-  } catch {
-    // revalidation failure should not break the operation
-  }
 
   return sale as Sale;
 }
@@ -854,17 +847,15 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
     await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true, req: { transactionID } });
 
     await payload.db.commitTransaction(transactionID);
+
+    await pusherServer.trigger(`private-owner-${saleOwnerId}`, 'sale_deleted', {
+      title: 'Venta eliminada',
+      body: `Venta #${saleId} eliminada`,
+      metadata: { saleId, userId: callerId },
+    });
   } catch (error) {
     await payload.db.rollbackTransaction(transactionID);
     throw error;
-  }
-
-  try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
-  } catch {
-    // revalidation failure should not break the operation
   }
 }
 
@@ -1045,17 +1036,15 @@ export async function editSaleFull(
     });
 
     await payload.db.commitTransaction(transactionID);
+
+    await pusherServer.trigger(`private-owner-${saleOwnerId}`, 'sale_edited', {
+      title: 'Venta editada',
+      body: `Venta #${saleId} editada`,
+      metadata: { saleId, userId: callerId },
+    });
   } catch (error) {
     await payload.db.rollbackTransaction(transactionID);
     throw error;
-  }
-
-  try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
-  } catch {
-    // revalidation failure should not break the operation
   }
 }
 

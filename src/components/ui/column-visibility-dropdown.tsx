@@ -32,6 +32,7 @@ export function ColumnVisibilityDropdown({ tableName, excludeColumns = [] }: Col
     <FilterSheet
       title="Columnas visibles"
       align="end"
+      closeOnSelect={false}
       trigger={
         <Button variant="outline" className="h-9 px-2.5 sm:px-4">
           <SlidersHorizontal className="h-4 w-4" />

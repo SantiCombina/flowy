@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Loader2, ShoppingCart, XCircle } from 'lucide-react';
@@ -23,7 +24,6 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
@@ -62,8 +62,8 @@ function StockBadge({ label, stock }: { label: string; stock: number }) {
         stock === 0
           ? 'bg-muted text-muted-foreground/50 line-through'
           : stock <= 5
-            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-            : 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400',
+            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300'
+            : 'bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300',
       )}
     >
       {label} {stock} uds.
@@ -108,7 +108,6 @@ function ItemRow({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:grid sm:grid-cols-[1fr_80px_140px_140px] sm:items-center sm:gap-3">
-      {/* Producto info */}
       <div className="min-w-0 space-y-1.5">
         <p className="text-sm font-medium leading-snug truncate">{item.variantName}</p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
@@ -123,7 +122,6 @@ function ItemRow({
         </div>
       </div>
 
-      {/* Cantidad */}
       <FormField
         control={control}
         name={`items.${index}.quantity`}
@@ -144,7 +142,6 @@ function ItemRow({
         )}
       />
 
-      {/* Origen */}
       <FormField
         control={control}
         name={`items.${index}.stockSource`}
@@ -171,7 +168,6 @@ function ItemRow({
         )}
       />
 
-      {/* Subtotal */}
       <div className="flex items-center justify-between sm:flex-col sm:items-end">
         <p className="text-xs text-muted-foreground sm:hidden">Subtotal</p>
         <div className="text-right">
@@ -200,7 +196,7 @@ interface ConvertFormValues {
 }
 
 export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvertDialogProps) {
-  const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
 
   const { executeAsync: createSale } = useAction(createSaleAction);
   const { executeAsync: updateStatus } = useAction(updateBudgetStatusAction);
@@ -208,9 +204,10 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
   const [isConverting, setIsConverting] = useState(false);
 
   const { data: fetchResult, isPending: isLoading } = useServerActionQuery({
-    queryKey: ['budget-convert-data', budgetId],
+    queryKey: queryKeys.budgets.convertData(budgetId),
     queryFn: () => getBudgetConvertDataAction({ budgetId }),
     enabled: isOpen,
+    staleTime: 5 * 60 * 1000,
   });
 
   const convertData = fetchResult?.success && fetchResult.data ? fetchResult.data : null;
@@ -250,6 +247,24 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
     const values = form.getValues();
     setServerError(null);
     setIsConverting(true);
+    onClose();
+
+    const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
+    queryClient.getQueriesData({ queryKey: ['budgets', 'list'] }).forEach(([key, d]) => {
+      previousData.push({ queryKey: key, data: d });
+    });
+
+    queryClient.setQueriesData({ queryKey: ['budgets', 'list'] }, (oldData: unknown) => {
+      if (!oldData || typeof oldData !== 'object') return oldData;
+      const data = oldData as Record<string, unknown>;
+      if (!Array.isArray(data.budgets)) return oldData;
+      return {
+        ...data,
+        budgets: (data.budgets as Array<Record<string, unknown>>).map((b) =>
+          b.id === budgetId ? { ...b, status: 'converted' } : b,
+        ),
+      };
+    });
 
     const saleItems = convertData.items.map((item, idx) => ({
       variantId: item.variantId,
@@ -268,23 +283,28 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
     });
 
     if (createResult?.serverError) {
-      setServerError(createResult.serverError);
+      for (const { queryKey, data: saved } of previousData) {
+        if (saved) queryClient.setQueryData(queryKey, saved);
+      }
+      toast.error(createResult.serverError);
       setIsConverting(false);
       return;
     }
 
     if (!createResult?.data?.success) {
-      setServerError('Error al crear la venta');
+      for (const { queryKey, data: saved } of previousData) {
+        if (saved) queryClient.setQueryData(queryKey, saved);
+      }
+      toast.error('Error al crear la venta');
       setIsConverting(false);
       return;
     }
 
     await updateStatus({ budgetId, status: 'converted' });
 
+    void queryClient.invalidateQueries({ queryKey: queryKeys.sales.list() });
     toast.success('Presupuesto convertido a venta');
-    invalidateQueries([queryKeys.budgets.list(), queryKeys.sales.list()]);
     setIsConverting(false);
-    onClose();
   };
 
   const formatTotal = (value: number) =>

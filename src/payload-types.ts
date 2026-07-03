@@ -697,7 +697,32 @@ export interface Notification {
   id: number;
   recipient: number | User;
   owner: number | User;
-  type: 'sale_created' | 'payment_registered' | 'stock_dispatched' | 'stock_returned' | 'stock_low' | 'stock_adjusted';
+  type:
+    | 'sale_created'
+    | 'sale_deleted'
+    | 'sale_edited'
+    | 'payment_registered'
+    | 'stock_dispatched'
+    | 'stock_returned'
+    | 'stock_low'
+    | 'stock_adjusted'
+    | 'budget_created'
+    | 'budget_updated'
+    | 'budget_deleted'
+    | 'budget_converted'
+    | 'product_created'
+    | 'product_updated'
+    | 'product_deleted'
+    | 'variant_created'
+    | 'variant_updated'
+    | 'variant_deleted'
+    | 'seller_invited'
+    | 'seller_updated'
+    | 'seller_deleted'
+    | 'commission_paid'
+    | 'client_created'
+    | 'client_updated'
+    | 'client_deleted';
   title: string;
   body: string;
   metadata?:

@@ -1,8 +1,8 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
+import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Budget } from '@/payload-types';
@@ -71,10 +71,6 @@ export async function createBudget(sellerId: number, ownerId: number, data: Budg
       });
     } catch {}
   }
-
-  try {
-    revalidateTag('budgets');
-  } catch {}
 
   return budget as Budget;
 }
@@ -301,14 +297,16 @@ export async function updateBudgetStatus(
     data: { status },
     overrideAccess: true,
   });
-
-  try {
-    revalidateTag('budgets');
-  } catch {}
 }
 
-export async function updateBudget(budgetId: number, data: BudgetValues): Promise<void> {
+export async function updateBudget(budgetId: number, data: BudgetValues, performerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const budget = await payload.findByID({
+    collection: 'budgets',
+    id: budgetId,
+    overrideAccess: true,
+  });
 
   const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
 
@@ -341,13 +339,30 @@ export async function updateBudget(budgetId: number, data: BudgetValues): Promis
     } catch {}
   }
 
+  const ownerId = typeof budget.owner === 'object' ? budget.owner.id : budget.owner;
+  const sellerId = typeof budget.seller === 'object' ? budget.seller.id : budget.seller;
+
   try {
-    revalidateTag('budgets');
+    await notifyEvent({
+      recipientId: ownerId,
+      ownerId,
+      sellerId,
+      type: 'budget_updated',
+      title: 'Presupuesto editado',
+      body: 'Un presupuesto fue editado',
+      metadata: { budgetId, sellerId, userId: performerId },
+    }).catch(() => undefined);
   } catch {}
 }
 
-export async function deleteBudget(budgetId: number): Promise<void> {
+export async function deleteBudget(budgetId: number, performerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const budget = await payload.findByID({
+    collection: 'budgets',
+    id: budgetId,
+    overrideAccess: true,
+  });
 
   await payload.delete({
     collection: 'budgets',
@@ -355,8 +370,19 @@ export async function deleteBudget(budgetId: number): Promise<void> {
     overrideAccess: true,
   });
 
+  const ownerId = typeof budget.owner === 'object' ? budget.owner.id : budget.owner;
+  const sellerId = typeof budget.seller === 'object' ? budget.seller.id : budget.seller;
+
   try {
-    revalidateTag('budgets');
+    await notifyEvent({
+      recipientId: ownerId,
+      ownerId,
+      sellerId,
+      type: 'budget_deleted',
+      title: 'Presupuesto eliminado',
+      body: 'Un presupuesto fue eliminado',
+      metadata: { budgetId, sellerId, userId: performerId },
+    }).catch(() => undefined);
   } catch {}
 }
 

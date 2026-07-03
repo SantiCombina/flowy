@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ProfileSection } from '@/components/profile/profile-section';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -10,17 +11,25 @@ export const metadata: Metadata = {
 export default async function ProfilePage() {
   const user = await getCurrentUser();
 
+  if (!user) return null;
+
+  const channel =
+    user.role === 'owner' || user.role === 'admin' ? `private-owner-${user.id}` : `private-seller-${user.id}`;
+
   return (
-    <ProfileSection
-      phone={user?.phone ?? null}
-      dni={user?.dni ?? null}
-      cuitCuil={user?.cuitCuil ?? null}
-      cbu={user?.cbu ?? null}
-      businessName={user?.businessName ?? null}
-      businessCuit={user?.businessCuit ?? null}
-      businessPhone={user?.businessPhone ?? null}
-      businessAddress={user?.businessAddress ?? null}
-      ivaCondition={user?.ivaCondition ?? null}
-    />
+    <>
+      <RealtimeRefresher channel={channel} events={['business_updated', 'user_updated']} userId={user.id} />
+      <ProfileSection
+        phone={user.phone ?? null}
+        dni={user.dni ?? null}
+        cuitCuil={user.cuitCuil ?? null}
+        cbu={user.cbu ?? null}
+        businessName={user.businessName ?? null}
+        businessCuit={user.businessCuit ?? null}
+        businessPhone={user.businessPhone ?? null}
+        businessAddress={user.businessAddress ?? null}
+        ivaCondition={user.ivaCondition ?? null}
+      />
+    </>
   );
 }

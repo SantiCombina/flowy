@@ -1,16 +1,19 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
+import type { BudgetRow } from '@/app/services/budgets';
+import type { SaleClientOption, SaleOptions, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -33,27 +36,26 @@ import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import type { Budget, Client } from '@/payload-types';
 import { budgetSchema, type BudgetValues } from '@/schemas/budgets/budget-schema';
+import type { ClientValues } from '@/schemas/clients/client-schema';
 
-import { getClientsForSaleAction } from '../clients/actions';
+import { createClientAction, getClientsForSaleAction } from '../clients/actions';
 
-import { createBudgetAction, getBudgetByIdAction, getBudgetOptionsAction, updateBudgetAction } from './actions';
+import { createBudgetAction, getBudgetByIdAction, updateBudgetAction } from './actions';
+
+const generateTempId = () => -Date.now();
 
 interface NewBudgetDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  budgetOptions?: SaleOptions;
   editBudgetId?: number;
 }
 
-function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: NewBudgetDialogProps) {
+function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, budgetOptions, editBudgetId }: NewBudgetDialogProps) {
   const isEditing = editBudgetId !== undefined;
-
-  const { data: options, isPending: isLoadingOptions } = useServerActionQuery({
-    queryKey: queryKeys.budgets.options(),
-    queryFn: () => getBudgetOptionsAction(),
-    enabled: isOpen,
-    staleTime: 60_000,
-  });
+  const queryClient = useQueryClient();
+  const user = useUser();
 
   const { executeAsync: createBudget, isExecuting: isCreating } = useAction(createBudgetAction);
   const { executeAsync: updateBudget, isExecuting: isUpdating } = useAction(updateBudgetAction);
@@ -74,8 +76,8 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
       saveClientPhone: false,
     }) as BudgetValues;
 
-  const variants: SaleVariantOption[] = options?.variants ?? [];
-  const localClients: SaleClientOption[] = clientsOverride ?? options?.clients ?? [];
+  const variants: SaleVariantOption[] = budgetOptions?.variants ?? [];
+  const localClients: SaleClientOption[] = clientsOverride ?? budgetOptions?.clients ?? [];
 
   const form = useForm<BudgetValues>({
     resolver: zodResolver(budgetSchema),
@@ -139,50 +141,172 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
     form.setValue('saveClientPhone', false);
   };
 
-  const handleNewClientSuccess = async (newClient: Client) => {
-    const result = await getClientsForSaleAction();
-    if (result?.data?.success && result.data.clients) {
-      setClientsOverride(result.data.clients);
-    } else {
-      setClientsOverride([
-        ...localClients,
-        { id: newClient.id, name: newClient.name, phone: newClient.phone ?? undefined },
-      ]);
+  const handleNewClientSuccess = async (data: ClientValues) => {
+    const result = await createClientAction(data);
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
     }
-    form.setValue('clientId', newClient.id);
-    if (newClient.phone) {
-      form.setValue('clientPhone', newClient.phone);
+
+    if (result?.data?.success && result.data.client) {
+      const newClient = result.data.client as Client;
+
+      const refreshResult = await getClientsForSaleAction();
+      if (refreshResult?.data?.success && refreshResult.data.clients) {
+        setClientsOverride(refreshResult.data.clients);
+      } else {
+        setClientsOverride([
+          ...localClients,
+          { id: newClient.id, name: newClient.name, phone: newClient.phone ?? undefined },
+        ]);
+      }
+
+      form.setValue('clientId', newClient.id);
+      if (newClient.phone) {
+        form.setValue('clientPhone', newClient.phone);
+      }
     }
+
     setIsClientModalOpen(false);
   };
 
-  const onSubmit = useCallback(
-    async (data: BudgetValues) => {
-      setServerError(null);
+  const onSubmit = async (data: BudgetValues) => {
+    setServerError(null);
 
-      const hasPhoneToSave = data.saveClientPhone && data.clientPhone && data.clientId;
-      const submitData = {
-        ...data,
-        saveClientPhone: hasPhoneToSave ? true : undefined,
-      };
+    const hasPhoneToSave = data.saveClientPhone && data.clientPhone && data.clientId;
+    const submitData = {
+      ...data,
+      saveClientPhone: hasPhoneToSave ? true : undefined,
+    };
 
-      const result = editBudgetId
-        ? await updateBudget({ budgetId: editBudgetId, data: submitData })
-        : await createBudget(submitData);
+    if (editBudgetId) {
+      const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+      onClose();
+
+      const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
+      queryClient.getQueriesData({ queryKey: ['budgets', 'list'] }).forEach(([key, d]) => {
+        previousData.push({ queryKey: key, data: d });
+      });
+
+      queryClient.setQueriesData({ queryKey: ['budgets', 'list'] }, (oldData: unknown) => {
+        if (!oldData || typeof oldData !== 'object') return oldData;
+        const listData = oldData as Record<string, unknown>;
+        if (!Array.isArray(listData.budgets)) return oldData;
+        return {
+          ...listData,
+          budgets: listData.budgets.map((b: Record<string, unknown>) =>
+            b.id === editBudgetId
+              ? {
+                  ...b,
+                  clientId: data.clientId,
+                  clientName: budgetOptions?.clients.find((c) => c.id === data.clientId)?.name,
+                  clientPhone: data.clientPhone,
+                  itemCount: data.items.length,
+                  total,
+                  validUntil: data.validUntil,
+                  notes: data.notes,
+                  items: data.items.map((item) => ({
+                    variantId: item.variantId,
+                    variantName: budgetOptions?.variants.find((v) => v.variantId === item.variantId)?.productName ?? '',
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    subtotal: item.quantity * item.unitPrice,
+                  })),
+                }
+              : b,
+          ),
+        };
+      });
+
+      const result = await updateBudget({ budgetId: editBudgetId, data: submitData });
 
       if (result?.serverError) {
-        setServerError(result.serverError);
+        for (const { queryKey, data: saved } of previousData) {
+          if (saved) queryClient.setQueryData(queryKey, saved);
+        }
+        toast.error(result.serverError);
         return;
       }
 
       if (result?.data?.success) {
-        toast.success(editBudgetId ? 'Presupuesto actualizado' : 'Presupuesto creado');
+        toast.success('Presupuesto actualizado');
         onSuccess();
-        onClose();
       }
-    },
-    [editBudgetId, createBudget, updateBudget, onSuccess, onClose],
-  );
+    } else {
+      const tempId = generateTempId();
+      const now = new Date().toISOString();
+      const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+      const placeholderRow: BudgetRow = {
+        id: tempId,
+        date: now,
+        sellerId: user.id,
+        sellerName: user.name,
+        clientId: data.clientId,
+        clientName: budgetOptions?.clients.find((c) => c.id === data.clientId)?.name,
+        clientPhone: data.clientPhone,
+        itemCount: data.items.length,
+        total,
+        status: 'pending',
+        validUntil: data.validUntil,
+        notes: data.notes,
+        items: data.items.map((item) => ({
+          variantId: item.variantId,
+          variantName: budgetOptions?.variants.find((v) => v.variantId === item.variantId)?.productName ?? '',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.quantity * item.unitPrice,
+        })),
+      };
+
+      const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
+      queryClient.getQueriesData({ queryKey: ['budgets', 'list'] }).forEach(([key, d]) => {
+        previousData.push({ queryKey: key, data: d });
+      });
+
+      queryClient.setQueriesData({ queryKey: ['budgets', 'list'] }, (oldData: unknown) => {
+        if (!oldData || typeof oldData !== 'object') return oldData;
+        const listData = oldData as Record<string, unknown>;
+        if (!Array.isArray(listData.budgets)) return oldData;
+        return {
+          ...listData,
+          budgets: [placeholderRow, ...listData.budgets],
+          totalCount: ((listData.totalCount as number) ?? 0) + 1,
+        };
+      });
+
+      onClose();
+
+      const result = await createBudget(submitData);
+
+      if (result?.serverError) {
+        for (const { queryKey, data: saved } of previousData) {
+          if (saved) queryClient.setQueryData(queryKey, saved);
+        }
+        toast.error(result.serverError);
+        return;
+      }
+
+      if (result?.data?.success) {
+        queryClient.setQueriesData({ queryKey: ['budgets', 'list'] }, (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object') return oldData;
+          const listData = oldData as Record<string, unknown>;
+          if (!Array.isArray(listData.budgets)) return oldData;
+          return {
+            ...listData,
+            budgets: (listData.budgets as Array<Record<string, unknown>>).map((b) =>
+              b.id === tempId ? { ...b, id: result.data!.budgetId, date: result.data!.date } : b,
+            ),
+          };
+        });
+
+        toast.success('Presupuesto creado');
+        onSuccess();
+      }
+    }
+  };
 
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -201,11 +325,9 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
           </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
-        {isLoadingOptions || (isEditing && isLoadingBudget) ? (
+        {isEditing && isLoadingBudget ? (
           <ResponsiveModalBody className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">
-              {isEditing && isLoadingBudget ? 'Cargando presupuesto…' : 'Cargando productos…'}
-            </p>
+            <p className="text-sm text-muted-foreground">Cargando presupuesto…</p>
           </ResponsiveModalBody>
         ) : (
           <Form {...form}>
@@ -509,7 +631,7 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
       <ClientModal
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
-        onSuccess={handleNewClientSuccess}
+        onCreate={handleNewClientSuccess}
       />
     </>
   );

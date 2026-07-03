@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -30,8 +31,10 @@ import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
 
 import { deleteProductAction, getProductDemandSummaryAction } from './actions';
-import { StockMovementModal } from './modals/stock-movement-modal';
 
+const StockMovementModal = dynamic(() => import('./modals/stock-movement-modal').then((m) => m.StockMovementModal), {
+  ssr: false,
+});
 const ProductDemandSheet = dynamic(() => import('./modals/product-demand-sheet').then((m) => m.ProductDemandSheet), {
   ssr: false,
 });
@@ -97,21 +100,47 @@ function ProductsTableComponent({
 
   const demandMap = demandData?.success ? demandData.demand : undefined;
 
+  const queryClient = useQueryClient();
+
   const handleDelete = async () => {
     if (!productToDelete) return;
     const productId = productToDelete.id;
     setProductToDelete(null);
 
+    queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
+      if (!oldData || typeof oldData !== 'object') return oldData;
+      if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
+      const data = oldData as { docs: Array<Record<string, unknown>>; totalDocs: number; totalPages: number };
+
+      const filteredDocs = data.docs.filter((v) => {
+        const variant = v as { product: { id: number } };
+        return variant.product?.id !== productId;
+      });
+
+      if (filteredDocs.length === data.docs.length) return oldData;
+
+      const removedCount = data.docs.length - filteredDocs.length;
+      const newTotalDocs = data.totalDocs - removedCount;
+      const approxLimit = data.totalPages > 0 ? Math.ceil(data.totalDocs / data.totalPages) : 50;
+      const newTotalPages = Math.ceil(newTotalDocs / approxLimit) || 1;
+
+      return {
+        ...data,
+        docs: filteredDocs,
+        totalDocs: newTotalDocs,
+        totalPages: newTotalPages,
+      };
+    });
+
     const result = await deleteProductAction({ id: productId });
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
+    if (result?.serverError || !result?.data?.success) {
+      invalidateQueries([['products']]);
+      toast.error(result?.serverError ?? 'Error al eliminar el producto');
       return;
     }
 
-    if (result?.data?.success) {
-      toast.warning('Producto eliminado');
-    }
+    toast.warning('Producto eliminado');
   };
 
   const shouldShowColumn = useCallback(
@@ -130,18 +159,18 @@ function ProductsTableComponent({
           const product = variant.product;
           const image = typeof product.image === 'object' && product.image?.url ? product.image.url : null;
           return (
-            <div className="flex items-center justify-center">
+            <div className="flex shrink-0 items-center justify-center">
               {image ? (
                 <Image
                   src={image}
                   alt={product.name}
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded object-cover"
+                  className="h-10 w-10 shrink-0 rounded object-cover"
                   sizes="40px"
                 />
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded bg-muted">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-muted">
                   <ImageOff className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPhoneInput } from '@/lib/phone';
+import { queryKeys } from '@/lib/query-keys';
 import { updateBusinessDataSchema, type UpdateBusinessDataValues } from '@/schemas/profile/update-business-data-schema';
 
 import { updateBusinessDataAction } from './actions';
@@ -34,7 +36,8 @@ export function UpdateBusinessDataForm({
   businessAddress,
   ivaCondition,
 }: UpdateBusinessDataFormProps) {
-  const { executeAsync, isExecuting } = useAction(updateBusinessDataAction);
+  const queryClient = useQueryClient();
+  const { executeAsync } = useAction(updateBusinessDataAction);
 
   const form = useForm<UpdateBusinessDataValues>({
     resolver: zodResolver(updateBusinessDataSchema),
@@ -47,9 +50,28 @@ export function UpdateBusinessDataForm({
   });
 
   async function onSubmit(data: UpdateBusinessDataValues) {
+    const userKey = queryKeys.user.current();
+    const previousData = queryClient.getQueryData(userKey);
+
+    queryClient.setQueryData(userKey, (oldData: unknown) => {
+      if (!oldData || typeof oldData !== 'object') return oldData;
+      return {
+        ...(oldData as Record<string, unknown>),
+        businessCuit: data.businessCuit || null,
+        businessPhone: data.businessPhone || null,
+        businessAddress: data.businessAddress || null,
+        ivaCondition: data.ivaCondition ?? null,
+      };
+    });
+
     const result = await executeAsync(data);
 
     if (result?.serverError) {
+      if (previousData !== undefined) {
+        queryClient.setQueryData(userKey, previousData);
+      } else {
+        queryClient.removeQueries({ queryKey: userKey });
+      }
       toast.error(result.serverError);
       return;
     }
@@ -138,8 +160,8 @@ export function UpdateBusinessDataForm({
           )}
         />
 
-        <Button type="submit" disabled={isExecuting} className="ml-auto block">
-          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+        <Button type="submit" className="ml-auto block">
+          Guardar cambios
         </Button>
       </form>
     </Form>

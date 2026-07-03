@@ -4,10 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -33,8 +31,6 @@ import {
   type CollectSaleValues,
 } from '@/schemas/sales/collect-sale-schema';
 
-import { markSaleAsCollectedAction, markSaleAsCollectedBySellerAction } from './actions';
-
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
   transfer: 'Transferencia',
@@ -44,7 +40,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 interface CollectSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onCollect: (data: { saleId: number; amount: number; paymentMethod?: string; checkDueDate?: string }) => void;
   saleId: number;
   total: number;
   amountPaid: number;
@@ -54,15 +50,12 @@ interface CollectSaleModalProps {
 export function CollectSaleModal({
   isOpen,
   onClose,
-  onSuccess,
+  onCollect,
   saleId,
   total,
   amountPaid,
   isSeller,
 }: CollectSaleModalProps) {
-  const { executeAsync: executeOwner, isExecuting: isExecutingOwner } = useAction(markSaleAsCollectedAction);
-  const { executeAsync: executeSeller, isExecuting: isExecutingSeller } = useAction(markSaleAsCollectedBySellerAction);
-  const isExecuting = isExecutingOwner || isExecutingSeller;
   const remaining = Number((total - amountPaid).toFixed(2));
 
   const sellerForm = useForm<CollectSaleBySellerValues>({
@@ -94,36 +87,17 @@ export function CollectSaleModal({
     }
   }, [isOpen, saleId, remaining]);
 
-  const onSubmitOwner = async (data: CollectSaleValues) => {
-    const result = await executeOwner(data);
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success) {
-      const newAmountPaid = amountPaid + data.amount;
-      const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
-      toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess();
-    }
+  const onSubmitOwner = (data: CollectSaleValues) => {
+    onCollect({ saleId, amount: data.amount });
   };
 
-  const onSubmitSeller = async (data: CollectSaleBySellerValues) => {
-    const result = await executeSeller(data);
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success) {
-      const newAmountPaid = amountPaid + data.amount;
-      const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
-      toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess();
-    }
+  const onSubmitSeller = (data: CollectSaleBySellerValues) => {
+    onCollect({
+      saleId,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      checkDueDate: data.checkDueDate,
+    });
   };
 
   const summaryBlock = (
@@ -272,11 +246,11 @@ export function CollectSaleModal({
             </ResponsiveModalBody>
 
             <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isExecuting || isOverRemaining}>
-                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+              <Button type="submit" disabled={isOverRemaining}>
+                Registrar cobro
               </Button>
             </ResponsiveModalFooter>
           </form>
@@ -303,11 +277,11 @@ export function CollectSaleModal({
             </ResponsiveModalBody>
 
             <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isExecuting || isOverRemaining}>
-                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+              <Button type="submit" disabled={isOverRemaining}>
+                Registrar cobro
               </Button>
             </ResponsiveModalFooter>
           </form>

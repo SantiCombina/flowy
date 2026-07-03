@@ -19,9 +19,17 @@ export const getNotificationsAction = actionClient.action(async () => {
   if (!user) throw new Error('No autorizado');
 
   const notifications = await getNotifications(user.id);
+
+  return { success: true, notifications };
+});
+
+export const getUnreadCountAction = actionClient.action(async () => {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('No autorizado');
+
   const unreadCount = await getUnreadCount(user.id);
 
-  return { success: true, notifications, unreadCount };
+  return { success: true, unreadCount };
 });
 
 export const markReadAction = actionClient

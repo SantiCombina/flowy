@@ -31,6 +31,7 @@ export const queryKeys = {
     },
     options: () => ['budgetOptions'] as const,
     detail: (id: number | undefined) => ['budgets', 'detail', id] as const,
+    convertData: (id: number) => ['budgets', 'convert', id] as const,
   },
   sellers: {
     list: () => ['sellers'] as const,
@@ -52,6 +53,7 @@ export const queryKeys = {
   },
   notifications: {
     list: () => ['notifications'] as const,
+    unreadCount: () => ['notifications', 'unreadCount'] as const,
   },
   dashboard: {
     owner: (period: string) => ['dashboard', { kind: 'owner', period }] as const,

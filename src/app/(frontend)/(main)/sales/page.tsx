@@ -2,7 +2,9 @@ import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getPaginatedSales } from '@/app/services/sales';
+import { getPaginatedSales, getSaleOptions } from '@/app/services/sales';
+import type { SaleOptions } from '@/app/services/sales';
+import { getSellers } from '@/app/services/users';
 import { getZones } from '@/app/services/zones';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
@@ -128,9 +130,26 @@ async function SalesDataFetcher({
     ),
   ]);
 
+  const initialSaleOptions: Record<number, SaleOptions> = {};
+  if (isSeller) {
+    initialSaleOptions[user.id] = await getSaleOptions(user.id, ownerId);
+  } else {
+    const sellers = await getSellers(ownerId);
+    const results = await Promise.allSettled(sellers.map((s) => getSaleOptions(s.id, ownerId)));
+    sellers.forEach((s, i) => {
+      if (results[i].status === 'fulfilled') {
+        initialSaleOptions[s.id] = (results[i] as PromiseFulfilledResult<SaleOptions>).value;
+      }
+    });
+  }
+
   return (
     <>
-      <RealtimeRefresher channel={channel} events={['sale_created', 'payment_registered']} />
+      <RealtimeRefresher
+        channel={channel}
+        events={['sale_created', 'sale_deleted', 'sale_edited', 'payment_registered']}
+        userId={user.id}
+      />
       <SalesSection
         initialFilters={initialFilters}
         initialResult={initialResult}
@@ -140,6 +159,7 @@ async function SalesDataFetcher({
         canManage
         isSeller={isSeller}
         initialStatusFilter={paymentStatus}
+        initialSaleOptions={initialSaleOptions}
       />
     </>
   );

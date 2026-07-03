@@ -163,7 +163,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
         toast.success('Preferencia actualizada');
       }
     } catch {
-      // silently handled by serverError check above
+      return;
     }
   }, []);
 

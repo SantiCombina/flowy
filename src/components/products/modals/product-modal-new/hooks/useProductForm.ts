@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { convertToWebP } from '@/lib/image-utils';
 import { queryKeys } from '@/lib/query-keys';
@@ -47,21 +47,44 @@ async function uploadImage(file: File, altText: string): Promise<number> {
   return data.doc.id;
 }
 
+const EMPTY_FORM: ProductFormData = {
+  name: '',
+  description: '',
+  brandId: '',
+  categoryId: '',
+  qualityId: '',
+  isActive: true,
+  variants: [
+    {
+      presentationId: '',
+      code: '',
+      stock: 0,
+      minimumStock: 0,
+      costPrice: 0,
+      profitMargin: 0,
+    },
+  ],
+};
+
+const generateTempId = () => -Date.now();
+
 export function useProductForm({ productId, isOpen, onSuccess, onClose }: UseProductFormProps) {
   const isEditing = !!productId;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useServerActionQuery({
     queryKey: queryKeys.products.detail(productId),
     queryFn: () => getProductByIdAction({ id: productId! }),
     enabled: isEditing && !!productId && isOpen,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000,
   });
   const [variantsToDelete, setVariantsToDelete] = useState<number[]>([]);
   const [currentImageId, setCurrentImageId] = useState<number | undefined>(undefined);
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined);
   const [previousImageId, setPreviousImageId] = useState<number | undefined>(undefined);
   const [pendingImageFile, setPendingImageFile] = useState<File | undefined>(undefined);
+
+  const prevProductIdRef = useRef(productId);
 
   const {
     register,
@@ -73,24 +96,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
     watch,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      brandId: '',
-      categoryId: '',
-      qualityId: '',
-      isActive: true,
-      variants: [
-        {
-          presentationId: '',
-          code: '',
-          stock: 0,
-          minimumStock: 0,
-          costPrice: 0,
-          profitMargin: 0,
-        },
-      ],
-    },
+    defaultValues: EMPTY_FORM,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -104,6 +110,17 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
     setPreviousImageId(undefined);
     setPendingImageFile(undefined);
   };
+
+  useEffect(() => {
+    const prev = prevProductIdRef.current;
+    prevProductIdRef.current = productId;
+
+    if (prev !== undefined && productId === undefined) {
+      reset(EMPTY_FORM);
+      resetImageState();
+      setVariantsToDelete([]);
+    }
+  }, [productId, reset]);
 
   useEffect(() => {
     if (!isEditing || !productId || !isOpen || !data?.success) return;
@@ -144,9 +161,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   }, [isEditing, productId, isOpen, data, reset]);
 
   const handleClose = () => {
-    reset();
-    setVariantsToDelete([]);
-    resetImageState();
     onClose();
   };
 
@@ -179,6 +193,79 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
 
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true);
+
+    if (isEditing && productId) {
+      queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
+        if (!oldData || typeof oldData !== 'object') return oldData;
+        if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
+        return {
+          ...oldData,
+          docs: (oldData as { docs: Array<Record<string, unknown>> }).docs.map((cacheVariant) => {
+            if ((cacheVariant.product as Record<string, unknown>)?.id !== productId) return cacheVariant;
+
+            const formVariant = data.variants.find((v) => v.id === cacheVariant.id);
+            return {
+              ...cacheVariant,
+              product: {
+                ...(cacheVariant.product as Record<string, unknown>),
+                name: data.name,
+                isActive: data.isActive,
+              },
+              ...(formVariant
+                ? {
+                    code: formVariant.code ?? '',
+                    stock: formVariant.stock,
+                    minimumStock: formVariant.minimumStock,
+                    costPrice: formVariant.costPrice,
+                    profitMargin: formVariant.profitMargin,
+                  }
+                : {}),
+            };
+          }),
+        };
+      });
+    }
+
+    if (!isEditing) {
+      const tempProductId = generateTempId();
+      const placeholderVariants = data.variants.map((v, i) => ({
+        id: tempProductId - i - 1,
+        code: v.code || '',
+        stock: v.stock || 0,
+        minimumStock: v.minimumStock || 0,
+        costPrice: v.costPrice || 0,
+        profitMargin: v.profitMargin || 0,
+        product: {
+          id: tempProductId,
+          name: data.name,
+          isActive: data.isActive,
+          image: null,
+          brand: null,
+          category: null,
+          quality: null,
+        },
+        presentation: {
+          id: v.presentationId ? Number(v.presentationId) : 0,
+          label: '',
+          amount: 0,
+          unit: '',
+        },
+      }));
+
+      queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
+        if (!oldData || typeof oldData !== 'object') return oldData;
+        if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
+        const data = oldData as { docs: unknown[]; totalDocs: number };
+        return {
+          ...data,
+          docs: [...data.docs, ...placeholderVariants],
+          totalDocs: data.totalDocs + placeholderVariants.length,
+        };
+      });
+    }
+
+    handleClose();
+
     try {
       let resolvedImageId = currentImageId;
 
@@ -213,31 +300,29 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           await deleteMediaAction({ id: previousImageId });
         }
 
-        for (const variantId of variantsToDelete) {
-          const deleteResult = await deleteVariantAction({ id: variantId });
-          if (deleteResult?.serverError) {
-            toast.error(`Error al eliminar variante: ${deleteResult.serverError}`);
-            return;
-          }
+        const deleteResults = await Promise.all(
+          variantsToDelete.map((variantId) => deleteVariantAction({ id: variantId })),
+        );
+        const deleteError = deleteResults.find((r) => r?.serverError);
+        if (deleteError) {
+          toast.error(`Error al eliminar variante: ${deleteError.serverError}`);
+          return;
         }
 
-        for (const variant of data.variants) {
-          if (variant.id) {
-            const updateResult = await updateVariantAction({
-              id: variant.id,
-              code: variant.code || '',
-              ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
-              stock: variant.stock,
-              minimumStock: variant.minimumStock,
-              costPrice: variant.costPrice,
-              profitMargin: variant.profitMargin,
-            });
-            if (updateResult?.serverError) {
-              toast.error(`Error al actualizar variante: ${updateResult.serverError}`);
-              return;
+        const variantResults = await Promise.all(
+          data.variants.map((variant) => {
+            if (variant.id) {
+              return updateVariantAction({
+                id: variant.id,
+                code: variant.code || '',
+                ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
+                stock: variant.stock,
+                minimumStock: variant.minimumStock,
+                costPrice: variant.costPrice,
+                profitMargin: variant.profitMargin,
+              });
             }
-          } else {
-            const createResult = await createVariantAction({
+            return createVariantAction({
               code: variant.code || '',
               product: productId,
               ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
@@ -246,14 +331,56 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
               costPrice: variant.costPrice,
               profitMargin: variant.profitMargin,
             });
-            if (createResult?.serverError) {
-              toast.error(`Error al crear variante: ${createResult.serverError}`);
-              return;
-            }
-          }
+          }),
+        );
+        const variantError = variantResults.find((r) => r?.serverError);
+        if (variantError) {
+          toast.error(`Error al guardar variante: ${variantError.serverError}`);
+          return;
         }
 
-        toast.success('Producto actualizado exitosamente');
+        queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object') return oldData;
+          if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
+          return {
+            ...oldData,
+            docs: (oldData as { docs: Array<Record<string, unknown>> }).docs.map((cacheVariant) => {
+              if ((cacheVariant.product as Record<string, unknown>)?.id !== productId) return cacheVariant;
+
+              const formVariant = data.variants.find((v) => v.id === cacheVariant.id);
+
+              const serverVariant = formVariant?.id
+                ? variantResults.find((r) => r.data?.variant?.id === formVariant.id)?.data?.variant
+                : undefined;
+
+              return {
+                ...cacheVariant,
+                product: {
+                  ...(cacheVariant.product as Record<string, unknown>),
+                  name: data.name,
+                  isActive: data.isActive,
+                },
+                ...(serverVariant
+                  ? {
+                      code: serverVariant.code,
+                      stock: serverVariant.stock,
+                      minimumStock: serverVariant.minimumStock,
+                      costPrice: serverVariant.costPrice,
+                      profitMargin: serverVariant.profitMargin,
+                    }
+                  : formVariant
+                    ? {
+                        code: formVariant.code ?? '',
+                        stock: formVariant.stock,
+                        minimumStock: formVariant.minimumStock,
+                        costPrice: formVariant.costPrice,
+                        profitMargin: formVariant.profitMargin,
+                      }
+                    : {}),
+              };
+            }),
+          };
+        });
       } else {
         const productResult = await createProductAction({
           name: data.name,
@@ -277,27 +404,56 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
 
         const newProductId = productResult.data.product.id;
 
-        for (const variant of data.variants) {
-          const createResult = await createVariantAction({
-            code: variant.code || '',
-            product: newProductId,
-            ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
-            stock: variant.stock,
-            minimumStock: variant.minimumStock,
-            costPrice: variant.costPrice,
-            profitMargin: variant.profitMargin,
-          });
-          if (createResult?.serverError) {
-            toast.error(`Error al crear variante: ${createResult.serverError}`);
-            return;
-          }
+        const createResults = await Promise.all(
+          data.variants.map((variant) =>
+            createVariantAction({
+              code: variant.code || '',
+              product: newProductId,
+              ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
+              stock: variant.stock,
+              minimumStock: variant.minimumStock,
+              costPrice: variant.costPrice,
+              profitMargin: variant.profitMargin,
+            }),
+          ),
+        );
+        const createError = createResults.find((r) => r?.serverError);
+        if (createError) {
+          toast.error(`Error al crear variante: ${createError.serverError}`);
+          return;
         }
 
-        toast.success('Producto creado exitosamente');
-      }
+        const realVariants = createResults.map((r) => r.data!.variant);
 
-      invalidateQueries([['products']]);
-      handleClose();
+        queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
+          if (!oldData || typeof oldData !== 'object') return oldData;
+          if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
+          const existing = oldData as { docs: Array<Record<string, unknown>> };
+
+          let replacedCount = 0;
+          const newDocs = existing.docs.map((v) => {
+            const variant = v as { product: { id: number; name: string } };
+            if (
+              typeof variant.product?.id === 'number' &&
+              variant.product.id < 0 &&
+              variant.product.name === data.name &&
+              replacedCount < realVariants.length
+            ) {
+              const real = realVariants[replacedCount];
+              replacedCount++;
+              return real;
+            }
+            return v;
+          });
+
+          if (replacedCount === 0) return oldData;
+
+          return { ...existing, docs: newDocs };
+        });
+      }
+      reset(EMPTY_FORM);
+      setVariantsToDelete([]);
+      resetImageState();
       onSuccess();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar el producto');

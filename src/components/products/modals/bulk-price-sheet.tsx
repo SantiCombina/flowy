@@ -1,30 +1,26 @@
 'use client';
 
-import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
-import { bulkUpdateVariantPricesAction } from '../actions';
-
-interface BulkPriceSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  variants: PopulatedProductVariant[];
-  onSuccess: () => void;
-}
-
-interface PriceRow {
+export interface PriceRow {
   variantId: number;
   costPrice: number;
   profitMargin: number;
 }
 
-export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPriceSheetProps) {
+interface BulkPriceSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  variants: PopulatedProductVariant[];
+  onSubmit: (rows: PriceRow[]) => void;
+}
+
+export function BulkPriceSheet({ isOpen, onClose, variants, onSubmit }: BulkPriceSheetProps) {
   const [rows, setRows] = useState<PriceRow[]>(() =>
     variants.map((v) => ({
       variantId: v.id,
@@ -33,8 +29,6 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
     })),
   );
   const [percentage, setPercentage] = useState('');
-
-  const { executeAsync, isExecuting } = useAction(bulkUpdateVariantPricesAction);
 
   const applyPercentage = () => {
     const pct = parseFloat(percentage);
@@ -51,23 +45,8 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
     setRows((prev) => prev.map((r) => (r.variantId === variantId ? { ...r, costPrice: value } : r)));
   };
 
-  const handleSave = async () => {
-    const result = await executeAsync({
-      updates: rows.map((r) => ({ variantId: r.variantId, costPrice: r.costPrice })),
-    });
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success) {
-      toast.success(`${result.data.updated} variantes actualizadas`);
-      onSuccess();
-      onClose();
-    } else {
-      toast.error('No se pudieron actualizar los precios');
-    }
+  const handleSave = () => {
+    onSubmit(rows);
   };
 
   const getRow = (variantId: number): PriceRow | undefined => rows.find((r) => r.variantId === variantId);
@@ -94,7 +73,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
               />
               <span className="absolute right-2.5 top-2 text-sm text-muted-foreground">%</span>
             </div>
-            <Button variant="secondary" onClick={applyPercentage} disabled={!percentage || isExecuting}>
+            <Button variant="secondary" onClick={applyPercentage} disabled={!percentage}>
               Aplicar a todas
             </Button>
           </div>
@@ -130,7 +109,6 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
                         className="h-8 w-28"
                         step="0.01"
                         min="0"
-                        disabled={isExecuting}
                       />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{profitMargin}%</td>
@@ -151,11 +129,11 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
         </div>
 
         <div className="flex justify-end gap-2 border-t px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={isExecuting}>
+          <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={isExecuting || rows.length === 0}>
-            {isExecuting ? 'Guardando...' : `Guardar ${variants.length} variantes`}
+          <Button onClick={handleSave} disabled={rows.length === 0}>
+            {`Guardar ${variants.length} variantes`}
           </Button>
         </div>
       </SheetContent>

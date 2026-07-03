@@ -26,9 +26,10 @@ interface FilterSheetProps {
   items: FilterItem[];
   title: string;
   align?: 'start' | 'end';
+  closeOnSelect?: boolean;
 }
 
-export function FilterSheet({ trigger, items, title, align = 'end' }: FilterSheetProps) {
+export function FilterSheet({ trigger, items, title, align = 'end', closeOnSelect = true }: FilterSheetProps) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
@@ -90,7 +91,14 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align={align}>
         {items.map((item) => (
-          <DropdownMenuCheckboxItem key={item.key} checked={item.checked} onCheckedChange={item.onToggle}>
+          <DropdownMenuCheckboxItem
+            key={item.key}
+            checked={item.checked}
+            onCheckedChange={item.onToggle}
+            onSelect={(event) => {
+              if (!closeOnSelect) event.preventDefault();
+            }}
+          >
             {item.label}
           </DropdownMenuCheckboxItem>
         ))}

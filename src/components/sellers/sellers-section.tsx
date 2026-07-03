@@ -1,36 +1,52 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
-import type { CommissionSummary } from '@/app/services/commissions';
+import type { CommissionPaymentRow, CommissionSummary } from '@/app/services/commissions';
+import type { MobileInventoryItem } from '@/app/services/mobile-seller';
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { useUserOptional } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { getSellersAction } from './actions';
-import { DispatchStockModal } from './modals/dispatch-stock-modal';
-import { EditSellerModal } from './modals/edit-seller-modal';
-import { InviteSellerModal } from './modals/invite-seller-modal';
-import { ReturnStockModal } from './modals/return-stock-modal';
-import { SellerDetailsModal } from './modals/seller-details-modal';
 import { SellersTable } from './sellers-table';
+
+const InviteSellerModal = dynamic(() => import('./modals/invite-seller-modal').then((m) => m.InviteSellerModal));
+const SellerDetailsModal = dynamic(() => import('./modals/seller-details-modal').then((m) => m.SellerDetailsModal));
+const EditSellerModal = dynamic(() => import('./modals/edit-seller-modal').then((m) => m.EditSellerModal));
+const DispatchStockModal = dynamic(() => import('./modals/dispatch-stock-modal').then((m) => m.DispatchStockModal));
+const ReturnStockModal = dynamic(() => import('./modals/return-stock-modal').then((m) => m.ReturnStockModal));
+
+interface CommissionDetail {
+  summary: CommissionSummary;
+  payments: CommissionPaymentRow[];
+}
 
 interface SellersSectionProps {
   initialSellers: { success: true; sellers: User[] };
   variants: PopulatedProductVariant[];
   commissionBalances: Record<number, CommissionSummary>;
+  initialMobileInventory?: Record<number, MobileInventoryItem[]>;
+  initialCommissionDetails?: Record<string, CommissionDetail>;
 }
 
-export function SellersSection({ initialSellers, variants, commissionBalances }: SellersSectionProps) {
+export function SellersSection({
+  initialSellers,
+  variants,
+  commissionBalances,
+  initialMobileInventory = {},
+  initialCommissionDetails = {},
+}: SellersSectionProps) {
   const user = useUserOptional();
   const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
-  const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
 
   const { data } = useServerActionQuery({
     queryKey: queryKeys.sellers.list(),
@@ -53,7 +69,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
   const [sellerForReturn, setSellerForReturn] = useState<User | null>(null);
 
   const handleSuccess = () => {
-    invalidateQueries([queryKeys.sellers.list()]);
+    queryClient.invalidateQueries({ queryKey: ['sellers'], refetchType: 'none' });
   };
 
   const handleOpenDetails = (seller: User) => {
@@ -118,6 +134,13 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
           setSellerForDetails(null);
         }}
         seller={sellerForDetails}
+        initialCommissionDetail={
+          sellerForDetails
+            ? (initialCommissionDetails[
+                `${sellerForDetails.id}-${new Date().getFullYear()}-${new Date().getMonth() + 1}`
+              ] ?? null)
+            : null
+        }
       />
       <EditSellerModal
         isOpen={isEditModalOpen}
@@ -146,6 +169,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances }:
         }}
         onSuccess={handleSuccess}
         seller={sellerForReturn}
+        inventory={sellerForReturn ? (initialMobileInventory[sellerForReturn.id] ?? []) : []}
       />
     </div>
   );

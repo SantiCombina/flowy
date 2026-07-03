@@ -10,7 +10,6 @@ import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/
 import type { Period } from '@/app/services/dashboard';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
-import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -40,6 +39,7 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
             'stock_low',
             'stock_adjusted',
           ]}
+          userId={user.id}
         />
         <DashboardShell
           kind="owner"
@@ -56,7 +56,11 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
   const ownerId = typeof ownerRef === 'object' && ownerRef !== null ? ownerRef.id : (ownerRef ?? 0);
   return (
     <>
-      <RealtimeRefresher channel={`private-seller-${user.id}`} events={['stock_dispatched', 'sale_created']} />
+      <RealtimeRefresher
+        channel={`private-seller-${user.id}`}
+        events={['stock_dispatched', 'sale_created']}
+        userId={user.id}
+      />
       <DashboardShell
         kind="seller"
         userId={user.id}
@@ -71,11 +75,8 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   return (
-    <>
-      <PageHeader title="Dashboard" description="Resumen general del negocio" />
-      <Suspense fallback={<DashboardSkeleton />}>
-        <DashboardContent searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent searchParams={searchParams} />
+    </Suspense>
   );
 }

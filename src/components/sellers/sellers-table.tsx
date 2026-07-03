@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowUpFromLine, Eye, Pencil, Trash2 } from 'lucide-react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -18,9 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
-import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -61,7 +60,7 @@ function SellersTableComponent({
 }: SellersTableProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = useMemo(() => getVisibleColumns('sellers'), [getVisibleColumns]);
-  const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
   const [sellerToDelete, setSellerToDelete] = useState<User | null>(null);
 
   const filteredSellers = useMemo(() => {
@@ -71,21 +70,30 @@ function SellersTableComponent({
   }, [sellers, searchQuery]);
 
   const handleDelete = async () => {
-    if (!sellerToDelete) return;
+    const target = sellerToDelete;
+    if (!target) return;
 
-    const result = await deleteSellerAction({ id: sellerToDelete.id });
+    queryClient.setQueriesData({ queryKey: ['sellers'] }, (old: unknown) => {
+      if (!old || typeof old !== 'object' || !('sellers' in (old as Record<string, unknown>))) return old;
+      const existing = old as { success: boolean; sellers: User[] };
+      return {
+        ...existing,
+        sellers: existing.sellers.filter((s) => s.id !== target.id),
+      };
+    });
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
+    setSellerToDelete(null);
+
+    const result = await deleteSellerAction({ id: target.id });
+
+    if (result?.serverError || !result?.data?.success) {
+      queryClient.invalidateQueries({ queryKey: ['sellers'] });
+      toast.error(result?.serverError ?? 'Error al eliminar vendedor');
       return;
     }
 
-    if (result?.data?.success) {
-      toast.warning('Vendedor eliminado');
-      invalidateQueries([queryKeys.sellers.list()]);
-    }
-
-    setSellerToDelete(null);
+    toast.warning('Vendedor eliminado');
+    queryClient.invalidateQueries({ queryKey: ['sellers'], refetchType: 'none' });
   };
 
   const allColumns = useMemo<Record<string, Column<User>>>(

@@ -148,7 +148,6 @@ export const Settings: CollectionConfig = {
       type: 'select',
       defaultValue: DEFAULT_ITEMS_PER_PAGE.toString(),
       options: [
-        // '10' is kept only for backward DB compatibility. The UI and application code use 25/50/100.
         { label: '10', value: '10' },
         ...ITEMS_PER_PAGE_OPTIONS.map((value) => ({
           label: value.toString(),

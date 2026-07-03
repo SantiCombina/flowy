@@ -1,11 +1,11 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
 import { calculateCommission } from '@/lib/commissions';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
+import { pusherServer } from '@/lib/pusher-server';
 import type { Sale } from '@/payload-types';
 
 export interface CommissionSummary {
@@ -232,6 +232,11 @@ export async function createCommissionPayment(
     overrideAccess: true,
   });
 
-  revalidateTag('dashboard');
-  revalidateTag('dashboard');
+  try {
+    await pusherServer.trigger(`private-owner-${ownerId}`, 'commission_paid', {
+      metadata: { userId: ownerId, sellerId },
+    });
+  } catch {
+    return;
+  }
 }

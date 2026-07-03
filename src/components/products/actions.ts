@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import {
@@ -23,6 +22,7 @@ import {
 import { getProductDemandSummary, getVariantSalesHistory } from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
+import { pusherServer } from '@/lib/pusher-server';
 import { actionClient } from '@/lib/safe-action';
 import { bulkUpdatePricesSchema, bulkToggleActiveSchema } from '@/schemas/products/bulk-actions-schema';
 import {
@@ -172,7 +172,13 @@ export const createProductAction = actionClient.schema(createProductActionSchema
   };
   const product = await createProduct(productData, user.id);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'product_created', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -199,7 +205,13 @@ export const updateProductAction = actionClient.schema(updateProductActionSchema
   };
   const product = await updateProduct(id, productData);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'product_updated', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -216,7 +228,13 @@ export const deleteProductAction = actionClient.schema(deleteProductActionSchema
 
   await deleteProduct(parsedInput.id);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'product_deleted', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -349,7 +367,13 @@ export const createVariantAction = actionClient.schema(createVariantActionSchema
   };
   const variant = await createVariant(variantData, user.id);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'variant_created', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -375,7 +399,13 @@ export const updateVariantAction = actionClient.schema(updateVariantActionSchema
   };
   const variant = await updateVariant(id, variantData);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'variant_updated', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -392,7 +422,13 @@ export const deleteVariantAction = actionClient.schema(deleteVariantActionSchema
 
   await deleteVariant(parsedInput.id);
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'variant_deleted', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,
@@ -410,7 +446,13 @@ export const bulkUpdateVariantPricesAction = actionClient
 
     await Promise.all(parsedInput.updates.map(({ variantId, costPrice }) => updateVariant(variantId, { costPrice })));
 
-    revalidatePath('/products');
+    try {
+      await pusherServer.trigger(`private-owner-${user.id}`, 'variant_updated', {
+        metadata: { userId: user.id },
+      });
+    } catch {
+      return;
+    }
 
     return {
       success: true,
@@ -427,7 +469,13 @@ export const bulkToggleProductsAction = actionClient.schema(bulkToggleActiveSche
 
   await Promise.all(parsedInput.productIds.map((id) => updateProduct(id, { isActive: parsedInput.isActive })));
 
-  revalidatePath('/products');
+  try {
+    await pusherServer.trigger(`private-owner-${user.id}`, 'product_updated', {
+      metadata: { userId: user.id },
+    });
+  } catch {
+    return;
+  }
 
   return {
     success: true,

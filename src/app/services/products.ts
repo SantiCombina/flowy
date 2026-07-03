@@ -124,6 +124,7 @@ export async function createProduct(data: CreateProductData, ownerId: number): P
       ...data,
       owner: ownerId,
     },
+    depth: 2,
     overrideAccess: true,
   });
 
@@ -244,6 +245,7 @@ export async function createVariant(data: CreateVariantData, ownerId: number): P
   const variant = await payload.create({
     collection: 'product-variants',
     data: { ...data, owner: ownerId },
+    depth: 2,
     overrideAccess: true,
   });
 
