@@ -1,9 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAction } from 'next-safe-action/hooks';
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -19,6 +18,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { formatPhoneInput } from '@/lib/phone';
 import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
@@ -34,8 +34,8 @@ interface EditSellerModalProps {
 }
 
 export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSellerModalProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(updateSellerAction);
+  const { executeAsync, isExecuting } = useAction(updateSellerAction);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const form = useForm<EditSellerValues>({
     resolver: zodResolver(editSellerSchema),
@@ -64,61 +64,27 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
     }
   }, [seller, form]);
 
-  const onSubmit = useCallback(
-    async (data: EditSellerValues) => {
-      if (!seller) return;
+  const onSubmit = async (data: EditSellerValues) => {
+    if (!seller) return;
 
-      const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
-      queryClient.getQueriesData({ queryKey: queryKeys.sellers.list() }).forEach(([qk, qd]) => {
-        previousData.push({ queryKey: qk, data: qd });
-      });
+    const result = await executeAsync({
+      id: seller.id,
+      ...data,
+    });
 
-      queryClient.setQueriesData({ queryKey: queryKeys.sellers.list() }, (old: unknown) => {
-        if (!old || typeof old !== 'object' || !('sellers' in (old as Record<string, unknown>))) return old;
-        const existing = old as { success: boolean; sellers: User[] };
-        return {
-          ...existing,
-          sellers: existing.sellers.map((s) =>
-            s.id === seller.id
-              ? {
-                  ...s,
-                  name: data.name,
-                  email: data.email,
-                  phone: data.phone || null,
-                  dni: data.dni || null,
-                  cuitCuil: data.cuitCuil || null,
-                  cbu: data.cbu || null,
-                  isActive: data.isActive,
-                }
-              : s,
-          ),
-        };
-      });
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
 
+    if (result?.data?.success) {
+      const wasDeactivated = seller.isActive && !data.isActive;
+      toast[wasDeactivated ? 'warning' : 'success'](wasDeactivated ? 'Vendedor desactivado' : 'Vendedor actualizado');
+      invalidateQueries([queryKeys.sellers.list()]);
+      onSuccess();
       onClose();
-
-      const result = await executeAsync({
-        id: seller.id,
-        ...data,
-      });
-
-      if (result?.serverError || result?.validationErrors) {
-        for (const { queryKey, data: prevData } of previousData) {
-          if (prevData) queryClient.setQueryData(queryKey, prevData);
-        }
-        toast.error(result?.serverError ?? 'Error de validación');
-        return;
-      }
-
-      if (result?.data?.success) {
-        const wasDeactivated = seller.isActive && !data.isActive;
-        toast[wasDeactivated ? 'warning' : 'success'](wasDeactivated ? 'Vendedor desactivado' : 'Vendedor actualizado');
-        queryClient.invalidateQueries({ queryKey: ['sellers'], refetchType: 'none' });
-        onSuccess();
-      }
-    },
-    [queryClient, seller, executeAsync, onSuccess, onClose],
-  );
+    }
+  };
 
   const formatCuitCuil = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -262,10 +228,12 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
           </ResponsiveModalBody>
 
           <ResponsiveModalFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
               Cancelar
             </Button>
-            <Button type="submit">Guardar cambios</Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+            </Button>
           </ResponsiveModalFooter>
         </form>
       </Form>

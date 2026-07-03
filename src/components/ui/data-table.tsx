@@ -160,7 +160,7 @@ function DataTableComponent<T>({
                       onFilterChange={
                         column.onFilterChange ??
                         (() => {
-                          return;
+                          /* no-op */
                         })
                       }
                       className={column.className}

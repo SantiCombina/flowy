@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -10,8 +10,8 @@ interface NewBudgetButtonProps {
 
 export function NewBudgetButton({ onOpen }: NewBudgetButtonProps) {
   return (
-    <Button onClick={onOpen}>
-      <Plus className="h-4 w-4" />
+    <Button size="sm" onClick={onOpen}>
+      <FileText className="h-4 w-4 mr-2" />
       Nuevo presupuesto
     </Button>
   );

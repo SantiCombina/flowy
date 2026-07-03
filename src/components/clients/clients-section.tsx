@@ -1,29 +1,22 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Users } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
 import type { Serialized } from '@/lib/serialization';
 import type { Client, User } from '@/payload-types';
-import type { ClientValues } from '@/schemas/clients/client-schema';
 
-import { createClientAction, deleteClientAction, updateClientAction } from './actions';
+import { ClientModal } from './client-modal';
 import { ClientsTable } from './clients-table';
-
-const generateTempId = () => -Date.now();
-
-const ClientModal = dynamic(() => import('./client-modal').then((m) => m.ClientModal));
 
 interface ClientsSectionProps {
   clients: Client[];
@@ -33,15 +26,13 @@ interface ClientsSectionProps {
 
 export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {
   const isOwner = currentUser.role === 'owner';
-  const queryClient = useQueryClient();
-
-  const [clientList, setClientList] = useState(clients);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const { data: zonesData } = useServerActionQuery({
     queryKey: queryKeys.zones.list(),
     queryFn: getZonesAction,
     enabled: isOwner,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30_000,
   });
 
   const zones = zonesData?.zones ?? [];
@@ -56,98 +47,11 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
   const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', DEFAULT_ITEMS_PER_PAGE);
 
   const handleZonesChanged = () => {
-    queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+    invalidateQueries([queryKeys.zones.list()]);
   };
 
-  const handleCreateClient = async (data: ClientValues) => {
-    const tempId = generateTempId();
-    const zoneId = data.zone;
-    const zoneObj = zones.find((z) => z.id === zoneId);
-
-    const placeholder: Client = {
-      id: tempId,
-      name: data.name,
-      cuit: data.cuit ?? null,
-      phone: data.phone ?? null,
-      email: data.email ?? null,
-      address: data.address ?? null,
-      provincia: data.provincia ?? null,
-      localidad: data.localidad ?? null,
-      zone: zoneId ? (zoneObj ?? zoneId) : null,
-      createdBy: currentUser as unknown as User,
-      owner: currentUser as unknown as User,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setClientList((prev) => [placeholder, ...prev]);
-    handleClose();
-
-    const result = await createClientAction(data);
-
-    if (result?.serverError) {
-      setClientList((prev) => prev.filter((c) => c.id !== tempId));
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success && result.data.client) {
-      setClientList((prev) => prev.map((c) => (c.id === tempId ? (result.data!.client as Client) : c)));
-      toast.success('Cliente creado');
-    }
-  };
-
-  const handleUpdateClient = async (id: number, data: ClientValues) => {
-    const previous = clientList;
-    const zoneId = data.zone;
-    const zoneObj = zones.find((z) => z.id === zoneId);
-
-    setClientList((prev) =>
-      prev.map((c) =>
-        c.id !== id
-          ? c
-          : {
-              ...c,
-              name: data.name,
-              cuit: data.cuit ?? null,
-              phone: data.phone ?? null,
-              email: data.email ?? null,
-              address: data.address ?? null,
-              provincia: data.provincia ?? null,
-              localidad: data.localidad ?? null,
-              zone: zoneId ? (zoneObj ?? zoneId) : null,
-            },
-      ),
-    );
-    handleClose();
-
-    const result = await updateClientAction({ id, ...data });
-
-    if (result?.serverError) {
-      setClientList(previous);
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success && result.data.client) {
-      setClientList((prev) => prev.map((c) => (c.id === id ? (result.data!.client as Client) : c)));
-      toast.success('Cliente actualizado');
-    }
-  };
-
-  const handleDelete = async (clientId: number) => {
-    const previous = clientList;
-    setClientList((prev) => prev.filter((c) => c.id !== clientId));
-
-    const result = await deleteClientAction({ id: clientId });
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      setClientList(previous);
-      return;
-    }
-
-    toast.warning('Cliente eliminado');
+  const handleSuccess = () => {
+    invalidateQueries([queryKeys.clients.list()]);
   };
 
   const handleEdit = (client: Client) => {
@@ -190,33 +94,26 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
         </div>
 
         <ClientsTable
-          clients={clientList}
+          clients={clients}
           clientDebts={clientDebts}
           searchQuery={searchQuery}
           zones={zones.map((z) => ({ id: z.id, name: z.name }))}
           zoneFilter={zoneFilter}
           onZoneFilterChange={(v) => setZoneFilter(v === zoneFilter ? '' : v)}
-          localidades={[...new Set(clientList.map((c) => c.localidad).filter(Boolean) as string[])].sort()}
+          localidades={[...new Set(clients.map((c) => c.localidad).filter(Boolean) as string[])].sort()}
           localidadFilter={localidadFilter}
           onLocalidadFilterChange={(v) => setLocalidadFilter(v === localidadFilter ? '' : v)}
-          provincias={[...new Set(clientList.map((c) => c.provincia).filter(Boolean) as string[])].sort()}
+          provincias={[...new Set(clients.map((c) => c.provincia).filter(Boolean) as string[])].sort()}
           provinciaFilter={provinciaFilter}
           onProvinciaFilterChange={(v) => setProvinciaFilter(v === provinciaFilter ? '' : v)}
           showSellerColumn={isOwner}
           onEdit={handleEdit}
-          onDelete={handleDelete}
           itemsPerPage={itemsPerPage}
           onItemsPerPageChange={setItemsPerPage}
         />
       </main>
 
-      <ClientModal
-        isOpen={isModalOpen}
-        onClose={handleClose}
-        onCreate={handleCreateClient}
-        onEdit={handleUpdateClient}
-        client={clientToEdit}
-      />
+      <ClientModal isOpen={isModalOpen} onClose={handleClose} onSuccess={handleSuccess} client={clientToEdit} />
 
       {isOwner && (
         <ManageZonesModal

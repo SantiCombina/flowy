@@ -20,7 +20,7 @@ interface UpdateBusinessNameFormProps {
 
 export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormProps) {
   const queryClient = useQueryClient();
-  const { executeAsync } = useAction(updateBusinessNameAction);
+  const { executeAsync, isExecuting } = useAction(updateBusinessNameAction);
 
   const form = useForm<UpdateBusinessNameValues>({
     resolver: zodResolver(updateBusinessNameSchema),
@@ -30,28 +30,16 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
   });
 
   async function onSubmit(data: UpdateBusinessNameValues) {
-    const userKey = queryKeys.user.current();
-    const previousData = queryClient.getQueryData(userKey);
-
-    queryClient.setQueryData(userKey, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      return { ...(oldData as Record<string, unknown>), businessName: data.businessName };
-    });
-
     const result = await executeAsync(data);
 
-    if (result?.serverError) {
-      if (previousData !== undefined) {
-        queryClient.setQueryData(userKey, previousData);
-      } else {
-        queryClient.removeQueries({ queryKey: userKey });
-      }
-      toast.error(result.serverError);
+    if (!result || result.serverError) {
+      toast.error(result?.serverError ?? 'Error al guardar. Intentá de nuevo.');
       return;
     }
 
-    if (result?.data?.success) {
+    if (result.data?.success) {
       toast.success('Nombre del negocio actualizado correctamente.');
+      void queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
     }
   }
 
@@ -72,8 +60,8 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
           )}
         />
 
-        <Button type="submit" className="ml-auto block">
-          Guardar cambios
+        <Button type="submit" disabled={isExecuting} className="ml-auto block">
+          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </form>
     </Form>

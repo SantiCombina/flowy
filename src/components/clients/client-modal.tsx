@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useMemo, useRef, useState } from 'react';
@@ -33,6 +32,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ARGENTINA_PROVINCES } from '@/lib/constants/argentina-geo';
 import { formatPhoneInput } from '@/lib/phone';
@@ -42,6 +42,8 @@ import type { Client, Zone } from '@/payload-types';
 import { clientSchema, type ClientValues } from '@/schemas/clients/client-schema';
 
 import { createZoneAction, deleteZoneAction, getZonesAction } from '../zones/actions';
+
+import { createClientAction, updateClientAction } from './actions';
 
 function formatCuit(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 11);
@@ -53,14 +55,16 @@ function formatCuit(raw: string): string {
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate?: (data: ClientValues) => void;
-  onEdit?: (id: number, data: ClientValues) => void;
+  onSuccess: (client: Client) => void;
   client?: Client | null;
 }
 
-export function ClientModal({ isOpen, onClose, onCreate, onEdit, client }: ClientModalProps) {
+export function ClientModal({ isOpen, onClose, onSuccess, client }: ClientModalProps) {
   const isEditMode = !!client;
-  const queryClient = useQueryClient();
+  const { executeAsync: execCreate, isExecuting: isCreating } = useAction(createClientAction);
+  const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateClientAction);
+  const isExecuting = isCreating || isUpdating;
+  const { invalidateQueries } = useInvalidateQueries();
 
   const currentUser = useUser();
   const isOwner = currentUser.role === 'owner';
@@ -165,7 +169,7 @@ export function ClientModal({ isOpen, onClose, onCreate, onEdit, client }: Clien
       return;
     }
     if (result?.data?.success) {
-      queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+      invalidateQueries([queryKeys.zones.list()]);
       if (form.getValues('zone') === id) {
         form.setValue('zone', undefined, { shouldDirty: true });
       }
@@ -186,7 +190,7 @@ export function ClientModal({ isOpen, onClose, onCreate, onEdit, client }: Clien
 
     if (result?.data?.success && result.data.zone) {
       const newZone = result.data.zone as Zone;
-      queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+      invalidateQueries([queryKeys.zones.list()]);
       form.setValue('zone', newZone.id, { shouldDirty: true });
       setNewZoneName('');
       setIsCreatingZone(false);
@@ -194,11 +198,25 @@ export function ClientModal({ isOpen, onClose, onCreate, onEdit, client }: Clien
     }
   };
 
-  const onSubmit = (data: ClientValues) => {
+  const onSubmit = async (data: ClientValues) => {
+    let result;
+
     if (isEditMode && client) {
-      onEdit?.(client.id, data);
+      result = await execUpdate({ id: client.id, ...data });
     } else {
-      onCreate?.(data);
+      result = await execCreate(data);
+    }
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      return;
+    }
+
+    if (result?.data?.success && result.data.client) {
+      toast.success(isEditMode ? 'Cliente actualizado' : 'Cliente creado');
+      invalidateQueries([queryKeys.clients.list()]);
+      onSuccess(result.data.client as Client);
+      onClose();
     }
   };
 
@@ -472,10 +490,18 @@ export function ClientModal({ isOpen, onClose, onCreate, onEdit, client }: Clien
             </ResponsiveModalBody>
 
             <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
                 Cancelar
               </Button>
-              <Button type="submit">{isEditMode ? 'Guardar cambios' : 'Crear cliente'}</Button>
+              <Button type="submit" disabled={isExecuting}>
+                {isExecuting
+                  ? isEditMode
+                    ? 'Guardando…'
+                    : 'Creando…'
+                  : isEditMode
+                    ? 'Guardar cambios'
+                    : 'Crear cliente'}
+              </Button>
             </ResponsiveModalFooter>
           </form>
         </Form>

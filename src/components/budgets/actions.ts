@@ -49,9 +49,9 @@ export const createBudgetAction = actionClient.schema(budgetSchema).action(async
     throw new Error('No se pudo determinar el dueño del negocio');
   }
 
-  const budget = await createBudget(user.id, ownerId, parsedInput);
+  await createBudget(user.id, ownerId, parsedInput);
 
-  return { success: true, budgetId: budget.id, date: budget.date };
+  return { success: true };
 });
 
 export const getBudgetsAction = actionClient.schema(getBudgetsListSchema).action(async ({ parsedInput }) => {
@@ -131,7 +131,7 @@ export const updateBudgetAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await updateBudget(parsedInput.budgetId, parsedInput.data, user.id);
+    await updateBudget(parsedInput.budgetId, parsedInput.data);
 
     return { success: true };
   });
@@ -145,7 +145,7 @@ export const deleteBudgetAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await deleteBudget(parsedInput.budgetId, user.id);
+    await deleteBudget(parsedInput.budgetId);
 
     return { success: true };
   });

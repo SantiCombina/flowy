@@ -54,21 +54,7 @@ async function ProductsPageInner() {
 
   return (
     <>
-      <RealtimeRefresher
-        channel={channel}
-        events={[
-          'stock_adjusted',
-          'stock_low',
-          'sale_created',
-          'product_created',
-          'product_updated',
-          'product_deleted',
-          'variant_created',
-          'variant_updated',
-          'variant_deleted',
-        ]}
-        userId={user.id}
-      />
+      <RealtimeRefresher channel={channel} events={['stock_adjusted', 'stock_low', 'sale_created']} />
       <ProductsContent ownerId={ownerId} canManageProducts={canManageProducts} />
     </>
   );

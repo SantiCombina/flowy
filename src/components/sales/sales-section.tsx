@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowDown,
@@ -16,12 +15,11 @@ import {
   Trash2,
   Truck,
 } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, memo, Suspense, useCallback, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import type { SaleOptions, SaleRow } from '@/app/services/sales';
+import type { SaleRow } from '@/app/services/sales';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -43,6 +41,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useSalesUrlSync } from '@/hooks/use-sales-url-sync';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
@@ -51,16 +50,9 @@ import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
-import {
-  deleteSaleAction,
-  getSalesAction,
-  markAsDeliveredAction,
-  markSaleAsCollectedAction,
-  markSaleAsCollectedBySellerAction,
-} from './actions';
-
-const CollectSaleModal = dynamic(() => import('./collect-sale-modal').then((m) => m.CollectSaleModal));
-const EditSaleModal = dynamic(() => import('./edit-sale-modal').then((m) => m.EditSaleModal));
+import { deleteSaleAction, getSalesAction, markAsDeliveredAction } from './actions';
+import { CollectSaleModal } from './collect-sale-modal';
+import { EditSaleModal } from './edit-sale-modal';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -159,7 +151,6 @@ interface SalesSectionProps {
   canManage: boolean;
   isSeller: boolean;
   initialStatusFilter?: StatusFilter;
-  initialSaleOptions: Record<number, SaleOptions>;
 }
 
 function SalesSectionComponent({
@@ -171,12 +162,10 @@ function SalesSectionComponent({
   canManage,
   isSeller,
   initialStatusFilter,
-  initialSaleOptions,
 }: SalesSectionProps) {
   const { getVisibleColumns } = useSettings();
-  const [capturedInitialResult] = useState(() => initialResult);
   const visibleColumns = getVisibleColumns('sales');
-  const queryClient = useQueryClient();
+  const { invalidateQueries } = useInvalidateQueries();
 
   const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
   const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
@@ -210,15 +199,13 @@ function SalesSectionComponent({
     queryFn: () => getSalesAction(filters),
     initialData: isInitialQuery ? { success: true, ...initialResult } : undefined,
     placeholderData: (previousData) => previousData,
-    staleTime: Infinity,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
+    staleTime: 10_000,
   });
 
-  const salesData = data?.sales ?? capturedInitialResult.sales;
-  const totalCount = data?.totalCount ?? capturedInitialResult.totalCount;
-  const totalPages = data?.totalPages ?? capturedInitialResult.totalPages;
-  const currentPage = data?.page ?? capturedInitialResult.page;
+  const salesData = data?.sales ?? initialResult.sales;
+  const totalCount = data?.totalCount ?? initialResult.totalCount;
+  const totalPages = data?.totalPages ?? initialResult.totalPages;
+  const currentPage = data?.page ?? initialResult.page;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [collectingModal, setCollectingModal] = useState<{
@@ -227,151 +214,50 @@ function SalesSectionComponent({
     amountPaid: number;
   } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deliverConfirmId, setDeliverConfirmId] = useState<number | null>(null);
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
 
+  const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
-  const updateSaleInCache = useCallback(
-    (saleId: number, updater: (sale: SaleRow) => SaleRow) => {
-      queryClient.setQueriesData({ queryKey: ['sales'] }, (old: unknown) => {
-        if (!old || typeof old !== 'object' || !('sales' in (old as Record<string, unknown>))) return old;
-        const data = old as { success: boolean; sales: SaleRow[] };
-        return { ...data, sales: data.sales.map((s) => (s.id === saleId ? updater(s) : s)) };
-      });
-    },
-    [queryClient],
-  );
-
-  const handleCollectSubmit = useCallback(
-    async ({
-      saleId,
-      amount,
-      paymentMethod,
-      checkDueDate,
-    }: {
-      saleId: number;
-      amount: number;
-      paymentMethod?: string;
-      checkDueDate?: string;
-    }) => {
-      const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
-      queryClient.getQueriesData({ queryKey: ['sales'] }).forEach(([queryKey, data]) => {
-        previousData.push({ queryKey, data });
-      });
-
-      let currentPaid = 0;
-      let saleTotal = 0;
-      queryClient.getQueriesData({ queryKey: ['sales'] }).forEach(([, data]) => {
-        if (!data || typeof data !== 'object') return;
-        const d = data as { sales?: SaleRow[] };
-        const sale = d.sales?.find((s) => s.id === saleId);
-        if (sale) {
-          currentPaid = isSeller ? sale.amountPaid : sale.ownerAmountPaid;
-          saleTotal = sale.total;
-        }
-      });
-
-      const newAmountPaid = currentPaid + amount;
-      const newStatus = newAmountPaid >= saleTotal ? 'collected' : 'partially_collected';
-
-      updateSaleInCache(saleId, (sale) => ({
-        ...sale,
-        ...(isSeller
-          ? { paymentStatus: newStatus, amountPaid: newAmountPaid }
-          : { ownerPaymentStatus: newStatus, ownerAmountPaid: newAmountPaid }),
-      }));
-
-      setCollectingModal(null);
-
-      const result = isSeller
-        ? await markSaleAsCollectedBySellerAction({
-            saleId,
-            amount,
-            paymentMethod: paymentMethod as 'cash' | 'transfer' | 'check',
-            checkDueDate,
-          })
-        : await markSaleAsCollectedAction({ saleId, amount });
-
-      if (result?.serverError) {
-        toast.error(result.serverError);
-        for (const { queryKey, data } of previousData) {
-          if (data) queryClient.setQueryData(queryKey, data);
-        }
-        return;
-      }
-
-      toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      queryClient.invalidateQueries({ queryKey: ['sales'], refetchType: 'none' });
-    },
-    [isSeller, queryClient, updateSaleInCache, setCollectingModal],
-  );
+  const handleCollectSuccess = useCallback(() => {
+    invalidateQueries([queryKeys.sales.list(filters)]);
+    setCollectingModal(null);
+  }, [invalidateQueries, filters, setCollectingModal]);
 
   const handleMarkDelivered = async (saleId: number) => {
-    const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
-    queryClient.getQueriesData({ queryKey: ['sales'] }).forEach(([queryKey, data]) => {
-      previousData.push({ queryKey, data });
-    });
-
-    updateSaleInCache(saleId, (sale) => ({
-      ...sale,
-      deliveryStatus: 'delivered',
-      deliveredAt: new Date().toISOString(),
-    }));
-
-    setDeliverConfirmId(null);
-
     const result = await executeMarkDelivered({ saleId });
 
     if (result?.serverError) {
       toast.error(result.serverError);
-      for (const { queryKey, data } of previousData) {
-        if (data) queryClient.setQueryData(queryKey, data);
-      }
       return;
     }
 
-    toast.success('Venta marcada como entregada.');
-    queryClient.invalidateQueries({ queryKey: ['sales'], refetchType: 'none' });
+    if (result?.data?.success) {
+      toast.success('Venta marcada como entregada.');
+      invalidateQueries([queryKeys.sales.list(filters)]);
+    }
   };
 
-  const handleEditClick = (sale: SaleRow) => {
-    setEditingSale(sale);
+  const handleEditSuccess = () => {
+    toast.success('Venta editada');
+    setEditingSale(null);
+    invalidateQueries([queryKeys.sales.list(filters)]);
   };
 
   const handleDelete = async (saleId: number) => {
-    setDeletingId(saleId);
-    const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
-    queryClient.getQueriesData({ queryKey: ['sales'] }).forEach(([queryKey, data]) => {
-      previousData.push({ queryKey, data });
-    });
-
-    queryClient.setQueriesData({ queryKey: ['sales'] }, (old: unknown) => {
-      if (!old || typeof old !== 'object' || !('sales' in (old as Record<string, unknown>))) return old;
-      const data = old as { success: boolean; sales: SaleRow[]; totalCount: number };
-      return {
-        ...data,
-        sales: data.sales.filter((s) => s.id !== saleId),
-        totalCount: data.totalCount - 1,
-      };
-    });
-
+    const result = await executeDelete({ saleId });
     setDeleteConfirmId(null);
-
-    const result = await deleteSaleAction({ saleId });
 
     if (result?.serverError) {
       toast.error(result.serverError);
-      for (const { queryKey, data } of previousData) {
-        if (data) queryClient.setQueryData(queryKey, data);
-      }
-      setDeletingId(null);
       return;
     }
 
-    toast.warning('Venta eliminada');
-    setDeletingId(null);
+    if (result?.data?.success) {
+      toast.warning('Venta eliminada');
+      invalidateQueries([queryKeys.sales.list(filters)]);
+    }
   };
 
   const toggleExpand = (id: number) => {
@@ -698,7 +584,7 @@ function SalesSectionComponent({
                                   canManage && {
                                     label: 'Editar',
                                     icon: Pencil,
-                                    onClick: () => handleEditClick(sale),
+                                    onClick: () => setEditingSale(sale),
                                     separator: !!(canCollect || canMarkDelivery),
                                   },
                                   canManage && {
@@ -886,27 +772,23 @@ function SalesSectionComponent({
       </main>
 
       {collectingModal && (
-        <Suspense fallback={null}>
-          <CollectSaleModal
-            isOpen
-            onClose={() => setCollectingModal(null)}
-            onCollect={handleCollectSubmit}
-            isSeller={isSeller}
-            {...collectingModal}
-          />
-        </Suspense>
+        <CollectSaleModal
+          isOpen
+          onClose={() => setCollectingModal(null)}
+          onSuccess={handleCollectSuccess}
+          isSeller={isSeller}
+          {...collectingModal}
+        />
       )}
 
       {editingSale && (
-        <Suspense fallback={null}>
-          <EditSaleModal
-            isOpen
-            onClose={() => setEditingSale(null)}
-            sale={editingSale}
-            isSeller={isSeller}
-            initialOptions={initialSaleOptions[editingSale.sellerId] ?? null}
-          />
-        </Suspense>
+        <EditSaleModal
+          isOpen
+          onClose={() => setEditingSale(null)}
+          onSuccess={handleEditSuccess}
+          sale={editingSale}
+          isSeller={isSeller}
+        />
       )}
 
       <AlertDialog open={deliverConfirmId !== null} onOpenChange={(open) => !open && setDeliverConfirmId(null)}>
@@ -940,13 +822,13 @@ function SalesSectionComponent({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingId === deleteConfirmId}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => deleteConfirmId !== null && void handleDelete(deleteConfirmId)}
-              disabled={deletingId === deleteConfirmId}
+              disabled={isDeleting}
             >
-              {deletingId === deleteConfirmId ? 'Eliminando…' : 'Eliminar'}
+              {isDeleting ? 'Eliminando…' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

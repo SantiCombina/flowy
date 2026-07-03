@@ -2,7 +2,6 @@
 
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { DollarSign, EyeOff, Eye, Plus, RotateCcw, Search, Warehouse, X } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -21,23 +20,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
-import {
-  getVariantsAction,
-  getReferenceDataAction,
-  getProductByIdAction,
-  bulkToggleProductsAction,
-  bulkUpdateVariantPricesAction,
-} from './actions';
+import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
+import { BulkPriceSheet } from './modals/bulk-price-sheet';
+import { ProductModal } from './modals/product-modal-new/index';
 import { ProductsTable } from './products-table';
-
-const BulkPriceSheet = dynamic(() => import('./modals/bulk-price-sheet').then((m) => m.BulkPriceSheet));
-type PriceRow = import('./modals/bulk-price-sheet').PriceRow;
-
-const ProductModal = dynamic(() => import('./modals/product-modal-new/index').then((m) => m.ProductModal));
 
 interface RefData {
   brands: Brand[];
@@ -59,6 +50,7 @@ interface Props {
 export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const user = useUserOptional();
   const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
+  const { invalidateQueries } = useInvalidateQueries();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -110,8 +102,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
     }
   }, [queryClient, searchQuery, page]);
 
-  const { executeAsync: executeToggle } = useAction(bulkToggleProductsAction);
-  const { executeAsync: executeBulkUpdatePrices } = useAction(bulkUpdateVariantPricesAction);
+  const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -147,141 +138,48 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = async (productId: number) => {
+  const handleOpenEditModal = (productId: number) => {
     setEditingProductId(productId);
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.products.detail(productId),
-      queryFn: async () => {
-        const result = await getProductByIdAction({ id: productId });
-        if (result.serverError) throw new Error(result.serverError);
-        return result.data;
-      },
-      staleTime: 5 * 60 * 1000,
-    });
     setIsModalOpen(true);
   };
 
   const handleSuccess = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'none' });
-  }, [queryClient]);
+    invalidateQueries([queryKeys.products.list('', 1)]);
+  }, [invalidateQueries]);
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProductId(undefined);
   };
 
-  const handleBulkPriceSubmit = useCallback(
-    async (rows: PriceRow[]) => {
-      const priceByVariant = Object.fromEntries(rows.map((r) => [r.variantId, r.costPrice]));
-      const listQueryKey = queryKeys.products.list(searchQuery, page);
+  const handleBulkPriceSuccess = useCallback(() => {
+    setSelectedKeys(new Set());
+    invalidateQueries([queryKeys.products.list('', 1)]);
+  }, [invalidateQueries]);
 
-      const previousListData = queryClient.getQueryData(listQueryKey);
-
-      queryClient.setQueryData(listQueryKey, (oldData: unknown) => {
-        if (!oldData || typeof oldData !== 'object') return oldData;
-        if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
-        return {
-          ...oldData,
-          docs: (oldData as { docs: Array<Record<string, unknown>> }).docs.map((entry) => {
-            const v = entry as { id: number; costPrice: number };
-            if (v.id in priceByVariant) {
-              return { ...v, costPrice: priceByVariant[v.id] };
-            }
-            return v;
-          }),
-        };
-      });
-
-      setIsBulkPriceOpen(false);
-
-      const result = await executeBulkUpdatePrices({
-        updates: rows.map((r) => ({ variantId: r.variantId, costPrice: r.costPrice })),
-      });
-
-      if (result?.serverError) {
-        if (previousListData !== undefined) {
-          queryClient.setQueryData(listQueryKey, previousListData);
-        } else {
-          queryClient.removeQueries({ queryKey: listQueryKey });
-        }
-        toast.error(result.serverError);
-        return;
-      }
-
-      if (result?.data?.success) {
-        toast.success(`${result.data.updated} variantes actualizadas`);
-        setSelectedKeys(new Set());
-        queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'none' });
-      } else {
-        if (previousListData !== undefined) {
-          queryClient.setQueryData(listQueryKey, previousListData);
-        } else {
-          queryClient.removeQueries({ queryKey: listQueryKey });
-        }
-        toast.error('No se pudieron actualizar los precios');
-      }
-    },
-    [queryClient, executeBulkUpdatePrices, searchQuery, page],
-  );
-
-  const handleBulkToggleConfirm = useCallback(async () => {
+  const handleBulkToggleConfirm = async () => {
     if (bulkToggleTarget === null || uniqueProductIds.length === 0) return;
-
-    const productIdSet = new Set(uniqueProductIds);
-    const active = bulkToggleTarget;
-    const listQueryKey = queryKeys.products.list(searchQuery, page);
-
-    const previousListData = queryClient.getQueryData(listQueryKey);
-
-    queryClient.setQueryData(listQueryKey, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
-
-      return {
-        ...oldData,
-        docs: (oldData as { docs: { product: { id: number; isActive?: boolean } }[] }).docs.map((variant) => {
-          if (productIdSet.has(variant.product.id)) {
-            return {
-              ...variant,
-              product: { ...variant.product, isActive: active },
-            };
-          }
-          return variant;
-        }),
-      };
-    });
-
-    setBulkToggleTarget(null);
 
     const result = await executeToggle({
       productIds: uniqueProductIds,
-      isActive: active,
+      isActive: bulkToggleTarget,
     });
 
     if (result?.serverError) {
-      if (previousListData !== undefined) {
-        queryClient.setQueryData(listQueryKey, previousListData);
-      } else {
-        queryClient.removeQueries({ queryKey: listQueryKey });
-      }
       toast.error(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
-      const label = active ? 'activados' : 'pausados';
+      const label = bulkToggleTarget ? 'activados' : 'pausados';
       toast.warning(`${result.data.updated} productos ${label}`);
       setSelectedKeys(new Set());
-      queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'none' });
+      setBulkToggleTarget(null);
+      invalidateQueries([queryKeys.products.list('', 1)]);
     } else {
-      if (previousListData !== undefined) {
-        queryClient.setQueryData(listQueryKey, previousListData);
-      } else {
-        queryClient.removeQueries({ queryKey: listQueryKey });
-      }
       toast.error('No se pudo actualizar el estado de los productos');
     }
-  }, [bulkToggleTarget, uniqueProductIds, queryClient, executeToggle, searchQuery, page]);
+  };
 
   return (
     <div className="flex flex-1 flex-col">
@@ -297,9 +195,9 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          {canCreateProduct && (
+          {canCreateProduct && !isPending && totalDocs > 0 && (
             <div
-              className={`hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm ${totalDocs === 0 ? 'invisible' : ''}`}
+              className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
               title="Valor del inventario (página actual)"
             >
               <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
@@ -404,7 +302,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
         isOpen={isBulkPriceOpen}
         onClose={() => setIsBulkPriceOpen(false)}
         variants={selectedVariants}
-        onSubmit={handleBulkPriceSubmit}
+        onSuccess={handleBulkPriceSuccess}
       />
 
       <AlertDialog open={bulkToggleTarget !== null} onOpenChange={(open) => !open && setBulkToggleTarget(null)}>
@@ -418,9 +316,9 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkToggleConfirm}>
-              {bulkToggleTarget ? 'Activar' : 'Pausar'}
+            <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkToggleConfirm} disabled={isToggling}>
+              {isToggling ? 'Procesando...' : bulkToggleTarget ? 'Activar' : 'Pausar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

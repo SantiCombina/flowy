@@ -1,12 +1,10 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { ArrowUpFromLine } from 'lucide-react';
+import { ArrowUpFromLine, Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import type { MobileInventoryItem } from '@/app/services/mobile-seller';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,25 +16,40 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
-import { returnStockAction } from '../actions';
+import { getMobileSellerInventoryAction, returnStockAction } from '../actions';
 
 interface ReturnStockModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   seller: User | null;
-  inventory: MobileInventoryItem[];
 }
 
-export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, inventory }: ReturnStockModalProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(returnStockAction);
+export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnStockModalProps) {
+  const { executeAsync, isExecuting } = useAction(returnStockAction);
+  const { invalidateQueries } = useInvalidateQueries();
   const [quantities, setQuantities] = useState<Record<number, string>>({});
 
-  const handleClose = () => {
+  const { data, isLoading } = useServerActionQuery({
+    queryKey: queryKeys.mobileInventory.forSeller(seller?.id),
+    queryFn: () => getMobileSellerInventoryAction({ sellerId: seller!.id }),
+    enabled: isOpen && !!seller,
+    staleTime: 10_000,
+  });
+
+  const inventory = data?.items ?? [];
+
+  const resetState = () => {
     setQuantities({});
+  };
+
+  const handleClose = () => {
+    resetState();
     onClose();
   };
 
@@ -60,43 +73,23 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, inventory
       return;
     }
 
-    handleClose();
-
-    queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
-      return {
-        ...oldData,
-        docs: (oldData as { docs: Array<{ id: number; stock: number }> }).docs.map((variant) => {
-          const item = items.find((i) => i.variantId === variant.id);
-          return item ? { ...variant, stock: variant.stock + item.quantity } : variant;
-        }),
-      };
-    });
-
     const result = await executeAsync({ sellerId: seller.id, items });
 
-    if (result?.serverError || result?.validationErrors) {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.error(result?.serverError ?? 'Error de validación');
+    if (result?.serverError) {
+      toast.error(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
       toast.success('Devolución registrada correctamente');
-      queryClient.invalidateQueries({
-        queryKey: ['products'],
-        refetchType: 'none',
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['sellers'],
-        refetchType: 'none',
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['mobileInventory'],
-        refetchType: 'none',
-      });
+      resetState();
+      invalidateQueries([
+        queryKeys.sellers.list(),
+        queryKeys.products.list('', 1),
+        queryKeys.mobileInventory.forSeller(seller.id),
+      ]);
       onSuccess();
+      onClose();
     }
   };
 
@@ -116,7 +109,11 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, inventory
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <ResponsiveModalBody className="space-y-3">
-          {inventory.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : inventory.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Este vendedor no tiene stock en su inventario móvil.
             </p>
@@ -152,11 +149,11 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller, inventory
         </ResponsiveModalBody>
 
         <ResponsiveModalFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isExecuting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={inventory.length === 0}>
-            Confirmar devolución
+          <Button type="submit" disabled={isExecuting || isLoading || inventory.length === 0}>
+            {isExecuting ? 'Registrando...' : 'Confirmar devolución'}
           </Button>
         </ResponsiveModalFooter>
       </form>

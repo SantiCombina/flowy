@@ -1,11 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-
 import { createClient, deleteClient, getClientDebts, getClients, updateClient } from '@/app/services/clients';
 import { getZoneById } from '@/app/services/zones';
 import { getCurrentUser } from '@/lib/payload';
-import { pusherServer } from '@/lib/pusher-server';
 import { actionClient } from '@/lib/safe-action';
 import { clientSchema, deleteClientSchema, updateClientSchema } from '@/schemas/clients/client-schema';
 
@@ -37,16 +34,6 @@ export const createClientAction = actionClient.schema(clientSchema).action(async
 
   const client = await createClient(sellerId, ownerId, parsedInput);
 
-  revalidatePath('/clients');
-
-  try {
-    await pusherServer.trigger(`private-owner-${ownerId}`, 'client_created', {
-      metadata: { userId: sellerId },
-    });
-  } catch {
-    return;
-  }
-
   return { success: true, client };
 });
 
@@ -69,18 +56,6 @@ export const updateClientAction = actionClient.schema(updateClientSchema).action
 
   const client = await updateClient(id, data);
 
-  revalidatePath('/clients');
-
-  const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
-
-  try {
-    await pusherServer.trigger(`private-owner-${ownerId}`, 'client_updated', {
-      metadata: { userId: user.id },
-    });
-  } catch {
-    return;
-  }
-
   return { success: true, client };
 });
 
@@ -92,18 +67,6 @@ export const deleteClientAction = actionClient.schema(deleteClientSchema).action
   }
 
   await deleteClient(parsedInput.id);
-
-  revalidatePath('/clients');
-
-  const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
-
-  try {
-    await pusherServer.trigger(`private-owner-${ownerId}`, 'client_deleted', {
-      metadata: { userId: user.id },
-    });
-  } catch {
-    return;
-  }
 
   return { success: true };
 });

@@ -5,7 +5,7 @@ import { endOfMonth, format, startOfMonth } from 'date-fns';
 import {
   ClipboardList,
   Contact,
-  FileSignature,
+  FileText,
   History,
   LayoutDashboard,
   Package,
@@ -19,7 +19,6 @@ import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { getBudgetsAction } from '@/components/budgets/actions';
-import { getOwnerDashboardStatsAction } from '@/components/dashboard/actions';
 import { getHistoryAction } from '@/components/history/actions';
 import { getVariantsAction } from '@/components/products/actions';
 import { getCurrentUserAction } from '@/components/profile/actions';
@@ -85,7 +84,7 @@ const mainNavItems: NavItem[] = [
   {
     title: 'Presupuestos',
     href: '/budgets',
-    icon: FileSignature,
+    icon: FileText,
     feature: 'budgets',
   },
   { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
@@ -112,8 +111,8 @@ export function AppSidebar({ features }: AppSidebarProps) {
   const { data: currentUser } = useServerActionQuery({
     queryKey: queryKeys.user.current(),
     queryFn: () => getCurrentUserAction(),
-    staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
   });
 
   const businessName = currentUser?.businessName ?? user?.businessName ?? null;
@@ -124,17 +123,6 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
   const handlePrefetch = (href: string) => {
     switch (href) {
-      case '/dashboard': {
-        if (!user) break;
-        if (user.role === 'owner') {
-          void queryClient.prefetchQuery({
-            queryKey: queryKeys.dashboard.owner('month'),
-            queryFn: () => getOwnerDashboardStatsAction({ period: 'month' }),
-            staleTime: 60_000,
-          });
-        }
-        break;
-      }
       case '/products':
         void queryClient.prefetchQuery({
           queryKey: queryKeys.products.list('', 1),

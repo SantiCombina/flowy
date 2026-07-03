@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { PackagePlus, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
@@ -20,6 +19,8 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 
 import { registerStockMovementAction } from '../stock-actions';
 
@@ -49,12 +50,12 @@ const movementTypes = [
 ] as const;
 
 export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: StockMovementModalProps) {
-  const queryClient = useQueryClient();
   const [type, setType] = useState<'entry' | 'exit' | 'adjustment' | ''>('');
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
+  const { invalidateQueries } = useInvalidateQueries();
 
-  const { executeAsync } = useAction(registerStockMovementAction);
+  const { executeAsync, isExecuting } = useAction(registerStockMovementAction);
 
   const handleClose = () => {
     setType('');
@@ -89,19 +90,6 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
 
     if (!variant || !isValid) return;
 
-    queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
-      return {
-        ...oldData,
-        docs: (oldData as { docs: Array<{ id: number; stock: number }> }).docs.map((v) =>
-          v.id === variant.id ? { ...v, stock: newStock } : v,
-        ),
-      };
-    });
-
-    handleClose();
-
     const result = await executeAsync({
       variantId: variant.id,
       type: type as 'entry' | 'exit' | 'adjustment',
@@ -110,17 +98,13 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
     });
 
     if (result?.serverError) {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.error(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
       toast.success('Movimiento registrado');
-      queryClient.invalidateQueries({
-        queryKey: ['history'],
-        refetchType: 'none',
-      });
+      invalidateQueries([queryKeys.products.list('', 1), queryKeys.history.list()]);
       onSuccess?.(variant.id, result.data.newStock);
       if (
         typeof result.data.newStock === 'number' &&
@@ -130,6 +114,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
       ) {
         toast.warning(`Stock bajo: ${result.data.newStock} unidades`);
       }
+      handleClose();
     }
   };
 
@@ -214,11 +199,11 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
         </ResponsiveModalBody>
 
         <ResponsiveModalFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isExecuting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={!isValid}>
-            Registrar movimiento
+          <Button type="submit" disabled={!isValid || isExecuting}>
+            {isExecuting ? 'Registrando...' : 'Registrar movimiento'}
           </Button>
         </ResponsiveModalFooter>
       </form>

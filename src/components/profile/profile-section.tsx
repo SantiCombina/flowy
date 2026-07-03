@@ -108,6 +108,25 @@ export function ProfileSection({
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base">Seguridad</CardTitle>
+              </div>
+              <CardDescription>Gestioná el acceso a tu cuenta</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Contraseña</p>
+                  <p className="text-xs text-muted-foreground">Última actualización desconocida</p>
+                </div>
+                <ChangePasswordDialog />
+              </div>
+            </CardContent>
+          </Card>
+
           {user.role === 'owner' && (
             <Card>
               <CardHeader>
@@ -171,25 +190,6 @@ export function ProfileSection({
               </CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-base">Seguridad</CardTitle>
-              </div>
-              <CardDescription>Gestioná el acceso a tu cuenta</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Contraseña</p>
-                  <p className="text-xs text-muted-foreground">Última actualización desconocida</p>
-                </div>
-                <ChangePasswordDialog />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

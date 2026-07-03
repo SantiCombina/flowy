@@ -1,15 +1,15 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Trash2, XCircle } from 'lucide-react';
+import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import type { SaleClientOption, SaleItemDetail, SaleRow, SaleVariantOption } from '@/app/services/sales';
+import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
@@ -34,10 +34,9 @@ import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
-import type { ClientValues } from '@/schemas/clients/client-schema';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 
-import { createClientAction, getClientsForSaleAction } from '../clients/actions';
+import { getClientsForSaleAction } from '../clients/actions';
 
 import { createSaleAction, getSaleOptionsAction, getSaleOptionsAsOwnerAction } from './actions';
 
@@ -229,25 +228,24 @@ function ItemRow({
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
   const user = useUser();
   const isOwner = user?.role === 'owner';
-  const queryClient = useQueryClient();
 
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
     queryKey: queryKeys.sales.options('seller'),
     queryFn: () => getSaleOptionsAction(),
-    enabled: !isOwner,
+    enabled: isOpen && !isOwner,
     staleTime: 60_000,
   });
 
   const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
     queryKey: queryKeys.sales.options('owner'),
     queryFn: () => getSaleOptionsAsOwnerAction(),
-    enabled: isOwner,
+    enabled: isOpen && isOwner,
     staleTime: 60_000,
   });
 
   const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
   const optionsResult = isOwner ? ownerOptions : sellerOptions;
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
@@ -277,126 +275,34 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     onClose();
   };
 
-  const handleNewClientSuccess = async (data: ClientValues) => {
-    const result = await createClientAction(data);
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
+  const handleNewClientSuccess = async (newClient: Client) => {
+    const result = await getClientsForSaleAction();
+    if (result?.data?.success && result.data.clients) {
+      setClientsOverride(result.data.clients);
+    } else {
+      setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
     }
-
-    if (result?.data?.success && result.data.client) {
-      const newClient = result.data.client as Client;
-
-      const refreshResult = await getClientsForSaleAction();
-      if (refreshResult?.data?.success && refreshResult.data.clients) {
-        setClientsOverride(refreshResult.data.clients);
-      } else {
-        setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
-      }
-
-      form.setValue('clientId', newClient.id);
-    }
-
+    form.setValue('clientId', newClient.id);
     setIsClientModalOpen(false);
   };
 
   const onSubmit = useCallback(
     async (data: SaleValues) => {
-      setIsSubmitting(true);
-      const tempId = -Date.now();
-      const isImmediate = data.paymentMethod !== 'credit';
-      const now = new Date().toISOString();
-
-      const client = localClients.find((c) => c.id === data.clientId);
-
-      const items: SaleItemDetail[] = data.items.map((item) => {
-        const variant = variants.find((v) => v.variantId === item.variantId);
-        const parts = [
-          variant?.brandName ?? null,
-          variant?.productName ?? null,
-          variant?.presentationLabel ?? null,
-        ].filter(Boolean);
-        return {
-          variantId: item.variantId,
-          variantName: parts.join(' · '),
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.quantity * item.unitPrice,
-          stockSource: item.stockSource,
-        };
-      });
-
-      const total = items.reduce((sum, i) => sum + i.subtotal, 0);
-
-      const placeholderRow: SaleRow = {
-        id: tempId,
-        date: now,
-        sellerId: user.id,
-        sellerName: user.name,
-        clientId: data.clientId ?? undefined,
-        clientName: client?.name,
-        notes: data.notes,
-        itemCount: data.items.length,
-        total,
-        paymentMethod: isImmediate ? (data.paymentMethod as 'cash' | 'transfer' | 'check') : null,
-        paymentStatus: isImmediate ? 'collected' : 'pending',
-        amountPaid: isImmediate ? total : 0,
-        ...(isImmediate ? { collectedAt: now } : {}),
-        ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
-        ownerPaymentStatus: isOwner ? (isImmediate ? 'collected' : 'pending') : 'pending',
-        ownerAmountPaid: isOwner ? (isImmediate ? total : 0) : 0,
-        ...(isOwner && isImmediate ? { ownerCollectedAt: now } : {}),
-        deliveryStatus: data.immediateDelivery ? 'delivered' : 'pending',
-        ...(data.immediateDelivery ? { deliveredAt: now } : {}),
-        items,
-      };
-
-      queryClient.setQueriesData({ queryKey: ['sales'] }, (old: unknown) => {
-        if (!old || typeof old !== 'object' || !('sales' in (old as Record<string, unknown>))) return old;
-        const existing = old as { success: boolean; sales: SaleRow[]; totalCount?: number };
-        return {
-          ...existing,
-          sales: [placeholderRow, ...existing.sales],
-          totalCount: (existing.totalCount ?? 0) + 1,
-        };
-      });
-
-      onClose();
-
-      const result = await createSaleAction(data);
-
-      setIsSubmitting(false);
+      setServerError(null);
+      const result = await submitSale(data);
 
       if (result?.serverError) {
-        queryClient.setQueriesData({ queryKey: ['sales'] }, (old: unknown) => {
-          if (!old || typeof old !== 'object' || !('sales' in (old as Record<string, unknown>))) return old;
-          const existing = old as { success: boolean; sales: SaleRow[]; totalCount?: number };
-          return {
-            ...existing,
-            sales: existing.sales.filter((s) => s.id !== tempId),
-            totalCount: (existing.totalCount ?? 1) - 1,
-          };
-        });
-        toast.error(result.serverError);
+        setServerError(result.serverError);
         return;
       }
 
       if (result?.data?.success) {
-        queryClient.setQueriesData({ queryKey: ['sales'] }, (old: unknown) => {
-          if (!old || typeof old !== 'object' || !('sales' in (old as Record<string, unknown>))) return old;
-          const existing = old as { success: boolean; sales: SaleRow[] };
-          return {
-            ...existing,
-            sales: existing.sales.map((s) => (s.id === tempId ? { ...s, id: result.data.saleId } : s)),
-          };
-        });
-
         toast.success('Venta registrada');
         onSuccess();
+        onClose();
       }
     },
-    [onSuccess, onClose, user, localClients, variants, isOwner, queryClient],
+    [submitSale, onSuccess, onClose],
   );
 
   const formatTotal = (value: number) =>
@@ -635,7 +541,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
       <ClientModal
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
-        onCreate={handleNewClientSuccess}
+        onSuccess={handleNewClientSuccess}
       />
     </>
   );

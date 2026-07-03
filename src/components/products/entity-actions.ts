@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import {
@@ -29,6 +30,7 @@ export const createBrandAction = actionClient
     }
 
     const brand: Brand = await createBrand(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, brand };
   });
 
@@ -41,6 +43,7 @@ export const updateBrandAction = actionClient
     }
 
     const brand: Brand = await updateBrand(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, brand };
   });
 
@@ -53,6 +56,7 @@ export const createCategoryAction = actionClient
     }
 
     const category: Category = await createCategory(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, category };
   });
 
@@ -65,6 +69,7 @@ export const updateCategoryAction = actionClient
     }
 
     const category: Category = await updateCategory(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, category };
   });
 
@@ -77,6 +82,7 @@ export const createQualityAction = actionClient
     }
 
     const quality: Quality = await createQuality(parsedInput.name, user.id);
+    revalidatePath('/products');
     return { success: true, quality };
   });
 
@@ -89,6 +95,7 @@ export const updateQualityAction = actionClient
     }
 
     const quality: Quality = await updateQuality(parsedInput.id, parsedInput.name);
+    revalidatePath('/products');
     return { success: true, quality };
   });
 
@@ -101,6 +108,7 @@ export const createPresentationAction = actionClient
     }
 
     const presentation: Presentation = await createPresentation(parsedInput.label, user.id);
+    revalidatePath('/products');
     return { success: true, presentation };
   });
 
@@ -113,6 +121,7 @@ export const updatePresentationAction = actionClient
     }
 
     const presentation: Presentation = await updatePresentation(parsedInput.id, parsedInput.label);
+    revalidatePath('/products');
     return { success: true, presentation };
   });
 
@@ -123,6 +132,7 @@ export const deleteBrandAction = actionClient.schema(z.object({ id: z.number() }
   }
 
   await deleteBrand(parsedInput.id);
+  revalidatePath('/products');
   return { success: true };
 });
 
@@ -135,6 +145,7 @@ export const deleteCategoryAction = actionClient
     }
 
     await deleteCategory(parsedInput.id);
+    revalidatePath('/products');
     return { success: true };
   });
 
@@ -145,6 +156,7 @@ export const deleteQualityAction = actionClient.schema(z.object({ id: z.number()
   }
 
   await deleteQuality(parsedInput.id);
+  revalidatePath('/products');
   return { success: true };
 });
 
@@ -157,5 +169,6 @@ export const deletePresentationAction = actionClient
     }
 
     await deletePresentation(parsedInput.id);
+    revalidatePath('/products');
     return { success: true };
   });

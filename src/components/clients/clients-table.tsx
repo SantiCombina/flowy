@@ -2,6 +2,7 @@
 
 import { Pencil, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import { ActionMenu } from '@/components/ui/action-menu';
 import {
@@ -16,9 +17,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS, DEFAULT_ITEMS_PER_PAGE, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
+
+import { deleteClientAction } from './actions';
 
 interface ClientsTableProps {
   clients: Client[];
@@ -35,7 +40,6 @@ interface ClientsTableProps {
   onProvinciaFilterChange?: (value: string) => void;
   showSellerColumn?: boolean;
   onEdit?: (client: Client) => void;
-  onDelete?: (clientId: number) => void;
   itemsPerPage?: ItemsPerPageOption;
   onItemsPerPageChange?: (n: ItemsPerPageOption) => void;
 }
@@ -55,12 +59,12 @@ export function ClientsTable({
   onProvinciaFilterChange,
   showSellerColumn = false,
   onEdit,
-  onDelete,
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   onItemsPerPageChange,
 }: ClientsTableProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('clients');
+  const { invalidateQueries } = useInvalidateQueries();
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   const filteredClients = useMemo(() => {
@@ -94,9 +98,22 @@ export function ClientsTable({
     return result;
   }, [clients, searchQuery, zoneFilter, localidadFilter, provinciaFilter]);
 
-  const handleDeleteConfirm = () => {
+  const handleDelete = async () => {
     if (!clientToDelete) return;
-    onDelete?.(clientToDelete.id);
+
+    const result = await deleteClientAction({ id: clientToDelete.id });
+
+    if (result?.serverError) {
+      toast.error(result.serverError);
+      setClientToDelete(null);
+      return;
+    }
+
+    if (result?.data?.success) {
+      toast.warning('Cliente eliminado');
+      invalidateQueries([queryKeys.clients.list()]);
+    }
+
     setClientToDelete(null);
   };
 
@@ -244,7 +261,7 @@ export function ClientsTable({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">
+            <AlertDialogAction onClick={handleDelete} variant="destructive">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

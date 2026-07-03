@@ -4,7 +4,6 @@ import { Copy, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useState, useMemo, Fragment } from 'react';
 import { toast } from 'sonner';
 
-import type { CommissionPaymentRow, CommissionSummary } from '@/app/services/commissions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +15,9 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -58,130 +60,58 @@ function DetailRow({ label, value }: DetailRowProps) {
   );
 }
 
-interface CommissionDetail {
-  summary: CommissionSummary;
-  payments: CommissionPaymentRow[];
-}
-
 interface SellerDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   seller: User | null;
-  initialCommissionDetail?: CommissionDetail | null;
 }
 
-export function SellerDetailsModal({
-  isOpen,
-  onClose,
-  seller,
-  initialCommissionDetail = null,
-}: SellerDetailsModalProps) {
+export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsModalProps) {
+  const { invalidateQueries } = useInvalidateQueries();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
-  const [isLoadingCommissions, setIsLoadingCommissions] = useState(false);
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [commissionData, setCommissionData] = useState<{
-    summary: CommissionSummary;
-    payments: CommissionPaymentRow[];
-  } | null>(null);
 
-  const defaultKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
-  const selectedKey = `${selectedYear}-${selectedMonth}`;
-  const isDefaultMonth = selectedKey === defaultKey;
+  const { data, isPending: isLoadingCommissions } = useServerActionQuery({
+    queryKey: queryKeys.sellers.commissions.detail(seller?.id, selectedYear, selectedMonth),
+    queryFn: () => getCommissionDetailAction({ sellerId: seller!.id, year: selectedYear, month: selectedMonth }),
+    enabled: activeTab === 'commissions' && !!seller,
+    staleTime: 30_000,
+  });
 
-  const commissionSummary =
-    commissionData?.summary ?? (isDefaultMonth ? (initialCommissionDetail?.summary ?? null) : null);
-
-  const commissionPayments =
-    commissionData?.payments ?? (isDefaultMonth ? (initialCommissionDetail?.payments ?? []) : []);
+  const commissionSummary = data?.summary ?? null;
+  const commissionPayments = data?.payments ?? [];
 
   const periodLabel = useMemo(() => {
     return `${MONTH_LABELS[selectedMonth - 1]} ${selectedYear}`;
   }, [selectedMonth, selectedYear]);
 
-  const fetchCommissionData = async (year: number, month: number) => {
-    if (!seller) return;
-    setIsLoadingCommissions(true);
-    try {
-      const result = await getCommissionDetailAction({ sellerId: seller.id, year, month });
-      if (result?.data?.success) {
-        setCommissionData({
-          summary: result.data.summary,
-          payments: result.data.payments,
-        });
-      }
-    } catch {
-    } finally {
-      setIsLoadingCommissions(false);
-    }
-  };
-
-  const handleMonthChange = (year: number, month: number) => {
-    setSelectedYear(year);
-    setSelectedMonth(month);
-    setCommissionData(null);
-    if (`${year}-${month}` !== defaultKey) {
-      fetchCommissionData(year, month);
-    }
-  };
-
   const handlePrevMonth = () => {
     const newMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
     const newYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
-    handleMonthChange(newYear, newMonth);
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
   };
 
   const handleNextMonth = () => {
     const newMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
     const newYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
-    handleMonthChange(newYear, newMonth);
+    setSelectedMonth(newMonth);
+    setSelectedYear(newYear);
   };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
 
-  const handleOptimisticPayment = (payment: {
-    amount: number;
-    date: string;
-    paymentMethod: string;
-    reference: string | null;
-    notes: string | null;
-  }) => {
-    setCommissionData((prev) => {
-      const current = prev ?? (isDefaultMonth ? initialCommissionDetail : null);
-      if (!current) return prev;
-      const newTotalPaid = current.summary.totalPaid + payment.amount;
-      const newPendingBalance = Math.max(0, current.summary.totalCommission - newTotalPaid);
-      return {
-        summary: {
-          ...current.summary,
-          totalPaid: newTotalPaid,
-          pendingBalance: newPendingBalance,
-          periodPayments: current.summary.periodPayments + payment.amount,
-        },
-        payments: [
-          {
-            id: Date.now(),
-            amount: payment.amount,
-            date: payment.date,
-            paymentMethod: payment.paymentMethod as 'transfer' | 'cash' | 'check',
-            reference: payment.reference,
-            notes: payment.notes,
-            createdAt: new Date().toISOString(),
-          },
-          ...current.payments,
-        ],
-      };
-    });
-  };
-
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     if (!seller) return;
     toast.success('Pago registrado');
+    invalidateQueries([queryKeys.sellers.commissions.detail(seller.id, selectedYear, selectedMonth)]);
+    invalidateQueries([queryKeys.sellers.list()]);
   };
 
   const handleClose = () => {
@@ -189,7 +119,6 @@ export function SellerDetailsModal({
     setSelectedYear(n.getFullYear());
     setSelectedMonth(n.getMonth() + 1);
     setActiveTab('info');
-    setCommissionData(null);
     onClose();
   };
 
@@ -198,8 +127,6 @@ export function SellerDetailsModal({
     await navigator.clipboard.writeText(seller.cbu);
     toast.info('CBU/Alias copiado');
   };
-
-  const showLoading = activeTab === 'commissions' && !isDefaultMonth && isLoadingCommissions && !commissionData;
 
   return (
     <Fragment key={seller?.id}>
@@ -256,13 +183,13 @@ export function SellerDetailsModal({
             </TabsContent>
 
             <TabsContent value="commissions" className="mt-4 space-y-4">
-              {!commissionSummary && showLoading ? (
+              {!commissionSummary && isLoadingCommissions ? (
                 <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                   Cargando comisiones...
                 </div>
               ) : commissionSummary ? (
                 <div
-                  className={`space-y-4 ${showLoading ? 'opacity-60 pointer-events-none transition-opacity' : 'transition-opacity'}`}
+                  className={`space-y-4 ${isLoadingCommissions ? 'opacity-60 pointer-events-none transition-opacity' : 'transition-opacity'}`}
                 >
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg bg-muted/30 p-3 shadow-sm">
@@ -380,7 +307,6 @@ export function SellerDetailsModal({
           sellerId={seller.id}
           sellerName={seller.name}
           pendingBalance={commissionSummary.pendingBalance}
-          onOptimisticPayment={handleOptimisticPayment}
         />
       )}
     </Fragment>

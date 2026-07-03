@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
@@ -18,6 +17,8 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import type { User } from '@/payload-types';
 
 import { dispatchStockAction } from '../actions';
@@ -31,8 +32,8 @@ interface DispatchStockModalProps {
 }
 
 export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variants }: DispatchStockModalProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(dispatchStockAction);
+  const { executeAsync, isExecuting } = useAction(dispatchStockAction);
+  const { invalidateQueries } = useInvalidateQueries();
   const [quantities, setQuantities] = useState<Record<number, string>>({});
 
   const handleQuantityChange = (variantId: number, value: string) => {
@@ -55,25 +56,10 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
       return;
     }
 
-    handleClose();
-
-    queryClient.setQueriesData({ queryKey: ['products'] }, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      if (!('docs' in oldData) || !Array.isArray((oldData as Record<string, unknown>).docs)) return oldData;
-      return {
-        ...oldData,
-        docs: (oldData as { docs: Array<{ id: number; stock: number }> }).docs.map((variant) => {
-          const item = items.find((i) => i.variantId === variant.id);
-          return item ? { ...variant, stock: Math.max(0, variant.stock - item.quantity) } : variant;
-        }),
-      };
-    });
-
     const result = await executeAsync({ sellerId: seller.id, items });
 
-    if (result?.serverError || result?.validationErrors) {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.error(result?.serverError ?? 'Error de validación');
+    if (result?.serverError) {
+      toast.error(result.serverError);
       return;
     }
 
@@ -94,19 +80,14 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
       if (zeroStockItems.length === 0) {
         toast.success('Stock despachado');
       }
-      queryClient.invalidateQueries({
-        queryKey: ['products'],
-        refetchType: 'none',
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['sellers'],
-        refetchType: 'none',
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['mobileInventory'],
-        refetchType: 'none',
-      });
+      setQuantities({});
+      invalidateQueries([
+        queryKeys.sellers.list(),
+        queryKeys.products.list('', 1),
+        queryKeys.mobileInventory.forSeller(seller.id),
+      ]);
       onSuccess();
+      onClose();
     }
   };
 
@@ -178,11 +159,11 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
         </ResponsiveModalBody>
 
         <ResponsiveModalFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={variantsWithStock.length === 0}>
-            Confirmar despacho
+          <Button type="submit" disabled={isExecuting || variantsWithStock.length === 0}>
+            {isExecuting ? 'Despachando...' : 'Confirmar despacho'}
           </Button>
         </ResponsiveModalFooter>
       </form>

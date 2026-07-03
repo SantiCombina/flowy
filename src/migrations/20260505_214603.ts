@@ -23,6 +23,9 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
+  // ⚠️ ADVERTENCIA: Esta migración ELIMINA la tabla "zones" y TODOS sus datos.
+  // Los clientes con zonas asignadas perderán la referencia (zone_id se setea a null).
+  // Si necesitas conservar los datos, haz un backup antes de ejecutar esta migración.
   await db.execute(sql`
    ALTER TABLE "zones" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "zones" CASCADE;

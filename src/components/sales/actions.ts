@@ -73,9 +73,8 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
     throw new Error('No autorizado');
   }
 
-  let sale;
   if (user.role === 'owner') {
-    sale = await createSale(user.id, user.id, parsedInput);
+    await createSale(user.id, user.id, parsedInput);
   } else {
     const ownerId = typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
@@ -83,10 +82,10 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
       throw new Error('El vendedor no tiene un dueño asignado');
     }
 
-    sale = await createSale(user.id, ownerId, parsedInput);
+    await createSale(user.id, ownerId, parsedInput);
   }
 
-  return { success: true, saleId: sale.id };
+  return { success: true };
 });
 
 export const markSaleAsCollectedAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {

@@ -5,7 +5,6 @@ import { Suspense } from 'react';
 import { getClientDebts, getClients } from '@/app/services/clients';
 import { ClientsSection } from '@/components/clients/clients-section';
 import { PageHeader } from '@/components/layout/page-header';
-import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { getCurrentUser } from '@/lib/payload';
@@ -39,18 +38,7 @@ async function ClientsContent() {
     getClientDebts({ ownerId, sellerId }),
   ]);
 
-  const channel = user.role === 'seller' ? `private-seller-${user.id}` : `private-owner-${ownerId}`;
-
-  return (
-    <>
-      <RealtimeRefresher
-        channel={channel}
-        events={['client_created', 'client_updated', 'client_deleted']}
-        userId={user.id}
-      />
-      <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={serializeForClient(user)} />
-    </>
-  );
+  return <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={serializeForClient(user)} />;
 }
 
 export default async function ClientsPage() {

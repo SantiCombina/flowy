@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { format, isPast } from 'date-fns';
 import {
   ArrowDown,
@@ -16,14 +15,11 @@ import {
   ShoppingCart,
   Trash2,
 } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { useAction } from 'next-safe-action/hooks';
 import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { BudgetRow } from '@/app/services/budgets';
-import type { SaleOptions } from '@/app/services/sales';
-import { getCurrentUserAction } from '@/components/profile/actions';
 import { useUser } from '@/components/providers/user-provider';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -47,17 +43,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
 import { useBudgetsUrlSync } from '@/hooks/use-budgets-url-sync';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 
-import { deleteBudgetAction, getBudgetConvertDataAction, getBudgetsAction } from './actions';
+import { deleteBudgetAction, getBudgetsAction } from './actions';
+import { BudgetConvertDialog } from './budget-convert-dialog';
 import { NewBudgetButton } from './new-budget-button';
-
-const BudgetConvertDialog = dynamic(() => import('./budget-convert-dialog').then((m) => m.BudgetConvertDialog));
-const NewBudgetDialog = dynamic(() => import('./new-budget-dialog').then((m) => m.NewBudgetDialog));
+import { NewBudgetDialog } from './new-budget-dialog';
 
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', {
@@ -161,31 +157,16 @@ interface BudgetsSectionProps {
     totalPages: number;
     page: number;
   };
-  budgetOptions?: SaleOptions;
   showSellerColumn: boolean;
   isSeller: boolean;
 }
 
-function BudgetsSectionComponent({
-  initialFilters,
-  initialResult,
-  budgetOptions,
-  showSellerColumn,
-  isSeller,
-}: BudgetsSectionProps) {
+function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColumn, isSeller }: BudgetsSectionProps) {
   const user = useUser();
-  const { data: currentUser } = useServerActionQuery({
-    queryKey: queryKeys.user.current(),
-    queryFn: () => getCurrentUserAction(),
-    staleTime: 60_000,
-  });
   const isOwner = !isSeller;
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('budgets');
-  const queryClient = useQueryClient();
-
-  const [capturedInitialFilters] = useState(() => initialFilters);
-  const [capturedInitialResult] = useState(() => initialResult);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const [filters, setFilters] = useState<GetBudgetsListValues>(() => initialFilters);
 
@@ -193,106 +174,76 @@ function BudgetsSectionComponent({
 
   const isInitialQuery = useMemo(() => {
     return (
-      filters.page === capturedInitialFilters.page &&
-      filters.limit === capturedInitialFilters.limit &&
-      filters.sort === capturedInitialFilters.sort &&
-      filters.sortDir === capturedInitialFilters.sortDir &&
-      filters.dateFrom === capturedInitialFilters.dateFrom &&
-      filters.dateTo === capturedInitialFilters.dateTo &&
-      filters.status === capturedInitialFilters.status
+      filters.page === initialFilters.page &&
+      filters.limit === initialFilters.limit &&
+      filters.sort === initialFilters.sort &&
+      filters.sortDir === initialFilters.sortDir &&
+      filters.dateFrom === initialFilters.dateFrom &&
+      filters.dateTo === initialFilters.dateTo &&
+      filters.status === initialFilters.status
     );
-  }, [filters, capturedInitialFilters]);
+  }, [filters, initialFilters]);
 
   const { data, isPending, isError, error, refetch } = useServerActionQuery({
     queryKey: queryKeys.budgets.list(filters),
     queryFn: () => getBudgetsAction(filters),
-    initialData: isInitialQuery ? { success: true, ...capturedInitialResult } : undefined,
+    initialData: isInitialQuery ? { success: true, ...initialResult } : undefined,
     placeholderData: (previousData) => previousData,
-    staleTime: Infinity,
+    staleTime: 10_000,
   });
 
-  const budgetsData = data?.budgets ?? capturedInitialResult.budgets;
-  const totalCount = data?.totalCount ?? capturedInitialResult.totalCount;
-  const totalPages = data?.totalPages ?? capturedInitialResult.totalPages;
-  const currentPage = data?.page ?? capturedInitialResult.page;
+  const budgetsData = data?.budgets ?? initialResult.budgets;
+  const totalCount = data?.totalCount ?? initialResult.totalCount;
+  const totalPages = data?.totalPages ?? initialResult.totalPages;
+  const currentPage = data?.page ?? initialResult.page;
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [convertingBudgetId, setConvertingBudgetId] = useState<number | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
-  const [editBudgetId, setEditBudgetId] = useState<number | undefined>(undefined);
+  const [editingBudgetId, setEditingBudgetId] = useState<number | undefined>(undefined);
   const [dialogKey, setDialogKey] = useState(0);
 
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteBudgetAction);
 
   const handleOpenNew = () => {
-    setEditBudgetId(undefined);
+    setEditingBudgetId(undefined);
     setDialogKey((k) => k + 1);
     setIsNewDialogOpen(true);
   };
 
   const handleOpenEdit = (budgetId: number) => {
-    setEditBudgetId(budgetId);
+    setEditingBudgetId(budgetId);
     setDialogKey((k) => k + 1);
     setIsNewDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setIsNewDialogOpen(false);
-    setEditBudgetId(undefined);
+    setEditingBudgetId(undefined);
   };
 
-  const handleDialogSuccess = useCallback(() => undefined, []);
-
-  const handleConvertClick = async (budgetId: number) => {
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.budgets.convertData(budgetId),
-      queryFn: async () => {
-        const result = await getBudgetConvertDataAction({ budgetId });
-        if (result.serverError) throw new Error(result.serverError);
-        return result.data;
-      },
-      staleTime: 5 * 60 * 1000,
-    });
-    setConvertingBudgetId(budgetId);
-  };
+  const handleDialogSuccess = useCallback(() => {
+    invalidateQueries([queryKeys.budgets.list(filters)]);
+  }, [invalidateQueries, filters]);
 
   const handleDelete = async (budgetId: number) => {
+    const result = await executeDelete({ budgetId });
     setDeleteConfirmId(null);
 
-    const previousData: { queryKey: readonly unknown[]; data: unknown }[] = [];
-    queryClient.getQueriesData({ queryKey: ['budgets', 'list'] }).forEach(([key, d]) => {
-      previousData.push({ queryKey: key, data: d });
-    });
-
-    queryClient.setQueriesData({ queryKey: ['budgets', 'list'] }, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      const data = oldData as Record<string, unknown>;
-      if (!Array.isArray(data.budgets)) return oldData;
-      return {
-        ...data,
-        budgets: (data.budgets as Array<Record<string, unknown>>).filter((b) => b.id !== budgetId),
-        totalCount: Math.max(0, ((data.totalCount as number) ?? 0) - 1),
-      };
-    });
-
-    const result = await executeDelete({ budgetId });
-
     if (result?.serverError) {
-      for (const { queryKey, data: saved } of previousData) {
-        if (saved) queryClient.setQueryData(queryKey, saved);
-      }
       toast.error(result.serverError);
       return;
     }
 
     if (result?.data?.success) {
       toast.warning('Presupuesto eliminado');
+      invalidateQueries([queryKeys.budgets.list(filters)]);
     }
   };
 
   const handleWhatsApp = (budget: BudgetRow) => {
-    const businessName = currentUser?.businessName ?? user?.businessName ?? null;
+    const businessName = user?.businessName ?? null;
     window.open(getWhatsAppLink(budget, businessName), '_blank');
   };
 
@@ -543,7 +494,7 @@ function BudgetsSectionComponent({
                                   budget.status === 'pending' && {
                                     label: 'Convertir a venta',
                                     icon: ShoppingCart,
-                                    onClick: () => handleConvertClick(budget.id),
+                                    onClick: () => setConvertingBudgetId(budget.id),
                                   },
                                   canManage && budget.status === 'pending'
                                     ? {
@@ -696,8 +647,7 @@ function BudgetsSectionComponent({
         isOpen={isNewDialogOpen}
         onClose={handleCloseDialog}
         onSuccess={handleDialogSuccess}
-        budgetOptions={budgetOptions}
-        editBudgetId={editBudgetId}
+        editBudgetId={editingBudgetId}
       />
 
       <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>

@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAction } from 'next-safe-action/hooks';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -10,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { formatPhoneInput } from '@/lib/phone';
-import { queryKeys } from '@/lib/query-keys';
 import { updateProfileSchema, type UpdateProfileValues } from '@/schemas/profile/update-profile-schema';
 
 import { updateProfileAction } from './actions';
@@ -34,8 +32,7 @@ interface UpdateProfileFormProps {
 }
 
 export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFormProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(updateProfileAction);
+  const { executeAsync, isExecuting } = useAction(updateProfileAction);
 
   const form = useForm<UpdateProfileValues>({
     resolver: zodResolver(updateProfileSchema),
@@ -48,28 +45,9 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
   });
 
   async function onSubmit(data: UpdateProfileValues) {
-    const userKey = queryKeys.user.current();
-    const previousData = queryClient.getQueryData(userKey);
-
-    queryClient.setQueryData(userKey, (oldData: unknown) => {
-      if (!oldData || typeof oldData !== 'object') return oldData;
-      return {
-        ...(oldData as Record<string, unknown>),
-        phone: data.phone || null,
-        dni: data.dni || null,
-        cuitCuil: data.cuitCuil || null,
-        cbu: data.cbu || null,
-      };
-    });
-
     const result = await executeAsync(data);
 
     if (result?.serverError) {
-      if (previousData !== undefined) {
-        queryClient.setQueryData(userKey, previousData);
-      } else {
-        queryClient.removeQueries({ queryKey: userKey });
-      }
       toast.error(result.serverError);
       return;
     }
@@ -153,8 +131,8 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
           )}
         />
 
-        <Button type="submit" className="ml-auto block">
-          Guardar cambios
+        <Button type="submit" disabled={isExecuting} className="ml-auto block">
+          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
         </Button>
       </form>
     </Form>

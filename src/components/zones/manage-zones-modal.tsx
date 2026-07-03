@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
@@ -26,6 +25,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { Zone } from '@/payload-types';
@@ -39,7 +39,7 @@ interface ManageZonesModalProps {
 }
 
 export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZonesModalProps) {
-  const queryClient = useQueryClient();
+  const { invalidateQueries } = useInvalidateQueries();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [newZoneName, setNewZoneName] = useState('');
@@ -80,7 +80,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     if (result?.data?.success && result.data.zone) {
       setNewZoneName('');
       setIsAdding(false);
-      queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.success(`Zona "${name}" creada`);
     }
@@ -99,7 +99,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     if (result?.data?.success && result.data.zone) {
       setEditingId(null);
       setEditingName('');
-      queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.success('Zona actualizada');
     }
@@ -113,7 +113,7 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
     }
 
     if (result?.data?.success) {
-      queryClient.invalidateQueries({ queryKey: ['zones'], refetchType: 'none' });
+      invalidateQueries([queryKeys.zones.list()]);
       onZonesChanged();
       toast.warning('Zona eliminada');
     }

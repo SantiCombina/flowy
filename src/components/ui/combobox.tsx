@@ -17,7 +17,6 @@ interface ComboboxProps {
   options: ComboboxOption[];
   value: string;
   onValueChange: (value: string) => void;
-  onClear?: () => void;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -37,7 +36,6 @@ export function Combobox({
   options,
   value,
   onValueChange,
-  onClear,
   placeholder = 'Seleccionar...',
   searchPlaceholder = 'Buscar...',
   emptyMessage = 'Sin resultados.',
@@ -128,11 +126,7 @@ export function Combobox({
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onClear) {
-      onClear();
-    } else {
-      onValueChange('');
-    }
+    onValueChange('');
     setSearch('');
     setHighlightedIndex(0);
     inputRef.current?.focus();
@@ -157,32 +151,18 @@ export function Combobox({
               autoCapitalize="off"
               spellCheck={false}
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
               {selected && !open && (
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="text-muted-foreground hover:text-foreground p-1"
+                  className="pointer-events-auto text-muted-foreground hover:text-foreground p-1"
                   tabIndex={-1}
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (!open && !disabled) {
-                    setSearch(displayValue);
-                    setHighlightedIndex(0);
-                    setOpen(true);
-                    inputRef.current?.focus();
-                  }
-                }}
-                tabIndex={-1}
-                className="text-muted-foreground"
-              >
-                <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
-              </button>
+              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
             </div>
           </div>
         </div>

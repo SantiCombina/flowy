@@ -2,7 +2,7 @@ import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getBudgetOptions, getPaginatedBudgets } from '@/app/services/budgets';
+import { getPaginatedBudgets } from '@/app/services/budgets';
 import { BudgetsSection } from '@/components/budgets/budgets-section';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
@@ -32,7 +32,6 @@ async function BudgetsDataFetcher({
 
   const isSeller = user.role === 'seller';
   const ownerId = isSeller ? (typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0)) : user.id;
-  const sellerId = user.id;
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
   const params = await paramsPromise;
@@ -61,35 +60,27 @@ async function BudgetsDataFetcher({
     ),
   };
 
-  const [initialResult, budgetOptions] = await Promise.all([
-    getPaginatedBudgets(
-      ownerId,
-      {
-        dateFrom: initialFilters.dateFrom,
-        dateTo: initialFilters.dateTo,
-        status: initialFilters.status,
-      },
-      {
-        page: initialFilters.page,
-        limit: initialFilters.limit,
-        sort: initialFilters.sort,
-        sortDir: initialFilters.sortDir,
-      },
-    ),
-    getBudgetOptions(sellerId, ownerId),
-  ]);
+  const initialResult = await getPaginatedBudgets(
+    ownerId,
+    {
+      dateFrom: initialFilters.dateFrom,
+      dateTo: initialFilters.dateTo,
+      status: initialFilters.status,
+    },
+    {
+      page: initialFilters.page,
+      limit: initialFilters.limit,
+      sort: initialFilters.sort,
+      sortDir: initialFilters.sortDir,
+    },
+  );
 
   return (
     <>
-      <RealtimeRefresher
-        channel={channel}
-        events={['budget_created', 'budget_updated', 'budget_deleted', 'budget_converted']}
-        userId={user.id}
-      />
+      <RealtimeRefresher channel={channel} events={['budget_created']} />
       <BudgetsSection
         initialFilters={initialFilters}
         initialResult={initialResult}
-        budgetOptions={budgetOptions}
         showSellerColumn={!isSeller}
         isSeller={isSeller}
       />

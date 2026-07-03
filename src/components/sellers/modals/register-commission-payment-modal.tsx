@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
@@ -26,6 +25,8 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -48,13 +49,6 @@ interface RegisterCommissionPaymentModalProps {
   sellerId: number;
   sellerName: string;
   pendingBalance: number;
-  onOptimisticPayment?: (payment: {
-    amount: number;
-    date: string;
-    paymentMethod: string;
-    reference: string | null;
-    notes: string | null;
-  }) => void;
 }
 
 export function RegisterCommissionPaymentModal({
@@ -64,10 +58,9 @@ export function RegisterCommissionPaymentModal({
   sellerId,
   sellerName,
   pendingBalance,
-  onOptimisticPayment,
 }: RegisterCommissionPaymentModalProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(registerCommissionPaymentAction);
+  const { executeAsync, isExecuting } = useAction(registerCommissionPaymentAction);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const form = useForm<RegisterCommissionPaymentValues>({
     resolver: zodResolver(registerCommissionPaymentSchema),
@@ -95,15 +88,6 @@ export function RegisterCommissionPaymentModal({
   }, [isOpen, sellerId, pendingBalance]);
 
   const onSubmit = async (data: RegisterCommissionPaymentValues) => {
-    onOptimisticPayment?.({
-      amount: data.amount,
-      date: data.date,
-      paymentMethod: data.paymentMethod,
-      reference: data.reference ?? null,
-      notes: data.notes ?? null,
-    });
-    onClose();
-
     const result = await executeAsync(data);
 
     if (result?.serverError) {
@@ -112,8 +96,10 @@ export function RegisterCommissionPaymentModal({
     }
 
     if (result?.data?.success) {
-      queryClient.invalidateQueries({ queryKey: ['sellers'], refetchType: 'none' });
+      toast.success('Pago registrado');
+      invalidateQueries([queryKeys.sellers.list()]);
       onSuccess();
+      onClose();
     }
   };
 
@@ -243,10 +229,12 @@ export function RegisterCommissionPaymentModal({
           </ResponsiveModalBody>
 
           <ResponsiveModalFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
               Cancelar
             </Button>
-            <Button type="submit">Registrar pago</Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting ? 'Registrando…' : 'Registrar pago'}
+            </Button>
           </ResponsiveModalFooter>
         </form>
       </Form>

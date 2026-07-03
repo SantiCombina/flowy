@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath, revalidateTag } from 'next/cache';
+
 import { registerStockMovement } from '@/app/services/stock-movements';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
@@ -31,6 +33,9 @@ export const registerStockMovementAction = actionClient
       createdById: user.id,
       ownerId,
     });
+
+    revalidatePath('/products');
+    revalidateTag('dashboard');
 
     return {
       success: true,

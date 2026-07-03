@@ -1,7 +1,6 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -18,6 +17,8 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
+import { queryKeys } from '@/lib/query-keys';
 import { inviteSellerSchema, type InviteSellerValues } from '@/schemas/sellers/invite-seller-schema';
 
 import { inviteSellerAction } from '../actions';
@@ -29,8 +30,8 @@ interface InviteSellerModalProps {
 }
 
 export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerModalProps) {
-  const queryClient = useQueryClient();
-  const { executeAsync } = useAction(inviteSellerAction);
+  const { executeAsync, isExecuting } = useAction(inviteSellerAction);
+  const { invalidateQueries } = useInvalidateQueries();
 
   const form = useForm<InviteSellerValues>({
     resolver: zodResolver(inviteSellerSchema),
@@ -48,8 +49,6 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
 
   const onSubmit = useCallback(
     async (data: InviteSellerValues) => {
-      onClose();
-
       const result = await executeAsync(data);
 
       if (result?.serverError) {
@@ -59,11 +58,13 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
 
       if (result?.data?.success) {
         toast.success('Invitación enviada');
-        queryClient.invalidateQueries({ queryKey: ['sellers'], refetchType: 'none' });
+        form.reset();
+        invalidateQueries([queryKeys.sellers.list()]);
         onSuccess();
+        onClose();
       }
     },
-    [executeAsync, queryClient, onSuccess, onClose],
+    [executeAsync, form, invalidateQueries, onSuccess, onClose],
   );
 
   const handleClose = () => {
@@ -114,10 +115,12 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
           </ResponsiveModalBody>
 
           <ResponsiveModalFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isExecuting}>
               Cancelar
             </Button>
-            <Button type="submit">Enviar invitación</Button>
+            <Button type="submit" disabled={isExecuting}>
+              {isExecuting ? 'Enviando…' : 'Enviar invitación'}
+            </Button>
           </ResponsiveModalFooter>
         </form>
       </Form>

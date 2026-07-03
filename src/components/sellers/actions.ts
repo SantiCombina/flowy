@@ -8,7 +8,6 @@ import {
 } from '@/app/services/mobile-seller';
 import { deleteSeller, getSellers, updateSeller } from '@/app/services/users';
 import { getCurrentUser } from '@/lib/payload';
-import { pusherServer } from '@/lib/pusher-server';
 import { actionClient } from '@/lib/safe-action';
 import { dispatchStockSchema } from '@/schemas/sellers/dispatch-stock-schema';
 import { deleteSellerActionSchema, updateSellerActionSchema } from '@/schemas/sellers/edit-seller-schema';
@@ -26,14 +25,6 @@ export const inviteSellerAction = actionClient.schema(inviteSellerSchema).action
 
   await createInvitation(parsedInput.name, parsedInput.email, ownerId);
 
-  try {
-    await pusherServer.trigger(`private-owner-${ownerId}`, 'seller_invited', {
-      metadata: { userId: ownerId },
-    });
-  } catch {
-    return;
-  }
-
   return { success: true };
 });
 
@@ -47,14 +38,6 @@ export const updateSellerAction = actionClient.schema(updateSellerActionSchema).
   const { id, ...data } = parsedInput;
   const seller = await updateSeller(id, data);
 
-  try {
-    await pusherServer.trigger(`private-owner-${user.id}`, 'seller_updated', {
-      metadata: { userId: user.id },
-    });
-  } catch {
-    return;
-  }
-
   return { success: true, seller };
 });
 
@@ -66,14 +49,6 @@ export const deleteSellerAction = actionClient.schema(deleteSellerActionSchema).
   }
 
   await deleteSeller(parsedInput.id);
-
-  try {
-    await pusherServer.trigger(`private-owner-${user.id}`, 'seller_deleted', {
-      metadata: { userId: user.id },
-    });
-  } catch {
-    return;
-  }
 
   return { success: true };
 });
