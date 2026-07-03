@@ -10,7 +10,6 @@ import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/
 import type { Period } from '@/app/services/dashboard';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
-import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { getCurrentUser } from '@/lib/payload';
 
@@ -72,7 +71,6 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   return (
     <>
-      <PageHeader title="Dashboard" description="Resumen general del negocio" />
       <Suspense fallback={<DashboardSkeleton />}>
         <DashboardContent searchParams={searchParams} />
       </Suspense>

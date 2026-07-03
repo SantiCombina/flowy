@@ -44,6 +44,7 @@ export const Notifications: CollectionConfig = {
         { label: 'Stock devuelto', value: 'stock_returned' },
         { label: 'Stock bajo', value: 'stock_low' },
         { label: 'Stock ajustado', value: 'stock_adjusted' },
+        { label: 'Presupuesto creado', value: 'budget_created' },
       ],
     },
     {

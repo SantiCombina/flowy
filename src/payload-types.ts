@@ -697,7 +697,14 @@ export interface Notification {
   id: number;
   recipient: number | User;
   owner: number | User;
-  type: 'sale_created' | 'payment_registered' | 'stock_dispatched' | 'stock_returned' | 'stock_low' | 'stock_adjusted';
+  type:
+    | 'sale_created'
+    | 'payment_registered'
+    | 'stock_dispatched'
+    | 'stock_returned'
+    | 'stock_low'
+    | 'stock_adjusted'
+    | 'budget_created';
   title: string;
   body: string;
   metadata?:
