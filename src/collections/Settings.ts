@@ -43,7 +43,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de productos',
       },
-      defaultValue: DEFAULT_COLUMNS.products,
+      defaultValue: DEFAULT_COLUMNS.products.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -58,7 +58,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de clientes',
       },
-      defaultValue: DEFAULT_COLUMNS.clients,
+      defaultValue: DEFAULT_COLUMNS.clients.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -73,7 +73,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de ventas',
       },
-      defaultValue: DEFAULT_COLUMNS.sales,
+      defaultValue: DEFAULT_COLUMNS.sales.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -88,7 +88,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de asignaciones',
       },
-      defaultValue: DEFAULT_COLUMNS.assignments,
+      defaultValue: DEFAULT_COLUMNS.assignments.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -103,7 +103,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de historial',
       },
-      defaultValue: DEFAULT_COLUMNS.history,
+      defaultValue: DEFAULT_COLUMNS.history.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -118,7 +118,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de vendedores',
       },
-      defaultValue: DEFAULT_COLUMNS.sellers,
+      defaultValue: DEFAULT_COLUMNS.sellers.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',
@@ -133,7 +133,7 @@ export const Settings: CollectionConfig = {
       admin: {
         description: 'Columnas visibles en la tabla de presupuestos',
       },
-      defaultValue: DEFAULT_COLUMNS.budgets,
+      defaultValue: DEFAULT_COLUMNS.budgets.map((col) => ({ column: col })),
       fields: [
         {
           name: 'column',

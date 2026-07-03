@@ -51,6 +51,7 @@ export async function getSettings(userId: number): Promise<Setting> {
         })),
         historyColumns: DEFAULT_COLUMNS.history.map((col) => ({ column: col })),
         sellersColumns: DEFAULT_COLUMNS.sellers.map((col) => ({ column: col })),
+        budgetsColumns: DEFAULT_COLUMNS.budgets.map((col) => ({ column: col })),
         itemsPerPage: DEFAULT_ITEMS_PER_PAGE.toString() as Setting['itemsPerPage'],
       },
     });
