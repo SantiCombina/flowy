@@ -1,6 +1,6 @@
 'use client';
 
-import { format } from 'date-fns';
+import { endOfDay, parseISO, startOfDay } from 'date-fns';
 import {
   ArrowDown,
   ArrowUp,
@@ -285,8 +285,8 @@ function SalesSectionComponent({
   const handleDateRangeChange = (range: DateRangeValue | undefined) => {
     setFilters((prev) => ({
       ...prev,
-      dateFrom: range ? format(range.from, 'yyyy-MM-dd') : '',
-      dateTo: range ? format(range.to, 'yyyy-MM-dd') : '',
+      dateFrom: range ? startOfDay(range.from).toISOString() : '',
+      dateTo: range ? endOfDay(range.to).toISOString() : '',
       page: 1,
     }));
   };
@@ -305,7 +305,7 @@ function SalesSectionComponent({
 
   const dateRangeValue = useMemo<DateRangeValue | undefined>(() => {
     if (!filters.dateFrom || !filters.dateTo) return undefined;
-    return { from: new Date(filters.dateFrom), to: new Date(filters.dateTo) };
+    return { from: parseISO(filters.dateFrom), to: parseISO(filters.dateTo) };
   }, [filters.dateFrom, filters.dateTo]);
 
   const showSeller = showSellerColumn && visibleColumns.includes('seller');

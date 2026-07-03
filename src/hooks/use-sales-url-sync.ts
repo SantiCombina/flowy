@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
 const VALID_LIMITS = [25, 50, 100] as const;
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function parsePage(value: string | null): number {
   const parsed = parseInt(value ?? '1', 10);
@@ -18,7 +17,7 @@ function parseLimit(value: string | null): 25 | 50 | 100 {
 }
 
 function parseOptionalDate(value: string | null): string | undefined {
-  return value && DATE_REGEX.test(value) ? value : undefined;
+  return value && value.trim().length > 0 ? value : undefined;
 }
 
 function parseOptionalPositiveInt(value: string | null): number | undefined {

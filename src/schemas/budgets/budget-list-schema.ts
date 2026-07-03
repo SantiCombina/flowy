@@ -2,8 +2,6 @@ import { z } from 'zod';
 
 const SORT_COLUMNS = ['date', 'seller', 'client', 'items', 'total', 'status'] as const;
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 export const getBudgetsListSchema = z.object({
   page: z
     .number({
@@ -36,8 +34,7 @@ export const getBudgetsListSchema = z.object({
       invalid_type_error: 'La fecha de inicio debe ser una cadena de texto.',
     })
     .trim()
-    .max(10, 'La fecha de inicio no puede superar los 10 caracteres.')
-    .regex(DATE_REGEX, 'La fecha de inicio debe tener formato YYYY-MM-DD.')
+    .max(30, 'La fecha de inicio no puede superar los 30 caracteres.')
     .optional()
     .transform((value) => value || undefined),
   dateTo: z
@@ -45,8 +42,7 @@ export const getBudgetsListSchema = z.object({
       invalid_type_error: 'La fecha de fin debe ser una cadena de texto.',
     })
     .trim()
-    .max(10, 'La fecha de fin no puede superar los 10 caracteres.')
-    .regex(DATE_REGEX, 'La fecha de fin debe tener formato YYYY-MM-DD.')
+    .max(30, 'La fecha de fin no puede superar los 30 caracteres.')
     .optional()
     .transform((value) => value || undefined),
   status: z
