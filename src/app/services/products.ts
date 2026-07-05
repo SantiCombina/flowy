@@ -1,6 +1,9 @@
 import type { Where } from 'payload';
+import { revalidateTag, unstable_cache } from 'next/cache';
 
+import { cacheTags } from '@/lib/cache-tags';
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import type { Brand, Category, Product, ProductVariant, Presentation, Quality } from '@/payload-types';
 
 export interface PopulatedProductVariant extends Omit<ProductVariant, 'product' | 'presentation'> {
@@ -127,6 +130,10 @@ export async function createProduct(data: CreateProductData, ownerId: number): P
     overrideAccess: true,
   });
 
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {}
   return product;
 }
 
@@ -140,11 +147,23 @@ export async function updateProduct(id: number, data: UpdateProductData): Promis
     overrideAccess: true,
   });
 
+  const ownerId = resolveId(product.owner) ?? 0;
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {}
   return product;
 }
 
 export async function deleteProduct(id: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existingProduct = await payload.findByID({
+    collection: 'products',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
 
   const variants = await payload.find({
     collection: 'product-variants',
@@ -196,6 +215,13 @@ export async function deleteProduct(id: number): Promise<void> {
     id,
     overrideAccess: true,
   });
+
+  const ownerId = resolveId(existingProduct.owner) ?? 0;
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.history(ownerId));
+  } catch {}
 }
 
 export type CreateVariantData = Omit<ProductVariant, 'id' | 'createdAt' | 'updatedAt' | 'owner'>;
@@ -247,6 +273,10 @@ export async function createVariant(data: CreateVariantData, ownerId: number): P
     overrideAccess: true,
   });
 
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {}
   return variant;
 }
 
@@ -260,11 +290,23 @@ export async function updateVariant(id: number, data: UpdateVariantData): Promis
     overrideAccess: true,
   });
 
+  const ownerId = resolveId(variant.owner) ?? 0;
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {}
   return variant;
 }
 
 export async function deleteVariant(id: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existingVariant = await payload.findByID({
+    collection: 'product-variants',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
 
   const { totalDocs } = await payload.find({
     collection: 'sales',
@@ -282,6 +324,12 @@ export async function deleteVariant(id: number): Promise<void> {
     id,
     overrideAccess: true,
   });
+
+  const ownerId = resolveId(existingVariant.owner) ?? 0;
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {}
 }
 
 export async function getAllVariants(
@@ -331,7 +379,7 @@ export interface VariantFilters {
   isActive?: boolean;
 }
 
-export async function getVariantsWithProducts(
+async function _getVariantsWithProducts(
   ownerId: number,
   filters?: VariantFilters,
   options?: {
@@ -411,6 +459,16 @@ export async function getVariantsWithProducts(
     sort: options?.sort || 'product',
     depth: 2,
     overrideAccess: true,
+    select: {
+      id: true,
+      code: true,
+      stock: true,
+      costPrice: true,
+      profitMargin: true,
+      minimumStock: true,
+      product: { select: { id: true, name: true, brand: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, quality: { select: { id: true, name: true } }, image: { select: { id: true, url: true } }, isActive: true } },
+      presentation: { select: { id: true, label: true } },
+    } as any,
   });
 
   return {
@@ -419,4 +477,25 @@ export async function getVariantsWithProducts(
     totalPages: result.totalPages,
     page: result.page!,
   };
+}
+
+export async function getVariantsWithProducts(
+  ownerId: number,
+  filters?: VariantFilters,
+  options?: {
+    limit?: number;
+    page?: number;
+    sort?: string;
+  },
+): Promise<{
+  docs: PopulatedProductVariant[];
+  totalDocs: number;
+  totalPages: number;
+  page: number;
+}> {
+  return unstable_cache(
+    async () => _getVariantsWithProducts(ownerId, filters, options),
+    ['variants-with-products', String(ownerId), JSON.stringify(filters), JSON.stringify(options)],
+    { revalidate: 60 * 2, tags: [cacheTags.products(ownerId)] },
+  )();
 }

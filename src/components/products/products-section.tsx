@@ -3,7 +3,7 @@
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query';
 import { DollarSign, EyeOff, Eye, Plus, RotateCcw, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -62,6 +62,7 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isFirstPageNoSearch = page === 1 && !searchQuery;
   const queryClient = useQueryClient();
@@ -104,10 +105,15 @@ export function ProductsSection({ initialRefData, initialVariants }: Props) {
 
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setPage(1);
-  };
+  const handleSearchChange = useCallback((value: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchQuery(value);
+      setPage(1);
+    }, 350);
+  }, []);
 
   const selectedVariants = useMemo(
     () => variants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),

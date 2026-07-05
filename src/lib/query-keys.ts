@@ -47,8 +47,8 @@ export const queryKeys = {
   },
   history: {
     list: () => ['history'] as const,
-    filtered: (dateRange: { from: Date; to: Date } | undefined, types: MovementType[]) =>
-      ['history', { dateRange, types }] as const,
+    filtered: (dateRange: { from: Date; to: Date } | undefined, types: MovementType[], page: number, limit: number) =>
+      ['history', { dateRange, types, page, limit }] as const,
   },
   notifications: {
     list: () => ['notifications'] as const,

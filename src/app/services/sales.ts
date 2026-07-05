@@ -3,6 +3,7 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
+import { cacheTags } from '@/lib/cache-tags';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
@@ -152,10 +153,13 @@ async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleO
   return { variants, clients };
 }
 
-export const getSaleOptions = unstable_cache(_getSaleOptions, ['sale-options'], {
-  revalidate: 60 * 2,
-  tags: ['sale-options'],
-});
+export async function getSaleOptions(sellerId: number, ownerId: number): Promise<SaleOptions> {
+  return unstable_cache(
+    async () => _getSaleOptions(sellerId, ownerId),
+    ['sale-options', String(ownerId)],
+    { revalidate: 60 * 2, tags: [cacheTags.saleOptions(ownerId)] },
+  )();
+}
 
 export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
   const payload = await getPayloadClient();
@@ -360,11 +364,16 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
   });
 
   try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
+    revalidateTag(cacheTags.sales(sellerId));
+    revalidateTag(cacheTags.sales(ownerId));
+    revalidateTag(cacheTags.dashboard());
+    revalidateTag(cacheTags.dashboardPerOwner(ownerId));
+    revalidateTag(cacheTags.productDemand(ownerId));
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.history(ownerId));
+    revalidateTag(cacheTags.clientsDebts(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
   } catch {
-    // revalidation failure should not break the operation
   }
 
   return sale as Sale;
@@ -419,7 +428,7 @@ function buildSortField(sort: string | undefined, isSeller: boolean, sortDirValu
   }
 }
 
-export async function getPaginatedSales(
+async function _getPaginatedSales(
   scope: { sellerId: number } | { ownerId: number },
   filters: SalesListFilters,
   options: SalesListOptions,
@@ -555,6 +564,20 @@ export async function getPaginatedSales(
   const totalPages = result.totalPages;
 
   return { sales, totalCount, totalPages, page };
+}
+
+export async function getPaginatedSales(
+  scope: { sellerId: number } | { ownerId: number },
+  filters: SalesListFilters,
+  options: SalesListOptions,
+): Promise<{ sales: SaleRow[]; totalCount: number; totalPages: number; page: number }> {
+  const tagId = 'sellerId' in scope ? scope.sellerId : scope.ownerId;
+
+  return unstable_cache(
+    async () => _getPaginatedSales(scope, filters, options),
+    ['paginated-sales', String(tagId), JSON.stringify(filters), JSON.stringify(options)],
+    { revalidate: 60 * 2, tags: [cacheTags.sales(tagId)] },
+  )();
 }
 
 export async function getSales(filters: {
@@ -735,6 +758,18 @@ export async function registerPayment(
       });
     }
   }
+
+  try {
+    const tagId = 'ownerId' in context ? context.ownerId : context.sellerId;
+    revalidateTag(cacheTags.sales(tagId));
+    if ('ownerId' in context) {
+      revalidateTag(cacheTags.dashboard());
+      revalidateTag(cacheTags.dashboardPerOwner(context.ownerId));
+      revalidateTag(cacheTags.clientsDebts(context.ownerId));
+      revalidateTag(cacheTags.saleOptions(context.ownerId));
+    }
+  } catch {
+  }
 }
 
 function verifySaleAccess(sale: Sale, callerId: number, callerRole: 'owner' | 'seller'): void {
@@ -854,17 +889,24 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
     await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true, req: { transactionID } });
 
     await payload.db.commitTransaction(transactionID);
+
+    try {
+      revalidateTag(cacheTags.sales(callerId));
+      if (saleOwnerId) {
+        revalidateTag(cacheTags.sales(saleOwnerId));
+        revalidateTag(cacheTags.dashboard());
+        revalidateTag(cacheTags.dashboardPerOwner(saleOwnerId));
+        revalidateTag(cacheTags.productDemand(saleOwnerId));
+        revalidateTag(cacheTags.products(saleOwnerId));
+        revalidateTag(cacheTags.clientsDebts(saleOwnerId));
+        revalidateTag(cacheTags.saleOptions(saleOwnerId));
+        revalidateTag(cacheTags.history(saleOwnerId));
+      }
+    } catch {
+    }
   } catch (error) {
     await payload.db.rollbackTransaction(transactionID);
     throw error;
-  }
-
-  try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
-  } catch {
-    // revalidation failure should not break the operation
   }
 }
 
@@ -1045,17 +1087,24 @@ export async function editSaleFull(
     });
 
     await payload.db.commitTransaction(transactionID);
+
+    try {
+      revalidateTag(cacheTags.sales(callerId));
+      if (saleOwnerId) {
+        revalidateTag(cacheTags.sales(saleOwnerId));
+        revalidateTag(cacheTags.dashboard());
+        revalidateTag(cacheTags.dashboardPerOwner(saleOwnerId));
+        revalidateTag(cacheTags.productDemand(saleOwnerId));
+        revalidateTag(cacheTags.products(saleOwnerId));
+        revalidateTag(cacheTags.clientsDebts(saleOwnerId));
+        revalidateTag(cacheTags.saleOptions(saleOwnerId));
+        revalidateTag(cacheTags.history(saleOwnerId));
+      }
+    } catch {
+    }
   } catch (error) {
     await payload.db.rollbackTransaction(transactionID);
     throw error;
-  }
-
-  try {
-    revalidateTag('dashboard');
-    revalidateTag('dashboard');
-    revalidateTag('product-demand');
-  } catch {
-    // revalidation failure should not break the operation
   }
 }
 
@@ -1083,14 +1132,20 @@ export async function markAsDelivered(saleId: number, callerId: number, callerRo
     } as Partial<Sale>,
     overrideAccess: true,
   });
+
+  try {
+    revalidateTag(cacheTags.sales(callerId));
+    revalidateTag(cacheTags.dashboard());
+    revalidateTag(cacheTags.dashboardPerOwner(callerId));
+  } catch {
+  }
 }
 
 export async function getSaleOptionsForOwner(sellerId: number, ownerId: number): Promise<SaleOptions> {
   return getSaleOptions(sellerId, ownerId);
 }
 
-export const getProductDemandSummary = unstable_cache(
-  async (ownerId: number): Promise<Record<number, VariantDemandSummary>> => {
+async function _getProductDemandSummary(ownerId: number): Promise<Record<number, VariantDemandSummary>> {
     const payload = await getPayloadClient();
 
     const thirteenMonthsAgo = new Date();
@@ -1124,13 +1179,17 @@ export const getProductDemandSummary = unstable_cache(
     }
 
     return demandMap;
-  },
-  ['product-demand-summary'],
-  { revalidate: 60 * 5, tags: ['product-demand'] },
-);
+  }
 
-export const getVariantSalesHistory = unstable_cache(
-  async (variantId: number, ownerId: number): Promise<VariantSalesHistory> => {
+export async function getProductDemandSummary(ownerId: number): Promise<Record<number, VariantDemandSummary>> {
+  return unstable_cache(
+    async () => _getProductDemandSummary(ownerId),
+    ['product-demand-summary', String(ownerId)],
+    { revalidate: 60 * 5, tags: [cacheTags.productDemand(ownerId)] },
+  )();
+}
+
+async function _getVariantSalesHistory(variantId: number, ownerId: number): Promise<VariantSalesHistory> {
     const payload = await getPayloadClient();
 
     const now = new Date();
@@ -1205,7 +1264,12 @@ export const getVariantSalesHistory = unstable_cache(
     const previousMonth: MonthSummary = monthMap.get(previousMonthKey) ?? { units: 0, revenue: 0 };
 
     return { variantId, lastSoldAt, totalUnits, totalRevenue, monthly, currentMonth, previousMonth };
-  },
-  ['product-demand-history'],
-  { revalidate: 60 * 5, tags: ['product-demand'] },
-);
+  }
+
+export async function getVariantSalesHistory(variantId: number, ownerId: number): Promise<VariantSalesHistory> {
+  return unstable_cache(
+    async () => _getVariantSalesHistory(variantId, ownerId),
+    ['product-demand-history', String(variantId), String(ownerId)],
+    { revalidate: 60 * 5, tags: [cacheTags.productDemand(ownerId)] },
+  )();
+}

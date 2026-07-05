@@ -7,6 +7,7 @@ import { calculateCommission } from '@/lib/commissions';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
+import { cacheTags } from '@/lib/cache-tags';
 
 export interface CommissionSummary {
   totalCommission: number;
@@ -232,6 +233,6 @@ export async function createCommissionPayment(
     overrideAccess: true,
   });
 
-  revalidateTag('dashboard');
-  revalidateTag('dashboard');
+  revalidateTag(cacheTags.dashboard());
+  revalidateTag(cacheTags.dashboard());
 }

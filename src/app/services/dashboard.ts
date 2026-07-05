@@ -8,6 +8,7 @@ import type { MobileInventoryItem } from '@/app/services/mobile-seller';
 import { getSales } from '@/app/services/sales';
 import type { SaleRow } from '@/app/services/sales';
 import { getSellers } from '@/app/services/users';
+import { cacheTags } from '@/lib/cache-tags';
 import { getPayloadClient } from '@/lib/payload';
 
 export type Period = 'day' | 'week' | 'month' | 'year';
@@ -269,7 +270,7 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
     [`owner-dashboard-${ownerId}-${period}`],
     {
       revalidate: 60 * 5,
-      tags: ['dashboard', String(ownerId), period],
+      tags: [cacheTags.dashboard(), String(ownerId), period],
     },
   )();
 }
@@ -355,7 +356,7 @@ export async function getSellerDashboardStats(
     [`seller-dashboard-${sellerId}-${period}`],
     {
       revalidate: 60 * 5,
-      tags: ['dashboard', String(ownerId), String(sellerId), period],
+      tags: [cacheTags.dashboard(), String(ownerId), String(sellerId), period],
     },
   )();
 }

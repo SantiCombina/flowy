@@ -1,12 +1,15 @@
 'use server';
 
+import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
+import { cacheTags } from '@/lib/cache-tags';
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import type { Client } from '@/payload-types';
 import type { ClientValues } from '@/schemas/clients/client-schema';
 
-export async function getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Client[]> {
+async function _getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Client[]> {
   const payload = await getPayloadClient();
 
   const where: Where = sellerId
@@ -22,6 +25,16 @@ export async function getClients({ ownerId, sellerId }: { ownerId: number; selle
   });
 
   return result.docs as Client[];
+}
+
+export async function getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Client[]> {
+  const tagId = sellerId ?? ownerId;
+
+  return unstable_cache(
+    async () => _getClients({ ownerId, sellerId }),
+    ['clients', String(tagId)],
+    { revalidate: 60 * 2, tags: [cacheTags.clients(tagId)] },
+  )();
 }
 
 export async function createClient(sellerId: number, ownerId: number, data: ClientValues): Promise<Client> {
@@ -43,6 +56,13 @@ export async function createClient(sellerId: number, ownerId: number, data: Clie
     },
     overrideAccess: true,
   });
+
+  try {
+    revalidateTag(cacheTags.clients(ownerId));
+    revalidateTag(cacheTags.clientsDebts(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {
+  }
 
   return client as Client;
 }
@@ -66,20 +86,43 @@ export async function updateClient(clientId: number, data: ClientValues): Promis
     overrideAccess: true,
   });
 
+  try {
+    const ownerId = resolveId(client.owner) ?? 0;
+    revalidateTag(cacheTags.clients(ownerId));
+    revalidateTag(cacheTags.clientsDebts(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {
+  }
+
   return client as Client;
 }
 
 export async function deleteClient(clientId: number): Promise<void> {
   const payload = await getPayloadClient();
 
+  const client = await payload.findByID({
+    collection: 'clients',
+    id: clientId,
+    depth: 0,
+    overrideAccess: true,
+  });
+
   await payload.delete({
     collection: 'clients',
     id: clientId,
     overrideAccess: true,
   });
+
+  try {
+    const ownerId = resolveId(client.owner) ?? 0;
+    revalidateTag(cacheTags.clients(ownerId));
+    revalidateTag(cacheTags.clientsDebts(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+  } catch {
+  }
 }
 
-export async function getClientDebts({
+async function _getClientDebts({
   ownerId,
   sellerId,
 }: {
@@ -117,4 +160,14 @@ export async function getClientDebts({
   }
 
   return debts;
+}
+
+export async function getClientDebts({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Record<number, number>> {
+  const tagId = sellerId ?? ownerId;
+
+  return unstable_cache(
+    async () => _getClientDebts({ ownerId, sellerId }),
+    ['clients-debts', String(tagId)],
+    { revalidate: 30, tags: [cacheTags.clientsDebts(tagId)] },
+  )();
 }

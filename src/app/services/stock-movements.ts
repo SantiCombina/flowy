@@ -1,11 +1,13 @@
 'use server';
 
 import { endOfDay, startOfDay } from 'date-fns';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Product, ProductVariant, StockMovement, User } from '@/payload-types';
+import { cacheTags } from '@/lib/cache-tags';
 
 export type MovementType =
   | 'entry'
@@ -145,6 +147,10 @@ export async function registerStockMovement(
     });
   }
 
+  revalidateTag(cacheTags.history(ownerId));
+  revalidateTag(cacheTags.products(ownerId));
+  revalidateTag(cacheTags.saleOptions(ownerId));
+
   return {
     success: true,
     movement,
@@ -152,7 +158,7 @@ export async function registerStockMovement(
   };
 }
 
-export async function getHistoryMovements(ownerId: number, filters: HistoryFilters = {}): Promise<HistoryResult> {
+async function _getHistoryMovements(ownerId: number, filters: HistoryFilters = {}): Promise<HistoryResult> {
   const { from, to, types, page = 1, limit = 25 } = filters;
   const payload = await getPayloadClient();
 
@@ -210,6 +216,14 @@ export async function getHistoryMovements(ownerId: number, filters: HistoryFilte
     totalPages: result.totalPages,
     page: result.page ?? page,
   };
+}
+
+export async function getHistoryMovements(ownerId: number, filters: HistoryFilters = {}): Promise<HistoryResult> {
+  return unstable_cache(
+    async () => _getHistoryMovements(ownerId, filters),
+    ['history-movements', String(ownerId), JSON.stringify(filters)],
+    { revalidate: 60 * 2, tags: [cacheTags.history(ownerId)] },
+  )();
 }
 
 export async function getStockMovements(ownerId: number, variantId?: number): Promise<StockMovement[]> {

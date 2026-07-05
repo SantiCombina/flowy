@@ -136,7 +136,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
   const noFiltersActive = dateRange === undefined && selectedTypes.length === 0;
 
   const { data, isPending } = useServerActionQuery({
-    queryKey: queryKeys.history.filtered(dateRange, selectedTypes),
+    queryKey: queryKeys.history.filtered(dateRange, selectedTypes, page, itemsPerPage),
     queryFn: () =>
       getHistoryAction({
         ...(dateRange
@@ -146,7 +146,8 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
             }
           : {}),
         ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
-        limit: 500,
+        page,
+        limit: itemsPerPage,
       }),
     initialData: noFiltersActive ? initialData : undefined,
     placeholderData: keepPreviousData,
@@ -170,34 +171,8 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
     }
   }
 
-  const sortedDocs = [...docs].sort((a, b) => {
-    if (!sortKey) return 0;
-    let va: string | number = '';
-    let vb: string | number = '';
-    if (sortKey === 'createdAt') {
-      va = a.createdAt;
-      vb = b.createdAt;
-    } else if (sortKey === 'type') {
-      va = TYPE_LABELS[a.type];
-      vb = TYPE_LABELS[b.type];
-    } else if (sortKey === 'productName') {
-      va = a.productName;
-      vb = b.productName;
-    } else if (sortKey === 'quantity') {
-      va = Math.abs(a.quantity);
-      vb = Math.abs(b.quantity);
-    }
-    if (typeof va === 'number' && typeof vb === 'number') return sortDir === 'asc' ? va - vb : vb - va;
-    const sa = String(va).toLowerCase();
-    const sb = String(vb).toLowerCase();
-    if (sa < sb) return sortDir === 'asc' ? -1 : 1;
-    if (sa > sb) return sortDir === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(totalDocs / itemsPerPage));
+  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalDocs / itemsPerPage));
   const safePage = Math.min(page, totalPages);
-  const paginatedDocs = sortedDocs.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
   const showReference = visibleColumns.includes('reference');
   const showReason = visibleColumns.includes('reason');
@@ -284,7 +259,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedDocs.map((movement: HistoryMovement) => {
+                  docs.map((movement: HistoryMovement) => {
                     const isExpanded = expandedId === movement.id;
                     const impact = getStockImpact(movement);
                     return (

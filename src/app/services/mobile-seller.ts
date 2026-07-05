@@ -1,5 +1,8 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
+
+import { cacheTags } from '@/lib/cache-tags';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 
@@ -199,6 +202,13 @@ export async function dispatchStockToMobileSeller(
       metadata: { sellerId, ownerId, items },
     });
   }
+
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.history(ownerId));
+  } catch {
+  }
 }
 
 export async function returnStockFromMobileSeller(
@@ -342,6 +352,13 @@ export async function returnStockFromMobileSeller(
       body: `${sellerName} devolvió ${summary}`,
       metadata: { sellerId, ownerId, items },
     });
+  }
+
+  try {
+    revalidateTag(cacheTags.products(ownerId));
+    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.history(ownerId));
+  } catch {
   }
 }
 

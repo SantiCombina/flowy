@@ -1,12 +1,13 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Budget } from '@/payload-types';
 import type { BudgetValues } from '@/schemas/budgets/budget-schema';
+import { cacheTags } from '@/lib/cache-tags';
 
 import { getSaleOptions } from './sales';
 
@@ -73,7 +74,7 @@ export async function createBudget(sellerId: number, ownerId: number, data: Budg
   }
 
   try {
-    revalidateTag('budgets');
+    revalidateTag(cacheTags.budgets());
   } catch {}
 
   return budget as Budget;
@@ -174,7 +175,7 @@ function buildSortField(sort: string | undefined, sortDirValue: 'asc' | 'desc' |
   }
 }
 
-export async function getPaginatedBudgets(
+async function _getPaginatedBudgets(
   ownerId: number,
   filters: BudgetListFilters,
   options: BudgetListOptions,
@@ -276,6 +277,23 @@ export async function getPaginatedBudgets(
   };
 }
 
+export async function getPaginatedBudgets(
+  ownerId: number,
+  filters: BudgetListFilters,
+  options: BudgetListOptions,
+): Promise<{
+  budgets: BudgetRow[];
+  totalCount: number;
+  totalPages: number;
+  page: number;
+}> {
+  return unstable_cache(
+    async () => _getPaginatedBudgets(ownerId, filters, options),
+    ['paginated-budgets', String(ownerId), JSON.stringify(filters), JSON.stringify(options)],
+    { revalidate: 60 * 2, tags: [cacheTags.budgets()] },
+  )();
+}
+
 export async function getBudgetById(budgetId: number): Promise<Budget | null> {
   const payload = await getPayloadClient();
 
@@ -303,7 +321,7 @@ export async function updateBudgetStatus(
   });
 
   try {
-    revalidateTag('budgets');
+    revalidateTag(cacheTags.budgets());
   } catch {}
 }
 
@@ -342,7 +360,7 @@ export async function updateBudget(budgetId: number, data: BudgetValues): Promis
   }
 
   try {
-    revalidateTag('budgets');
+    revalidateTag(cacheTags.budgets());
   } catch {}
 }
 
@@ -356,7 +374,7 @@ export async function deleteBudget(budgetId: number): Promise<void> {
   });
 
   try {
-    revalidateTag('budgets');
+    revalidateTag(cacheTags.budgets());
   } catch {}
 }
 
