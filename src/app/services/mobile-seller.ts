@@ -207,8 +207,7 @@ export async function dispatchStockToMobileSeller(
     revalidateTag(cacheTags.products(ownerId));
     revalidateTag(cacheTags.saleOptions(ownerId));
     revalidateTag(cacheTags.history(ownerId));
-  } catch {
-  }
+  } catch {}
 }
 
 export async function returnStockFromMobileSeller(
@@ -358,8 +357,7 @@ export async function returnStockFromMobileSeller(
     revalidateTag(cacheTags.products(ownerId));
     revalidateTag(cacheTags.saleOptions(ownerId));
     revalidateTag(cacheTags.history(ownerId));
-  } catch {
-  }
+  } catch {}
 }
 
 export interface SellerInventorySummary {

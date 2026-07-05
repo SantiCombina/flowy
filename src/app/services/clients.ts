@@ -30,11 +30,10 @@ async function _getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: 
 export async function getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Client[]> {
   const tagId = sellerId ?? ownerId;
 
-  return unstable_cache(
-    async () => _getClients({ ownerId, sellerId }),
-    ['clients', String(tagId)],
-    { revalidate: 60 * 2, tags: [cacheTags.clients(tagId)] },
-  )();
+  return unstable_cache(async () => _getClients({ ownerId, sellerId }), ['clients', String(tagId)], {
+    revalidate: 60 * 2,
+    tags: [cacheTags.clients(tagId)],
+  })();
 }
 
 export async function createClient(sellerId: number, ownerId: number, data: ClientValues): Promise<Client> {
@@ -61,8 +60,7 @@ export async function createClient(sellerId: number, ownerId: number, data: Clie
     revalidateTag(cacheTags.clients(ownerId));
     revalidateTag(cacheTags.clientsDebts(ownerId));
     revalidateTag(cacheTags.saleOptions(ownerId));
-  } catch {
-  }
+  } catch {}
 
   return client as Client;
 }
@@ -91,8 +89,7 @@ export async function updateClient(clientId: number, data: ClientValues): Promis
     revalidateTag(cacheTags.clients(ownerId));
     revalidateTag(cacheTags.clientsDebts(ownerId));
     revalidateTag(cacheTags.saleOptions(ownerId));
-  } catch {
-  }
+  } catch {}
 
   return client as Client;
 }
@@ -118,8 +115,7 @@ export async function deleteClient(clientId: number): Promise<void> {
     revalidateTag(cacheTags.clients(ownerId));
     revalidateTag(cacheTags.clientsDebts(ownerId));
     revalidateTag(cacheTags.saleOptions(ownerId));
-  } catch {
-  }
+  } catch {}
 }
 
 async function _getClientDebts({
@@ -162,12 +158,17 @@ async function _getClientDebts({
   return debts;
 }
 
-export async function getClientDebts({ ownerId, sellerId }: { ownerId: number; sellerId?: number }): Promise<Record<number, number>> {
+export async function getClientDebts({
+  ownerId,
+  sellerId,
+}: {
+  ownerId: number;
+  sellerId?: number;
+}): Promise<Record<number, number>> {
   const tagId = sellerId ?? ownerId;
 
-  return unstable_cache(
-    async () => _getClientDebts({ ownerId, sellerId }),
-    ['clients-debts', String(tagId)],
-    { revalidate: 30, tags: [cacheTags.clientsDebts(tagId)] },
-  )();
+  return unstable_cache(async () => _getClientDebts({ ownerId, sellerId }), ['clients-debts', String(tagId)], {
+    revalidate: 30,
+    tags: [cacheTags.clientsDebts(tagId)],
+  })();
 }

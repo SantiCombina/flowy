@@ -1,5 +1,5 @@
-import type { Where } from 'payload';
 import { revalidateTag, unstable_cache } from 'next/cache';
+import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
 import { getPayloadClient } from '@/lib/payload';
@@ -466,9 +466,19 @@ async function _getVariantsWithProducts(
       costPrice: true,
       profitMargin: true,
       minimumStock: true,
-      product: { select: { id: true, name: true, brand: { select: { id: true, name: true } }, category: { select: { id: true, name: true } }, quality: { select: { id: true, name: true } }, image: { select: { id: true, url: true } }, isActive: true } },
-      presentation: { select: { id: true, label: true } },
-    } as any,
+      product: {
+        select: {
+          id: true,
+          name: true,
+          brand: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
+          quality: { select: { id: true, name: true } },
+          image: { select: { id: true, url: true } },
+          isActive: true,
+        },
+      } as unknown as true,
+      presentation: { select: { id: true, label: true } } as unknown as true,
+    },
   });
 
   return {

@@ -3,11 +3,11 @@
 import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
+import { cacheTags } from '@/lib/cache-tags';
 import { calculateCommission } from '@/lib/commissions';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
-import { cacheTags } from '@/lib/cache-tags';
 
 export interface CommissionSummary {
   totalCommission: number;

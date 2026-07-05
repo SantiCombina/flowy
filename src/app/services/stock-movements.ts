@@ -4,10 +4,10 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
+import { cacheTags } from '@/lib/cache-tags';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Product, ProductVariant, StockMovement, User } from '@/payload-types';
-import { cacheTags } from '@/lib/cache-tags';
 
 export type MovementType =
   | 'entry'
