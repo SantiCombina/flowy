@@ -184,24 +184,26 @@ export function DateRangePicker({
       <>
         {trigger}
         <Drawer open={open} onOpenChange={handleOpenChange}>
-          <DrawerContent className="p-0 gap-0 max-h-[90svh] overflow-y-auto">
-            <DrawerTitle className="sr-only">Seleccionar período</DrawerTitle>
-            <div className="px-4 pt-1 pb-2">
-              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
+          <DrawerContent className="p-0 gap-0 max-h-[90svh]">
+            <div className="overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+              <DrawerTitle className="sr-only">Seleccionar período</DrawerTitle>
+              <div className="px-4 pt-1 pb-2">
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
+              </div>
+              <div className="flex flex-wrap gap-2 px-4 pb-3">
+                {PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => handlePreset(preset.getRange)}
+                    className="rounded-full bg-muted px-3 py-1 text-sm transition-colors hover:bg-accent"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <div className="border-t pt-2 pb-8">{calendarContent}</div>
             </div>
-            <div className="flex flex-wrap gap-2 px-4 pb-3">
-              {PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => handlePreset(preset.getRange)}
-                  className="rounded-full bg-muted px-3 py-1 text-sm transition-colors hover:bg-accent"
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <div className="border-t pt-2 pb-8">{calendarContent}</div>
           </DrawerContent>
         </Drawer>
       </>

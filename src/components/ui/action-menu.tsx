@@ -46,7 +46,7 @@ export function ActionMenu({ items }: ActionMenuProps) {
         </Button>
         <DrawerContent className="p-0 gap-0">
           <DrawerTitle className="sr-only">Acciones</DrawerTitle>
-          <div className="py-2 pb-6">
+          <div className="py-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
             {filtered.map((item, index) => (
               <React.Fragment key={item.label}>
                 {item.separator && index > 0 && <div className="my-1 h-px bg-border" />}

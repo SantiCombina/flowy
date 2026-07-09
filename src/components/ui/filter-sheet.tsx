@@ -59,7 +59,7 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
             <div className="px-4 pt-4 pb-2">
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
             </div>
-            <div className="pb-8">
+            <div className="pb-[calc(2rem+env(safe-area-inset-bottom))]">
               {items.map((item) => (
                 <Button
                   key={item.key}

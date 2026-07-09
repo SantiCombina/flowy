@@ -86,5 +86,10 @@ export function ResponsiveModalBody({ className, ...props }: React.ComponentProp
 }
 
 export function ResponsiveModalFooter({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('flex flex-row justify-end gap-2 border-t p-6 pt-4', className)} {...props} />;
+    return (
+      <div
+        className={cn('flex flex-row justify-end gap-2 border-t p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]', className)}
+        {...props}
+      />
+    );
 }
