@@ -233,45 +233,57 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="relative flex flex-col gap-3 rounded-lg border bg-card p-3 sm:grid sm:grid-cols-[1fr_80px_110px_32px] sm:items-start sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0"
+                    className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:grid sm:grid-cols-[1fr_80px_110px_32px] sm:items-start sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0"
                   >
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.variantId`}
-                      render={({ field: variantField, fieldState }) => (
-                        <FormItem className="flex-1">
-                          <FormControl>
-                            <Combobox
-                              options={variants.map((v) => {
-                                const parts = [v.brandName ?? null, v.productName, v.presentationLabel ?? null].filter(
-                                  Boolean,
-                                );
-                                return {
-                                  value: String(v.variantId),
-                                  label: parts.join(' · '),
-                                };
-                              })}
-                              value={variantField.value ? String(variantField.value) : ''}
-                              onValueChange={(value) => {
-                                const id = Number(value);
-                                form.setValue(`items.${index}.variantId`, id, { shouldValidate: true });
-                                form.setValue(`items.${index}.quantity`, 1);
+                    <div className="flex gap-2 sm:contents">
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.variantId`}
+                        render={({ field: variantField, fieldState }) => (
+                          <FormItem className="min-w-0 flex-1 sm:flex-none">
+                            <FormControl>
+                              <Combobox
+                                options={variants.map((v) => {
+                                  const parts = [v.brandName ?? null, v.productName, v.presentationLabel ?? null].filter(
+                                    Boolean,
+                                  );
+                                  return {
+                                    value: String(v.variantId),
+                                    label: parts.join(' · '),
+                                  };
+                                })}
+                                value={variantField.value ? String(variantField.value) : ''}
+                                onValueChange={(value) => {
+                                  const id = Number(value);
+                                  form.setValue(`items.${index}.variantId`, id, { shouldValidate: true });
+                                  form.setValue(`items.${index}.quantity`, 1);
 
-                                const variant = variants.find((v) => v.variantId === id);
-                                if (variant) {
-                                  form.setValue(`items.${index}.unitPrice`, variant.price);
-                                }
-                              }}
-                              placeholder="Producto..."
-                              searchPlaceholder="Buscar por nombre o marca..."
-                              emptyMessage="No se encontró el producto."
-                              className={cn(fieldState.error && 'border-destructive')}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                                  const variant = variants.find((v) => v.variantId === id);
+                                  if (variant) {
+                                    form.setValue(`items.${index}.unitPrice`, variant.price);
+                                  }
+                                }}
+                                placeholder="Producto..."
+                                searchPlaceholder="Buscar por nombre o marca..."
+                                emptyMessage="No se encontró el producto."
+                                className={cn(fieldState.error && 'border-destructive')}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0 sm:order-last"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
 
                     <div className="flex gap-2 sm:contents">
                       <FormField
@@ -319,15 +331,6 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                         )}
                       />
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive sm:static sm:h-9 sm:w-9"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}
