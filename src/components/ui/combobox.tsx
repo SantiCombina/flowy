@@ -174,7 +174,7 @@ export function Combobox({
         sideOffset={4}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="max-h-[min(300px,40svh)] overflow-y-auto py-1">
+        <div className="max-h-[min(300px,40dvh)] overflow-y-auto py-1 touch-pan-y overscroll-contain">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
           ) : (

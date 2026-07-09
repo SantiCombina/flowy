@@ -54,16 +54,21 @@ interface ItemFormValues {
   stockSource: 'warehouse' | 'personal';
 }
 
-function StockBadge({ label, stock }: { label: string; stock: number }) {
+function StockBadge({ label, stock, needed }: { label: string; stock: number; needed?: number }) {
+  const isSufficient = needed !== undefined && stock >= needed;
+  const isInsufficient = needed !== undefined && stock > 0 && stock < needed;
+
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
         stock === 0
           ? 'bg-muted text-muted-foreground/50 line-through'
-          : stock <= 5
-            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-            : 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400',
+          : isInsufficient
+            ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400'
+            : isSufficient
+              ? 'bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400'
+              : 'bg-muted text-muted-foreground',
       )}
     >
       {label} {stock} uds.
@@ -91,10 +96,12 @@ function ItemRow({
   item,
   control,
   index,
+  portalContainer,
 }: {
   item: BudgetConvertItem;
   control: ReturnType<typeof useForm<ConvertFormValues>>['control'];
   index: number;
+  portalContainer?: HTMLElement | null;
 }) {
   const [stockSource, quantity] = useWatch({
     control,
@@ -118,8 +125,8 @@ function ItemRow({
           <PriceDiff budgetPrice={item.budgetUnitPrice} currentPrice={item.currentUnitPrice} />
         </div>
         <div className="flex flex-wrap gap-1.5 pt-0.5">
-          <StockBadge label="Depósito" stock={item.warehouseStock} />
-          <StockBadge label="Mi inv." stock={item.personalStock} />
+          <StockBadge label="Depósito" stock={item.warehouseStock} needed={quantity} />
+          <StockBadge label="Mi inv." stock={item.personalStock} needed={quantity} />
         </div>
       </div>
 
@@ -206,6 +213,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
   const { executeAsync: updateStatus } = useAction(updateBudgetStatusAction);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [drawerContainer, setDrawerContainer] = useState<HTMLElement | null>(null);
 
   const { data: fetchResult, isPending: isLoading } = useServerActionQuery({
     queryKey: ['budget-convert-data', budgetId],
@@ -295,7 +303,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Convertir presupuesto a venta</ResponsiveModalTitle>
         <ResponsiveModalDescription>
-          Elegí el origen del stock y ajustá cantidades. Los badges verdes/ámbar indican disponibilidad.
+          Elegí el origen del stock y ajustá cantidades. Los badges verdes/rojos indican disponibilidad.
         </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
@@ -311,7 +319,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
           </div>
         ) : convertData ? (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form ref={setDrawerContainer} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               {convertData.clientName && (
                 <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                   <span className="text-muted-foreground">Cliente:</span>
@@ -321,7 +329,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
 
               <div className="space-y-2">
                 {convertData.items.map((item, idx) => (
-                  <ItemRow key={item.variantId} item={item} control={form.control} index={idx} />
+                  <ItemRow key={item.variantId} item={item} control={form.control} index={idx} portalContainer={drawerContainer} />
                 ))}
               </div>
 
@@ -343,7 +351,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                <SelectContent portalContainer={drawerContainer}>
                         {PAYMENT_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
