@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import { useResponsiveModalContext } from '@/components/ui/responsive-modal';
 import { cn } from '@/lib/utils';
 
 interface ComboboxOption {
@@ -48,6 +49,7 @@ export function Combobox({
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const { portalContainer } = useResponsiveModalContext();
 
   const selected = options.find((o) => o.value === value);
   const displayValue = selected ? selected.label : '';
@@ -172,9 +174,10 @@ export function Combobox({
         className="w-(--radix-popover-trigger-width) p-0"
         align="start"
         sideOffset={4}
+        portalContainer={portalContainer}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="max-h-[min(300px,40dvh)] overflow-y-auto py-1 touch-pan-y overscroll-contain">
+        <div className="max-h-[min(300px,40svh)] overflow-y-auto py-1">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
           ) : (

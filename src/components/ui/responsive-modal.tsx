@@ -7,7 +7,14 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-const ResponsiveModalContext = React.createContext<{ isMobile: boolean }>({ isMobile: false });
+const ResponsiveModalContext = React.createContext<{ isMobile: boolean; portalContainer?: HTMLElement | null }>({
+  isMobile: false,
+  portalContainer: undefined,
+});
+
+export function useResponsiveModalContext() {
+  return React.useContext(ResponsiveModalContext);
+}
 
 interface ResponsiveModalProps {
   open: boolean;
@@ -18,12 +25,13 @@ interface ResponsiveModalProps {
 
 export function ResponsiveModal({ open, onOpenChange, children, className }: ResponsiveModalProps) {
   const isMobile = useIsMobile();
+  const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
 
   if (isMobile) {
     return (
-      <ResponsiveModalContext.Provider value={{ isMobile: true }}>
+      <ResponsiveModalContext.Provider value={{ isMobile: true, portalContainer }}>
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent className={cn('flex flex-col gap-0 p-0', className)}>
+          <DrawerContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0', className)}>
             <DrawerTitle className="sr-only">Modal</DrawerTitle>
             {children}
           </DrawerContent>
@@ -33,9 +41,9 @@ export function ResponsiveModal({ open, onOpenChange, children, className }: Res
   }
 
   return (
-    <ResponsiveModalContext.Provider value={{ isMobile: false }}>
+    <ResponsiveModalContext.Provider value={{ isMobile: false, portalContainer }}>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={cn('flex flex-col gap-0 p-0 overflow-hidden', className)}>{children}</DialogContent>
+        <DialogContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0 overflow-y-auto', className)}>{children}</DialogContent>
       </Dialog>
     </ResponsiveModalContext.Provider>
   );
