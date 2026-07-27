@@ -4,6 +4,7 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { subtractMoney } from '@/lib/money';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Client } from '@/payload-types';
@@ -145,10 +146,9 @@ async function _getClientDebts({
 
   for (const sale of result.docs) {
     if (!sale.client) continue;
-    if (sale.ownerPaymentStatus === 'collected') continue;
 
     const clientId = typeof sale.client === 'number' ? sale.client : sale.client.id;
-    const remaining = sale.total - (sale.amountPaid ?? 0);
+    const remaining = subtractMoney(sale.total, sale.amountPaid ?? 0);
 
     if (remaining > 0) {
       debts[clientId] = (debts[clientId] ?? 0) + remaining;

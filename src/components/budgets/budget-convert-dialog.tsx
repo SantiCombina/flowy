@@ -96,12 +96,10 @@ function ItemRow({
   item,
   control,
   index,
-  portalContainer,
 }: {
   item: BudgetConvertItem;
   control: ReturnType<typeof useForm<ConvertFormValues>>['control'];
   index: number;
-  portalContainer?: HTMLElement | null;
 }) {
   const [stockSource, quantity] = useWatch({
     control,
@@ -329,7 +327,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
 
               <div className="space-y-2">
                 {convertData.items.map((item, idx) => (
-                  <ItemRow key={item.variantId} item={item} control={form.control} index={idx} portalContainer={drawerContainer} />
+                  <ItemRow key={item.variantId} item={item} control={form.control} index={idx} />
                 ))}
               </div>
 
@@ -351,7 +349,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                <SelectContent portalContainer={drawerContainer}>
+                      <SelectContent portalContainer={drawerContainer}>
                         {PAYMENT_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}

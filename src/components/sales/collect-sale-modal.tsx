@@ -24,16 +24,11 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { calculateCommission } from '@/lib/commissions';
-import { cn } from '@/lib/utils';
-import {
-  collectSaleBySellerSchema,
-  collectSaleSchema,
-  type CollectSaleBySellerValues,
-  type CollectSaleValues,
-} from '@/schemas/sales/collect-sale-schema';
+import { calculateCommission, subtractMoney } from '@/lib/money';
+import { cn, formatCurrency } from '@/lib/utils';
+import { collectSaleSchema, type CollectSaleValues } from '@/schemas/sales/collect-sale-schema';
 
-import { markSaleAsCollectedAction, markSaleAsCollectedBySellerAction } from './actions';
+import { registerSalePaymentAction } from './actions';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: 'Efectivo',
@@ -48,70 +43,35 @@ interface CollectSaleModalProps {
   saleId: number;
   total: number;
   amountPaid: number;
-  isSeller: boolean;
 }
 
-export function CollectSaleModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  saleId,
-  total,
-  amountPaid,
-  isSeller,
-}: CollectSaleModalProps) {
-  const { executeAsync: executeOwner, isExecuting: isExecutingOwner } = useAction(markSaleAsCollectedAction);
-  const { executeAsync: executeSeller, isExecuting: isExecutingSeller } = useAction(markSaleAsCollectedBySellerAction);
-  const isExecuting = isExecutingOwner || isExecutingSeller;
-  const remaining = Number((total - amountPaid).toFixed(2));
+export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, amountPaid }: CollectSaleModalProps) {
+  const { executeAsync, isExecuting } = useAction(registerSalePaymentAction);
+  const remaining = subtractMoney(total, amountPaid);
 
-  const sellerForm = useForm<CollectSaleBySellerValues>({
-    resolver: zodResolver(collectSaleBySellerSchema),
-    defaultValues: { saleId, amount: remaining },
-  });
-
-  const ownerForm = useForm<CollectSaleValues>({
+  const form = useForm<CollectSaleValues>({
     resolver: zodResolver(collectSaleSchema),
     defaultValues: { saleId, amount: remaining },
   });
 
-  const watchedAmountSeller = useWatch({ control: sellerForm.control, name: 'amount' });
-  const watchedAmountOwner = useWatch({ control: ownerForm.control, name: 'amount' });
-  const watchedAmount = isSeller ? watchedAmountSeller : watchedAmountOwner;
+  const watchedAmount = useWatch({ control: form.control, name: 'amount' });
   const commissionBase = Number.isFinite(watchedAmount) && watchedAmount > 0 ? watchedAmount : 0;
-  const alreadyEarnedCommission = calculateCommission(amountPaid);
-  const newCommission = calculateCommission(commissionBase);
+  const alreadyEarnedCommission = calculateCommission(amountPaid, 3);
+  const newCommission = calculateCommission(commissionBase, 3);
   const commission = alreadyEarnedCommission + newCommission;
-  const watchedPaymentMethod = useWatch({ control: sellerForm.control, name: 'paymentMethod' });
+  const watchedPaymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
   const afterPayment =
-    Number.isFinite(watchedAmount) && watchedAmount > 0 ? Number((remaining - watchedAmount).toFixed(2)) : null;
+    Number.isFinite(watchedAmount) && watchedAmount > 0 ? subtractMoney(remaining, watchedAmount) : null;
   const isOverRemaining = Number.isFinite(watchedAmount) && Number(watchedAmount.toFixed(2)) > remaining;
 
   useEffect(() => {
     if (isOpen) {
-      sellerForm.reset({ saleId, amount: remaining });
-      ownerForm.reset({ saleId, amount: remaining });
+      form.reset({ saleId, amount: remaining });
     }
-  }, [isOpen, saleId, remaining]);
+  }, [isOpen, saleId, remaining, form]);
 
-  const onSubmitOwner = async (data: CollectSaleValues) => {
-    const result = await executeOwner(data);
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success) {
-      const newAmountPaid = amountPaid + data.amount;
-      const newStatus = newAmountPaid >= total ? 'collected' : 'partially_collected';
-      toast.success(newStatus === 'collected' ? 'Venta cobrada completamente.' : 'Cobro parcial registrado.');
-      onSuccess();
-    }
-  };
-
-  const onSubmitSeller = async (data: CollectSaleBySellerValues) => {
-    const result = await executeSeller(data);
+  const onSubmit = async (data: CollectSaleValues) => {
+    const result = await executeAsync(data);
 
     if (result?.serverError) {
       toast.error(result.serverError);
@@ -130,41 +90,41 @@ export function CollectSaleModal({
     <div className="rounded-lg bg-muted/50 p-4 text-sm shadow-sm">
       <div className="flex justify-between">
         <span className="text-muted-foreground">Total de la venta</span>
-        <span>$ {total.toLocaleString('es-AR')}</span>
+        <span>{formatCurrency(total)}</span>
       </div>
       <div className="flex justify-between mt-1">
         <span className="text-muted-foreground">Comisión de este cobro (3%)</span>
-        <span className="text-blue-600">$ {newCommission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+        <span className="text-blue-600">{formatCurrency(newCommission)}</span>
       </div>
       {amountPaid > 0 && (
         <>
           <div className="flex justify-between mt-1">
             <span className="text-muted-foreground">Ya cobrado</span>
-            <span>$ {amountPaid.toLocaleString('es-AR')}</span>
+            <span>{formatCurrency(amountPaid)}</span>
           </div>
           <div className="flex justify-between mt-1">
             <span className="text-muted-foreground">Comisión acumulada</span>
-            <span className="text-blue-600">$ {commission.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</span>
+            <span className="text-blue-600">{formatCurrency(commission)}</span>
           </div>
         </>
       )}
       <Separator className="my-2" />
       <div className="flex justify-between font-semibold">
         <span>Total</span>
-        <span>$ {remaining.toLocaleString('es-AR')}</span>
+        <span>{formatCurrency(remaining)}</span>
       </div>
       {afterPayment !== null && !isOverRemaining && (
         <div
           className={`flex justify-between mt-2 text-xs font-medium ${afterPayment <= 0 ? 'text-success' : 'text-warning'}`}
         >
           <span>{afterPayment <= 0 ? 'Quedará saldada' : 'Quedará pendiente'}</span>
-          <span>{afterPayment <= 0 ? '$ 0' : `$ ${Math.max(0, afterPayment).toLocaleString('es-AR')}`}</span>
+          <span>{afterPayment <= 0 ? formatCurrency(0) : formatCurrency(Math.max(0, afterPayment))}</span>
         </div>
       )}
       {isOverRemaining && (
         <div className="flex justify-between mt-2 text-xs font-medium text-destructive">
           <span>El monto supera lo pendiente</span>
-          <span>$ {remaining.toLocaleString('es-AR')}</span>
+          <span>{formatCurrency(remaining)}</span>
         </div>
       )}
     </div>
@@ -177,142 +137,109 @@ export function CollectSaleModal({
         <ResponsiveModalDescription>Ingresá el monto recibido.</ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
-      {isSeller ? (
-        <Form {...sellerForm}>
-          <form onSubmit={sellerForm.handleSubmit(onSubmitSeller)} className="flex flex-col flex-1 min-h-0">
-            <ResponsiveModalBody className="space-y-4">
-              {summaryBlock}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <ResponsiveModalBody className="space-y-4">
+            {summaryBlock}
 
-              <FormField
-                control={sellerForm.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Método de pago</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccioná..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {watchedPaymentMethod === 'check' && (
-                <FormField
-                  control={sellerForm.control}
-                  name="checkDueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha de cobro del cheque</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.value && 'text-muted-foreground',
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value
-                                ? format(new Date(`${field.value}T12:00:00`), "d 'de' MMMM 'de' yyyy", { locale: es })
-                                : 'Seleccioná una fecha'}
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value ? new Date(`${field.value}T12:00:00`) : undefined}
-                            onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                            locale={es}
-                            showOutsideDays={false}
-                            formatters={{
-                              formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
-                              formatCaption: (month, options) => {
-                                const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
-                                return str.charAt(0).toUpperCase() + str.slice(1);
-                              },
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Método de pago</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccioná..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
+            {watchedPaymentMethod === 'check' && (
               <FormField
-                control={sellerForm.control}
-                name="amount"
+                control={form.control}
+                name="checkDueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Monto a cobrar</FormLabel>
-                    <FormControl>
-                      <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
-                    </FormControl>
+                    <FormLabel>Fecha de cobro del cheque</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'w-full justify-start text-left font-normal',
+                              !field.value && 'text-muted-foreground',
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value
+                              ? format(new Date(`${field.value}T12:00:00`), "d 'de' MMMM 'de' yyyy", { locale: es })
+                              : 'Seleccioná una fecha'}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value ? new Date(`${field.value}T12:00:00`) : undefined}
+                          onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          locale={es}
+                          showOutsideDays={false}
+                          formatters={{
+                            formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
+                            formatCaption: (month, options) => {
+                              const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
+                              return str.charAt(0).toUpperCase() + str.slice(1);
+                            },
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </ResponsiveModalBody>
+            )}
 
-            <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isExecuting || isOverRemaining}>
-                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
-              </Button>
-            </ResponsiveModalFooter>
-          </form>
-        </Form>
-      ) : (
-        <Form {...ownerForm}>
-          <form onSubmit={ownerForm.handleSubmit(onSubmitOwner)} className="flex flex-col flex-1 min-h-0">
-            <ResponsiveModalBody className="space-y-4">
-              {summaryBlock}
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monto a cobrar</FormLabel>
+                  <FormControl>
+                    <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </ResponsiveModalBody>
 
-              <FormField
-                control={ownerForm.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto a cobrar</FormLabel>
-                    <FormControl>
-                      <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </ResponsiveModalBody>
-
-            <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isExecuting || isOverRemaining}>
-                {isExecuting ? 'Registrando…' : 'Registrar cobro'}
-              </Button>
-            </ResponsiveModalFooter>
-          </form>
-        </Form>
-      )}
+          <ResponsiveModalFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isExecuting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isExecuting || isOverRemaining}>
+              {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+            </Button>
+          </ResponsiveModalFooter>
+        </form>
+      </Form>
     </ResponsiveModal>
   );
 }

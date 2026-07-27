@@ -167,8 +167,8 @@ function SalesSectionComponent({
   const visibleColumns = getVisibleColumns('sales');
   const { invalidateQueries } = useInvalidateQueries();
 
-  const getStatus = (sale: SaleRow) => (isSeller ? sale.paymentStatus : sale.ownerPaymentStatus);
-  const getAmountPaid = (sale: SaleRow) => (isSeller ? sale.amountPaid : sale.ownerAmountPaid);
+  const getStatus = (sale: SaleRow) => sale.paymentStatus;
+  const getAmountPaid = (sale: SaleRow) => sale.amountPaid;
 
   const [filters, setFilters] = useState<GetSalesListValues>(() => {
     if (initialStatusFilter && initialStatusFilter !== 'all' && !initialFilters.paymentStatus) {
@@ -680,12 +680,10 @@ function SalesSectionComponent({
                                       </p>
                                     </div>
                                   )}
-                                  {(isSeller ? sale.collectedAt : sale.ownerCollectedAt) && (
+                                  {sale.collectedAt && (
                                     <div>
                                       <p className="text-xs text-muted-foreground">Cobrado el</p>
-                                      <p className="font-medium">
-                                        {formatShortDate((isSeller ? sale.collectedAt : sale.ownerCollectedAt)!)}
-                                      </p>
+                                      <p className="font-medium">{formatShortDate(sale.collectedAt)}</p>
                                     </div>
                                   )}
                                   {sale.deliveredAt && (
@@ -776,7 +774,6 @@ function SalesSectionComponent({
           isOpen
           onClose={() => setCollectingModal(null)}
           onSuccess={handleCollectSuccess}
-          isSeller={isSeller}
           {...collectingModal}
         />
       )}

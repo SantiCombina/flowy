@@ -43,7 +43,9 @@ export function ResponsiveModal({ open, onOpenChange, children, className }: Res
   return (
     <ResponsiveModalContext.Provider value={{ isMobile: false, portalContainer }}>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0 overflow-y-auto', className)}>{children}</DialogContent>
+        <DialogContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0 overflow-y-auto', className)}>
+          {children}
+        </DialogContent>
       </Dialog>
     </ResponsiveModalContext.Provider>
   );
@@ -94,10 +96,13 @@ export function ResponsiveModalBody({ className, ...props }: React.ComponentProp
 }
 
 export function ResponsiveModalFooter({ className, ...props }: React.ComponentProps<'div'>) {
-    return (
-      <div
-        className={cn('flex flex-row justify-end gap-2 border-t p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]', className)}
-        {...props}
-      />
-    );
+  return (
+    <div
+      className={cn(
+        'flex flex-row justify-end gap-2 border-t p-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]',
+        className,
+      )}
+      {...props}
+    />
+  );
 }

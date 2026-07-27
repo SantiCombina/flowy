@@ -4,6 +4,7 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { calculatePrice, multiplyMoney, roundMoney } from '@/lib/money';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Budget } from '@/payload-types';
@@ -38,7 +39,7 @@ export interface BudgetRow {
 export async function createBudget(sellerId: number, ownerId: number, data: BudgetValues): Promise<Budget> {
   const payload = await getPayloadClient();
 
-  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const total = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
   const now = new Date().toISOString();
 
   const budget = await payload.create({
@@ -113,7 +114,7 @@ export async function getBudgets(ownerId: number): Promise<BudgetRow[]> {
         variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
       };
     });
 
@@ -248,7 +249,7 @@ async function _getPaginatedBudgets(
         variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
       };
     });
 
@@ -328,7 +329,7 @@ export async function updateBudgetStatus(
 export async function updateBudget(budgetId: number, data: BudgetValues): Promise<void> {
   const payload = await getPayloadClient();
 
-  const total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const total = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
 
   await payload.update({
     collection: 'budgets',
@@ -457,7 +458,7 @@ export async function getBudgetConvertData(budgetId: number, sellerId: number): 
     const parts = [brandName, productName, presentationLabel].filter(Boolean);
     const variantName = parts.join(' · ');
 
-    const currentPrice = variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : item.unitPrice;
+    const currentPrice = variant ? calculatePrice(variant.costPrice, variant.profitMargin ?? 0) : item.unitPrice;
 
     return {
       variantId: vId,

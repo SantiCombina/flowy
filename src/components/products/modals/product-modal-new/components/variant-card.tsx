@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { calculatePrice } from '@/lib/money';
 
 import type { VariantCardProps } from '../types';
 
@@ -52,7 +53,7 @@ export function VariantCard({
   const presentationId = useWatch({ control, name: `variants.${index}.presentationId` }) ?? '';
   const costPrice = useWatch({ control, name: `variants.${index}.costPrice` }) ?? 0;
   const profitMargin = useWatch({ control, name: `variants.${index}.profitMargin` }) ?? 0;
-  const suggestedPrice = costPrice > 0 ? costPrice * (1 + profitMargin / 100) : null;
+  const suggestedPrice = costPrice > 0 ? calculatePrice(costPrice, profitMargin) : null;
 
   const [isCreatingPresentation, setIsCreatingPresentation] = useState(false);
   const [newPresentationName, setNewPresentationName] = useState('');

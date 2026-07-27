@@ -244,9 +244,11 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                             <FormControl>
                               <Combobox
                                 options={variants.map((v) => {
-                                  const parts = [v.brandName ?? null, v.productName, v.presentationLabel ?? null].filter(
-                                    Boolean,
-                                  );
+                                  const parts = [
+                                    v.brandName ?? null,
+                                    v.productName,
+                                    v.presentationLabel ?? null,
+                                  ].filter(Boolean);
                                   return {
                                     value: String(v.variantId),
                                     label: parts.join(' · '),
@@ -330,7 +332,6 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                           </FormItem>
                         )}
                       />
-
                     </div>
                   </div>
                 ))}

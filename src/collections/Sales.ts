@@ -142,7 +142,7 @@ export const Sales: CollectionConfig = {
       type: 'select',
       required: true,
       index: true,
-      label: 'Estado de cobro (vendedor)',
+      label: 'Estado de cobro',
       defaultValue: 'pending',
       options: [
         { label: 'Pendiente', value: 'pending' },
@@ -153,7 +153,7 @@ export const Sales: CollectionConfig = {
     {
       name: 'collectedAt',
       type: 'date',
-      label: 'Cobrado el (vendedor)',
+      label: 'Cobrado el',
       admin: {
         condition: (data) => data?.paymentStatus === 'collected' || data?.paymentStatus === 'partially_collected',
       },

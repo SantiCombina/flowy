@@ -3,6 +3,7 @@
 import { revalidateTag } from 'next/cache';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { calculatePrice } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 
@@ -47,7 +48,7 @@ export async function getMobileSellerInventory(sellerId: number): Promise<Mobile
       presentationName: presentation?.label ?? undefined,
       code: variant?.code ?? undefined,
       quantity: item.quantity,
-      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
+      price: variant ? calculatePrice(variant.costPrice, variant.profitMargin ?? 0) : 0,
     };
   });
 }
@@ -399,7 +400,7 @@ export async function getAllSellersInventoryForOwner(ownerId: number): Promise<S
       presentationName: presentation?.label ?? undefined,
       code: variant?.code ?? undefined,
       quantity: item.quantity,
-      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
+      price: variant ? calculatePrice(variant.costPrice, variant.profitMargin ?? 0) : 0,
     };
 
     const existing = sellerMap.get(seller.id);
@@ -449,7 +450,7 @@ export async function getMobileSellerInventoryForOwner(
       presentationName: presentation?.label ?? undefined,
       code: variant?.code ?? undefined,
       quantity: item.quantity,
-      price: variant ? variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100) : 0,
+      price: variant ? calculatePrice(variant.costPrice, variant.profitMargin ?? 0) : 0,
     };
   });
 }

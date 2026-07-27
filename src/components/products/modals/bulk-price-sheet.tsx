@@ -8,6 +8,7 @@ import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { calculatePrice, roundMoney } from '@/lib/money';
 
 import { bulkUpdateVariantPricesAction } from '../actions';
 
@@ -42,7 +43,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
     setRows((prev) =>
       prev.map((r) => ({
         ...r,
-        costPrice: Math.max(0.01, parseFloat((r.costPrice * (1 + pct / 100)).toFixed(2))),
+        costPrice: Math.max(0.01, roundMoney(r.costPrice * (1 + pct / 100))),
       })),
     );
   };
@@ -116,7 +117,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
                 const row = getRow(v.id);
                 const costPrice = row?.costPrice ?? v.costPrice;
                 const profitMargin = row?.profitMargin ?? v.profitMargin ?? 0;
-                const sellingPrice = costPrice * (1 + profitMargin / 100);
+                const sellingPrice = calculatePrice(costPrice, profitMargin);
 
                 return (
                   <tr key={v.id} className="hover:bg-muted/30">

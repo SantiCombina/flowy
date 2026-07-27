@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
-import { calculateCommission } from '@/lib/commissions';
+import { calculateCommission } from '@/lib/money';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
@@ -53,7 +53,7 @@ export async function getCommissionSummary(
 
   let totalCommission = 0;
   for (const sale of allSalesResult.docs as Sale[]) {
-    totalCommission += calculateCommission(sale.amountPaid ?? 0);
+    totalCommission += calculateCommission(sale.amountPaid ?? 0, 3);
   }
 
   const allPaymentsResult = await payload.find({
@@ -88,7 +88,7 @@ export async function getCommissionSummary(
   let periodCommission = 0;
   for (const sale of periodSalesResult.docs as Sale[]) {
     periodSales += sale.total;
-    periodCommission += calculateCommission(sale.amountPaid ?? 0);
+    periodCommission += calculateCommission(sale.amountPaid ?? 0, 3);
   }
 
   const periodPaymentsResult = await payload.find({
@@ -169,7 +169,7 @@ export async function getSellersCommissionSummaries(ownerId: number): Promise<Ma
     if (sellerId === 0) continue;
 
     const existing = commissionBySeller.get(sellerId) ?? { totalCommission: 0 };
-    existing.totalCommission += calculateCommission(sale.amountPaid ?? 0);
+    existing.totalCommission += calculateCommission(sale.amountPaid ?? 0, 3);
     commissionBySeller.set(sellerId, existing);
   }
 

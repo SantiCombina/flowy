@@ -151,8 +151,12 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
       const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
       const payload = await getPayloadClient();
 
+      const twelveMonthsAgo = new Date(
+        new Date(currentStart).setMonth(new Date(currentStart).getMonth() - 12),
+      ).toISOString();
+
       const [allSales, clients, sellers, sellersInventory, variantsResult] = await Promise.all([
-        getSales({ ownerId, dateFrom: prevStart }),
+        getSales({ ownerId, dateFrom: twelveMonthsAgo }),
         getClients({ ownerId }),
         getSellers(ownerId),
         getAllSellersInventoryForOwner(ownerId),
@@ -186,7 +190,6 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
         if (saleDate >= currentStart) {
           revCurrent += sale.total;
           salesCurrent++;
-          totalCollected += sale.amountPaid ?? 0;
           if (sale.paymentMethod) paymentMethods[sale.paymentMethod] += sale.total;
 
           const existingSeller = sellerMap.get(sale.sellerName);
@@ -222,6 +225,10 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
             entry.total += sale.total;
             entry.count++;
           }
+        }
+
+        if (sale.collectedAt && sale.collectedAt >= currentStart) {
+          totalCollected += sale.amountPaid ?? 0;
         }
       }
 

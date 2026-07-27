@@ -4,6 +4,7 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { calculatePrice, moneyEquals, multiplyMoney, roundMoney } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
@@ -85,9 +86,6 @@ export interface SaleRow {
   amountPaid: number;
   collectedAt?: string;
   checkDueDate?: string;
-  ownerPaymentStatus: 'pending' | 'partially_collected' | 'collected';
-  ownerAmountPaid: number;
-  ownerCollectedAt?: string;
   deliveryStatus: 'pending' | 'delivered';
   deliveredAt?: string;
   items: SaleItemDetail[];
@@ -138,7 +136,7 @@ async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleO
       brandName: brand?.name ?? undefined,
       presentationLabel: presentation?.label ?? undefined,
       code: variant.code ?? undefined,
-      price: variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100),
+      price: calculatePrice(variant.costPrice, variant.profitMargin ?? 0),
       warehouseStock: variant.stock,
       personalStock: personalStockMap.get(variant.id) ?? 0,
     };
@@ -301,7 +299,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
       }
     }
 
-    total = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    total = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
     const isImmediate = data.paymentMethod !== 'credit';
     const now = new Date().toISOString();
 
@@ -322,10 +320,10 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         total,
         amountPaid: isImmediate ? total : 0,
         paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+        ownerPaymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+        ownerAmountPaid: isImmediate ? total : 0,
         deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
         ...(data.immediateDelivery ? { deliveredAt: now } : {}),
-        ownerPaymentStatus: 'pending' as const,
-        ownerAmountPaid: 0,
         ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
         ...(isImmediate ? { collectedAt: now } : {}),
         ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
@@ -397,7 +395,7 @@ function buildSortDirection(sortDir: 'asc' | 'desc' | undefined): '' | '-' {
   return sortDir === 'asc' ? '' : '-';
 }
 
-function buildSortField(sort: string | undefined, isSeller: boolean, sortDirValue: 'asc' | 'desc' | undefined): string {
+function buildSortField(sort: string | undefined, sortDirValue: 'asc' | 'desc' | undefined): string {
   if (!sort) return '-date';
 
   const direction = buildSortDirection(sortDirValue);
@@ -410,7 +408,7 @@ function buildSortField(sort: string | undefined, isSeller: boolean, sortDirValu
     case 'paymentMethod':
       return `${direction}paymentMethod`;
     case 'paymentStatus':
-      return isSeller ? `${direction}paymentStatus` : `${direction}ownerPaymentStatus`;
+      return `${direction}paymentStatus`;
     case 'deliveryStatus':
       return `${direction}deliveryStatus`;
     case 'seller':
@@ -447,11 +445,10 @@ async function _getPaginatedSales(
   }
 
   if (filters.paymentStatus) {
-    const field = isSeller ? 'paymentStatus' : 'ownerPaymentStatus';
     if (filters.paymentStatus === 'pending') {
-      conditions.push({ [field]: { in: ['pending', 'partially_collected'] } });
+      conditions.push({ paymentStatus: { in: ['pending', 'partially_collected'] } });
     } else {
-      conditions.push({ [field]: { equals: 'collected' } });
+      conditions.push({ paymentStatus: { equals: 'collected' } });
     }
   }
 
@@ -475,7 +472,7 @@ async function _getPaginatedSales(
 
   const limit = options.limit ?? 25;
   const page = options.page ?? 1;
-  const sort = buildSortField(options.sort, isSeller, options.sortDir);
+  const sort = buildSortField(options.sort, options.sortDir);
 
   const result = await payload.find({
     collection: 'sales',
@@ -497,9 +494,6 @@ async function _getPaginatedSales(
       amountPaid: true,
       collectedAt: true,
       checkDueDate: true,
-      ownerPaymentStatus: true,
-      ownerAmountPaid: true,
-      ownerCollectedAt: true,
       deliveryStatus: true,
       deliveredAt: true,
       notes: true,
@@ -527,7 +521,7 @@ async function _getPaginatedSales(
         variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
         stockSource: (item.stockSource ?? 'warehouse') as 'warehouse' | 'personal',
       };
     });
@@ -549,9 +543,6 @@ async function _getPaginatedSales(
       amountPaid: sale.amountPaid ?? 0,
       collectedAt: sale.collectedAt ?? undefined,
       checkDueDate: sale.checkDueDate ?? undefined,
-      ownerPaymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
-      ownerAmountPaid: sale.ownerAmountPaid ?? 0,
-      ownerCollectedAt: sale.ownerCollectedAt ?? undefined,
       deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
       deliveredAt: sale.deliveredAt ?? undefined,
       items,
@@ -621,7 +612,7 @@ export async function getSales(filters: {
         variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
         stockSource: (item.stockSource ?? 'warehouse') as 'warehouse' | 'personal',
       };
     });
@@ -643,9 +634,6 @@ export async function getSales(filters: {
       amountPaid: sale.amountPaid ?? 0,
       collectedAt: sale.collectedAt ?? undefined,
       checkDueDate: sale.checkDueDate ?? undefined,
-      ownerPaymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
-      ownerAmountPaid: sale.ownerAmountPaid ?? 0,
-      ownerCollectedAt: sale.ownerCollectedAt ?? undefined,
       deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
       deliveredAt: sale.deliveredAt ?? undefined,
       items,
@@ -656,9 +644,10 @@ export async function getSales(filters: {
 export async function registerPayment(
   saleId: number,
   amount: number,
-  context:
-    | { ownerId: number }
-    | { sellerId: number; paymentMethod: 'cash' | 'transfer' | 'check'; checkDueDate: string | null },
+  paymentMethod: 'cash' | 'transfer' | 'check',
+  checkDueDate: string | null,
+  callerId: number,
+  callerRole: 'owner' | 'seller',
 ): Promise<void> {
   const payload = await getPayloadClient();
 
@@ -670,37 +659,45 @@ export async function registerPayment(
 
   if (!sale) throw new Error('Venta no encontrada');
 
-  if ('ownerId' in context) {
-    const saleOwnerId = resolveId(sale.owner);
-    if (saleOwnerId !== context.ownerId) throw new Error('No autorizado');
+  verifySaleAccess(sale as Sale, callerId, callerRole);
 
-    if (sale.ownerPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+  const currentPaymentStatus = sale.paymentStatus ?? 'pending';
+  if (currentPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
 
-    const currentOwnerAmountPaid = sale.ownerAmountPaid ?? 0;
-    const ownerRemaining = sale.total - currentOwnerAmountPaid;
+  const currentAmountPaid = sale.amountPaid ?? 0;
+  const remaining = sale.total - currentAmountPaid;
 
-    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-    if (amount > ownerRemaining) throw new Error(`El monto no puede superar el restante ($${ownerRemaining})`);
+  if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+  if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
 
-    const newOwnerAmountPaid = currentOwnerAmountPaid + amount;
-    const newOwnerStatus = newOwnerAmountPaid >= sale.total ? 'collected' : 'partially_collected';
+  const newAmountPaid = currentAmountPaid + amount;
+  const isCollected = moneyEquals(newAmountPaid, sale.total) || newAmountPaid > sale.total;
+  const newStatus = isCollected ? 'collected' : 'partially_collected';
 
-    await payload.update({
-      collection: 'sales',
-      id: saleId,
-      data: {
-        ownerAmountPaid: newOwnerAmountPaid,
-        ownerPaymentStatus: newOwnerStatus,
-        ...(newOwnerStatus === 'collected' ? { ownerCollectedAt: new Date().toISOString() } : {}),
-      } as Partial<Sale>,
-      overrideAccess: true,
-    });
+  await payload.update({
+    collection: 'sales',
+    id: saleId,
+    data: {
+      amountPaid: newAmountPaid,
+      paymentStatus: newStatus,
+      ...(newStatus === 'collected' ? { collectedAt: new Date().toISOString() } : {}),
+      ownerAmountPaid: newAmountPaid,
+      ownerPaymentStatus: newStatus,
+      ...(newStatus === 'collected' ? { ownerCollectedAt: new Date().toISOString() } : {}),
+      paymentMethod,
+      ...(checkDueDate ? { checkDueDate } : {}),
+    } as Partial<Sale>,
+    overrideAccess: true,
+  });
 
-    const saleSellerId = resolveId(sale.seller);
+  const saleOwnerId = resolveId(sale.owner);
+  const saleSellerId = resolveId(sale.seller);
+
+  if (callerRole === 'owner') {
     if (saleSellerId) {
       await notifyEvent({
         recipientId: saleSellerId,
-        ownerId: context.ownerId,
+        ownerId: callerId,
         type: 'payment_registered',
         title: 'Cobro registrado',
         body: `Tu venta fue cobrada por ${formatCurrency(amount)}`,
@@ -708,63 +705,37 @@ export async function registerPayment(
       });
     }
   } else {
-    const saleSellerId = resolveId(sale.seller);
-    if (saleSellerId !== context.sellerId) throw new Error('No autorizado');
-
-    if (sale.paymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
-
-    const currentAmountPaid = sale.amountPaid ?? 0;
-    const remaining = sale.total - currentAmountPaid;
-
-    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-    if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
-
-    const newAmountPaid = currentAmountPaid + amount;
-    const newStatus = newAmountPaid >= sale.total ? 'collected' : 'partially_collected';
-
-    await payload.update({
-      collection: 'sales',
-      id: saleId,
-      data: {
-        amountPaid: newAmountPaid,
-        paymentStatus: newStatus,
-        ...(newStatus === 'collected' ? { collectedAt: new Date().toISOString() } : {}),
-        paymentMethod: context.paymentMethod,
-        ...(context.checkDueDate ? { checkDueDate: context.checkDueDate } : {}),
-      } as Partial<Sale>,
-      overrideAccess: true,
-    });
-
-    const saleOwnerIdForNotif = resolveId(sale.owner);
-
-    if (saleOwnerIdForNotif) {
+    if (saleOwnerId) {
       const sellerUser = await payload.findByID({
         collection: 'users',
-        id: context.sellerId,
+        id: callerId,
         overrideAccess: true,
       });
       const sellerName = sellerUser?.name ?? 'Vendedor';
 
       await notifyEvent({
-        recipientId: saleOwnerIdForNotif,
-        ownerId: saleOwnerIdForNotif,
-        sellerId: context.sellerId,
+        recipientId: saleOwnerId,
+        ownerId: saleOwnerId,
+        sellerId: callerId,
         type: 'payment_registered',
         title: 'Cobro registrado',
         body: `${sellerName} registró cobro de ${formatCurrency(amount)}`,
-        metadata: { saleId, amount, sellerId: context.sellerId },
+        metadata: { saleId, amount, sellerId: callerId },
       });
     }
   }
 
   try {
-    const tagId = 'ownerId' in context ? context.ownerId : context.sellerId;
-    revalidateTag(cacheTags.sales(tagId));
-    if ('ownerId' in context) {
+    revalidateTag(cacheTags.sales(callerId));
+    if (saleOwnerId) {
+      revalidateTag(cacheTags.sales(saleOwnerId));
       revalidateTag(cacheTags.dashboard());
-      revalidateTag(cacheTags.dashboardPerOwner(context.ownerId));
-      revalidateTag(cacheTags.clientsDebts(context.ownerId));
-      revalidateTag(cacheTags.saleOptions(context.ownerId));
+      revalidateTag(cacheTags.dashboardPerOwner(saleOwnerId));
+      revalidateTag(cacheTags.clientsDebts(saleOwnerId));
+      revalidateTag(cacheTags.saleOptions(saleOwnerId));
+    }
+    if (saleSellerId) {
+      revalidateTag(cacheTags.sales(saleSellerId));
     }
   } catch {}
 }
@@ -1048,13 +1019,11 @@ export async function editSaleFull(
       }
     }
 
-    const newTotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const newTotal = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
     const amountPaid = sale.amountPaid ?? 0;
-    const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
 
-    const newPaymentStatus = amountPaid >= newTotal ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
-    const newOwnerPaymentStatus =
-      ownerAmountPaid >= newTotal ? 'collected' : ownerAmountPaid > 0 ? 'partially_collected' : 'pending';
+    const isCollected = moneyEquals(amountPaid, newTotal) || amountPaid > newTotal;
+    const newPaymentStatus = isCollected ? 'collected' : amountPaid > 0 ? 'partially_collected' : 'pending';
 
     const isImmediate = data.paymentMethod !== 'credit';
 
@@ -1076,7 +1045,7 @@ export async function editSaleFull(
           : { paymentMethod: null }),
         ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
         paymentStatus: newPaymentStatus,
-        ownerPaymentStatus: newOwnerPaymentStatus,
+        ownerPaymentStatus: newPaymentStatus,
       } as Partial<Sale>,
       overrideAccess: true,
       req: { transactionID },

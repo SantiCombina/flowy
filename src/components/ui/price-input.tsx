@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { roundMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 function formatDisplay(raw: string): string {
@@ -34,7 +35,7 @@ function formatDisplay(raw: string): string {
 function parseToNumber(display: string): number {
   const normalized = display.replace(/\./g, '').replace(',', '.');
   const num = parseFloat(normalized);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 0 : roundMoney(num);
 }
 
 function numberToDisplay(value: number): string {

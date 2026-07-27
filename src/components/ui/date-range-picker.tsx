@@ -188,7 +188,9 @@ export function DateRangePicker({
             <div className="overflow-y-auto pb-[env(safe-area-inset-bottom)]">
               <DrawerTitle className="sr-only">Seleccionar período</DrawerTitle>
               <div className="px-4 pt-1 pb-2">
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Seleccionar período</p>
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Seleccionar período
+                </p>
               </div>
               <div className="flex flex-wrap gap-2 px-4 pb-3">
                 {PRESETS.map((preset) => (

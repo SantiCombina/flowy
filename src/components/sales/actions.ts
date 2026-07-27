@@ -15,7 +15,7 @@ import {
 } from '@/app/services/sales';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
-import { collectSaleBySellerSchema, collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
+import { collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
 import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
 import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
 import { markAsDeliveredSchema } from '@/schemas/sales/mark-as-delivered-schema';
@@ -88,35 +88,25 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
   return { success: true };
 });
 
-export const markSaleAsCollectedAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {
+export const registerSalePaymentAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
-  if (!user || user.role !== 'owner') {
+  if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
     throw new Error('No autorizado');
   }
 
-  await registerPayment(parsedInput.saleId, parsedInput.amount, { ownerId: user.id });
+  const callerRole = user.role as 'owner' | 'seller';
+  await registerPayment(
+    parsedInput.saleId,
+    parsedInput.amount,
+    parsedInput.paymentMethod,
+    parsedInput.checkDueDate ?? null,
+    user.id,
+    callerRole,
+  );
 
   return { success: true };
 });
-
-export const markSaleAsCollectedBySellerAction = actionClient
-  .schema(collectSaleBySellerSchema)
-  .action(async ({ parsedInput }) => {
-    const user = await getCurrentUser();
-
-    if (!user || user.role !== 'seller') {
-      throw new Error('No autorizado');
-    }
-
-    await registerPayment(parsedInput.saleId, parsedInput.amount, {
-      sellerId: user.id,
-      paymentMethod: parsedInput.paymentMethod,
-      checkDueDate: parsedInput.checkDueDate ?? null,
-    });
-
-    return { success: true };
-  });
 
 export const deleteSaleAction = actionClient.schema(deleteSaleSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();

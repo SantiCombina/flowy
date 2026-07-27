@@ -26,6 +26,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { COLUMN_LABELS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import { calculatePrice } from '@/lib/money';
 import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
 
@@ -235,9 +236,9 @@ function ProductsTableComponent({
         key: 'price',
         header: COLUMN_LABELS.price,
         sortable: true,
-        sortValue: (v) => v.costPrice * (1 + (v.profitMargin ?? 0) / 100),
+        sortValue: (v) => calculatePrice(v.costPrice, v.profitMargin ?? 0),
         cell: (variant) => {
-          const suggestedPrice = variant.costPrice * (1 + (variant.profitMargin ?? 0) / 100);
+          const suggestedPrice = calculatePrice(variant.costPrice, variant.profitMargin ?? 0);
           const formattedPrice = suggestedPrice.toLocaleString('es-AR', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
