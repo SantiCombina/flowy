@@ -51,7 +51,7 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
 
   const form = useForm<CollectSaleValues>({
     resolver: zodResolver(collectSaleSchema),
-    defaultValues: { saleId, amount: remaining },
+    defaultValues: { saleId, amount: remaining, paymentMethod: 'cash' },
   });
 
   const watchedAmount = useWatch({ control: form.control, name: 'amount' });
