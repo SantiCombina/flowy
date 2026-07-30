@@ -19,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PriceInput } from '@/components/ui/price-input';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -295,16 +296,10 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                           <FormItem className="flex-1 sm:flex-none">
                             <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Cant.</p>
                             <FormControl>
-                              <Input
-                                type="number"
-                                min={1}
-                                step={1}
-                                placeholder="1"
-                                value={qtyField.value || ''}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  qtyField.onChange(val >= 1 ? val : 1);
-                                }}
+                              <QuantityInput
+                                value={qtyField.value}
+                                onChange={qtyField.onChange}
+                                onBlur={qtyField.onBlur}
                                 className={fieldState.error ? 'border-destructive' : ''}
                                 disabled={!watchedItems?.[index]?.variantId}
                               />

@@ -12,8 +12,8 @@ import { ClientModal } from '@/components/clients/client-modal';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { PriceInput } from '@/components/ui/price-input';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -153,17 +153,11 @@ function ItemRow({
             <FormItem>
               <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Cant.</p>
               <FormControl>
-                <Input
-                  type="number"
-                  min={1}
+                <QuantityInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
                   max={availableStock || undefined}
-                  step={1}
-                  placeholder="1"
-                  value={field.value || ''}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    field.onChange(availableStock ? Math.min(val, availableStock) : val);
-                  }}
                   className={fieldState.error ? 'border-destructive' : ''}
                   disabled={!variantId || availableStock === 0}
                 />

@@ -12,8 +12,8 @@ import type { BudgetConvertItem } from '@/app/services/budgets';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { QuantityInput } from '@/components/ui/quantity-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -25,6 +25,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { clampQuantityInputValue } from '@/lib/quantity-input';
 import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 
@@ -108,8 +109,9 @@ function ItemRow({
 
   const maxStock = stockSource === 'personal' ? item.personalStock : item.warehouseStock;
   const showStockWarning = quantity > maxStock;
+  const safeQuantity = quantity || 0;
 
-  const subtotal = quantity * item.currentUnitPrice;
+  const subtotal = safeQuantity * item.currentUnitPrice;
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:grid sm:grid-cols-[1fr_80px_140px_140px] sm:items-center sm:gap-3">
@@ -123,8 +125,8 @@ function ItemRow({
           <PriceDiff budgetPrice={item.budgetUnitPrice} currentPrice={item.currentUnitPrice} />
         </div>
         <div className="flex flex-wrap gap-1.5 pt-0.5">
-          <StockBadge label="Depósito" stock={item.warehouseStock} needed={quantity} />
-          <StockBadge label="Mi inv." stock={item.personalStock} needed={quantity} />
+          <StockBadge label="Depósito" stock={item.warehouseStock} needed={safeQuantity || undefined} />
+          <StockBadge label="Mi inv." stock={item.personalStock} needed={safeQuantity || undefined} />
         </div>
       </div>
 
@@ -132,16 +134,16 @@ function ItemRow({
       <FormField
         control={control}
         name={`items.${index}.quantity`}
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <p className="text-xs font-medium text-muted-foreground mb-1 sm:hidden">Cantidad</p>
             <FormControl>
-              <Input
-                type="number"
-                min={1}
-                step={1}
-                value={field.value || ''}
-                onChange={(e) => field.onChange(Math.max(1, Number(e.target.value)))}
+              <QuantityInput
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                max={maxStock || undefined}
+                className={fieldState.error ? 'border-destructive' : ''}
               />
             </FormControl>
             <FormMessage />
@@ -250,19 +252,23 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
     0,
   );
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (values: ConvertFormValues) => {
     if (!convertData) return;
 
-    const values = form.getValues();
     setServerError(null);
     setIsConverting(true);
 
-    const saleItems = convertData.items.map((item, idx) => ({
-      variantId: item.variantId,
-      quantity: values.items[idx].quantity,
-      unitPrice: item.currentUnitPrice,
-      stockSource: values.items[idx].stockSource,
-    }));
+    const saleItems = convertData.items.map((item, idx) => {
+      const stockSource = values.items[idx].stockSource;
+      const maxStock = stockSource === 'personal' ? item.personalStock : item.warehouseStock;
+
+      return {
+        variantId: item.variantId,
+        quantity: clampQuantityInputValue(values.items[idx].quantity, maxStock || undefined),
+        unitPrice: item.currentUnitPrice,
+        stockSource,
+      };
+    });
 
     const createResult = await createSale({
       items: saleItems,
