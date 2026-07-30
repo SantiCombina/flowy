@@ -4,11 +4,10 @@ import * as React from 'react';
 interface ContactEmailProps {
   name: string;
   email: string;
-  business?: string;
-  message?: string;
+  message: string;
 }
 
-export function ContactEmail({ name, email, business, message }: ContactEmailProps) {
+export function ContactEmail({ name, email, message }: ContactEmailProps) {
   return (
     <Html lang="es">
       <Head />
@@ -31,13 +30,6 @@ export function ContactEmail({ name, email, business, message }: ContactEmailPro
               <Text style={fieldLabel}>Email</Text>
               <Text style={fieldValue}>{email}</Text>
             </Section>
-
-            {business ? (
-              <Section style={fieldRow}>
-                <Text style={fieldLabel}>Negocio</Text>
-                <Text style={fieldValue}>{business}</Text>
-              </Section>
-            ) : null}
 
             {message ? (
               <Section style={fieldRow}>

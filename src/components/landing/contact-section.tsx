@@ -10,6 +10,7 @@ import { ScrollReveal } from '@/components/landing/scroll-reveal';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { contactSchema, type ContactValues } from '@/schemas/contact/contact-schema';
 
@@ -20,10 +21,11 @@ export function ContactSection() {
 
   const form = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       name: '',
       email: '',
-      business: '',
       message: '',
     },
   });
@@ -167,7 +169,14 @@ export function ContactSection() {
                     transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
+                      <form
+                        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                          const firstError = Object.keys(errors)[0] as keyof ContactValues;
+                          if (firstError) form.setFocus(firstError);
+                        })}
+                        noValidate
+                        className="space-y-4"
+                      >
                         <FormField
                           control={form.control}
                           name="name"
@@ -175,9 +184,11 @@ export function ContactSection() {
                             <FormItem>
                               <FormLabel className="text-foreground/80">Nombre</FormLabel>
                               <FormControl>
-                                <Input placeholder="Tu nombre" autoComplete="name" maxLength={100} {...field} />
+                                <Input placeholder="" autoComplete="name" maxLength={100} {...field} />
                               </FormControl>
-                              <FormMessage />
+                              <div className="min-h-[20px]">
+                                <FormMessage />
+                              </div>
                             </FormItem>
                           )}
                         />
@@ -190,32 +201,16 @@ export function ContactSection() {
                               <FormControl>
                                 <Input
                                   type="email"
-                                  placeholder="tu@email.com"
+                                  placeholder=""
                                   autoComplete="email"
                                   spellCheck={false}
                                   maxLength={255}
                                   {...field}
                                 />
                               </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="business"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground/80">Nombre del negocio</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Distribuidora..."
-                                  autoComplete="organization"
-                                  maxLength={200}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
+                              <div className="min-h-[20px]">
+                                <FormMessage />
+                              </div>
                             </FormItem>
                           )}
                         />
@@ -226,16 +221,11 @@ export function ContactSection() {
                             <FormItem>
                               <FormLabel className="text-foreground/80">Mensaje</FormLabel>
                               <FormControl>
-                                <Textarea
-                                  placeholder="Contanos un poco sobre tu negocio..."
-                                  rows={4}
-                                  maxLength={2000}
-                                  {...field}
-                                />
+                                <Textarea placeholder="" rows={4} maxLength={2000} {...field} />
                               </FormControl>
-                              <div className="flex items-center justify-between">
-                                <FormMessage />
-                                <span className="text-xs text-foreground/40 tabular-nums">
+                              <div className="flex items-start justify-between gap-2 min-h-[20px]">
+                                <FormMessage className="flex-1" />
+                                <span className="text-xs text-foreground/40 tabular-nums shrink-0">
                                   {field.value?.length ?? 0}/2000
                                 </span>
                               </div>
@@ -256,12 +246,8 @@ export function ContactSection() {
                         <Button type="submit" disabled={isExecuting} className="w-full rounded-full">
                           {isExecuting ? (
                             <span className="flex items-center gap-2">
-                              <motion.span
-                                className="inline-block size-4 rounded-full border-2 border-current border-t-transparent"
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 0.7, ease: 'linear' }}
-                              />
-                              Enviando...
+                              Enviando
+                              <Spinner />
                             </span>
                           ) : (
                             'Enviar mensaje'

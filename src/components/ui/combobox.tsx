@@ -189,7 +189,7 @@ export function Combobox({
                 }}
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  'flex cursor-pointer items-center justify-between px-3 py-2 text-sm select-none',
+                  'flex cursor-pointer items-center justify-between px-2 py-1.5 text-sm select-none mx-1 rounded-md',
                   index === highlightedIndex && 'bg-accent',
                   option.disabled && 'pointer-events-none opacity-50',
                 )}

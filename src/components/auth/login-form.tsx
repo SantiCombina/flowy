@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { Spinner } from '@/components/ui/spinner';
 import { forgotPasswordSchema, type ForgotPasswordValues } from '@/schemas/auth/forgot-password-schema';
 import { loginSchema, type LoginValues } from '@/schemas/auth/login-schema';
 
@@ -32,11 +33,15 @@ export function LoginForm() {
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: { email: '', password: '' },
   });
 
   const forgotForm = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: { email: '' },
   });
 
@@ -89,7 +94,7 @@ export function LoginForm() {
   if (view === 'forgot' || view === 'forgot-sent') {
     return (
       <Card className="w-full max-w-sm shadow-sm">
-        <CardHeader className="text-center pb-2">
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Recuperar contraseña</CardTitle>
           <CardDescription>
             {view === 'forgot-sent'
@@ -109,7 +114,13 @@ export function LoginForm() {
             </div>
           ) : (
             <Form {...forgotForm}>
-              <form onSubmit={forgotForm.handleSubmit(onForgotSubmit)} className="space-y-4">
+              <form
+                onSubmit={forgotForm.handleSubmit(onForgotSubmit, (errors) => {
+                  const firstError = Object.keys(errors)[0] as keyof ForgotPasswordValues;
+                  if (firstError) forgotForm.setFocus(firstError);
+                })}
+                className="space-y-2"
+              >
                 <FormField
                   control={forgotForm.control}
                   name="email"
@@ -117,15 +128,24 @@ export function LoginForm() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="email@ejemplo.com" {...field} />
+                        <Input type="email" placeholder="" autoComplete="off" {...field} />
                       </FormControl>
-                      <FormMessage />
+                      <div className="min-h-[20px]">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
 
                 <Button type="submit" className="w-full" disabled={isForgotExecuting}>
-                  {isForgotExecuting ? 'Enviando…' : 'Enviar enlace'}
+                  {isForgotExecuting ? (
+                    <span className="flex items-center gap-2">
+                      Enviando
+                      <Spinner />
+                    </span>
+                  ) : (
+                    'Enviar enlace'
+                  )}
                 </Button>
 
                 <div className="text-center">
@@ -147,13 +167,20 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-sm shadow-sm">
-      <CardHeader className="text-center pb-2">
+      <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Iniciar sesión</CardTitle>
         <CardDescription>Ingresá tus credenciales para acceder</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...loginForm}>
-          <form method="post" onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-2">
+          <form
+            method="post"
+            onSubmit={loginForm.handleSubmit(onLoginSubmit, (errors) => {
+              const firstError = Object.keys(errors)[0] as keyof LoginValues;
+              if (firstError) loginForm.setFocus(firstError);
+            })}
+            className="space-y-2"
+          >
             {registered && (
               <div className="rounded-md bg-success-muted p-3 text-sm text-success-muted-foreground">
                 Cuenta creada exitosamente. Ingresá tus credenciales.
@@ -175,9 +202,9 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="email@ejemplo.com" {...field} />
+                    <Input type="email" placeholder="" {...field} />
                   </FormControl>
-                  <div className="-mt-1 min-h-5">
+                  <div className="min-h-[20px]">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -191,9 +218,9 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="••••••••" {...field} />
+                    <PasswordInput placeholder="" {...field} />
                   </FormControl>
-                  <div className="-mt-1 min-h-5">
+                  <div className="min-h-[20px]">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -201,7 +228,14 @@ export function LoginForm() {
             />
 
             <Button type="submit" className="w-full" disabled={isLoginExecuting || redirecting}>
-              {isLoginExecuting || redirecting ? 'Ingresando…' : 'Ingresar'}
+              {isLoginExecuting || redirecting ? (
+                <span className="flex items-center gap-2">
+                  Ingresando
+                  <Spinner />
+                </span>
+              ) : (
+                'Ingresar'
+              )}
             </Button>
 
             <div className="text-center">

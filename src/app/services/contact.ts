@@ -18,7 +18,6 @@ export async function sendContactEmail(data: ContactValues) {
     ContactEmail({
       name: parsed.name,
       email: parsed.email,
-      business: parsed.business,
       message: parsed.message,
     }),
   );

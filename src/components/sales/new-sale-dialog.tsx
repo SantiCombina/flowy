@@ -14,7 +14,6 @@ import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,6 +28,8 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -132,7 +133,9 @@ function ItemRow({
                   className={cn(fieldState.error && 'border-destructive')}
                 />
               </FormControl>
-              <FormMessage />
+              <div className="min-h-[20px]">
+                <FormMessage />
+              </div>
             </FormItem>
           )}
         />
@@ -165,7 +168,9 @@ function ItemRow({
                   disabled={!variantId || availableStock === 0}
                 />
               </FormControl>
-              <FormMessage />
+              <div className="min-h-[20px]">
+                <FormMessage />
+              </div>
             </FormItem>
           )}
         />
@@ -184,7 +189,9 @@ function ItemRow({
                   className={fieldState.error ? 'border-destructive' : ''}
                 />
               </FormControl>
-              <FormMessage />
+              <div className="min-h-[20px]">
+                <FormMessage />
+              </div>
             </FormItem>
           )}
         />
@@ -198,7 +205,7 @@ function ItemRow({
               <FormControl>
                 <Select value={field.value} onValueChange={handleStockSourceChange} disabled={!variantId}>
                   <SelectTrigger className={fieldState.error ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Origen..." />
+                    <SelectValue placeholder="" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="warehouse" disabled={warehouseStock === 0}>
@@ -210,7 +217,9 @@ function ItemRow({
                   </SelectContent>
                 </Select>
               </FormControl>
-              <FormMessage />
+              <div className="min-h-[20px]">
+                <FormMessage />
+              </div>
             </FormItem>
           )}
         />
@@ -249,8 +258,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
 
   const form = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
-      paymentMethod: 'credit',
       items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
       immediateDelivery: false,
     },
@@ -302,7 +312,10 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const formatTotal = (value: number) =>
     value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const handleFormSubmit = form.handleSubmit(onSubmit);
+  const handleFormSubmit = form.handleSubmit(onSubmit, (errors) => {
+    const firstError = Object.keys(errors)[0] as keyof SaleValues;
+    if (firstError) form.setFocus(firstError);
+  });
 
   return (
     <>
@@ -386,12 +399,14 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                             options={localClients.map((c) => ({ value: String(c.id), label: c.name }))}
                             value={field.value ? String(field.value) : ''}
                             onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
-                            placeholder="Sin cliente"
+                            placeholder=""
                             searchPlaceholder="Buscar cliente..."
                             emptyMessage="No se encontró el cliente."
                           />
                         </FormControl>
-                        <FormMessage />
+                        <div className="min-h-[20px]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -422,7 +437,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <div className="min-h-[20px]">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -471,7 +488,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                               />
                             </PopoverContent>
                           </Popover>
-                          <FormMessage />
+                          <div className="min-h-[20px]">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -485,9 +504,11 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     <FormItem>
                       <FormLabel>Notas (opcional)</FormLabel>
                       <FormControl>
-                        <Textarea {...field} placeholder="Observaciones..." rows={2} />
+                        <Textarea {...field} placeholder="" rows={2} />
                       </FormControl>
-                      <FormMessage />
+                      <div className="min-h-[20px]">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />
@@ -496,11 +517,11 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   control={form.control}
                   name="immediateDelivery"
                   render={({ field }) => (
-                    <FormItem className="flex items-center gap-2 space-y-0">
-                      <FormControl>
-                        <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
-                      </FormControl>
+                    <FormItem className="flex items-center gap-3 space-y-0">
                       <FormLabel className="font-normal cursor-pointer">Entrega inmediata</FormLabel>
+                      <FormControl>
+                        <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
@@ -522,8 +543,15 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting || variants.length === 0 || hasUnselectedVariant}>
-                    {isSubmitting ? 'Registrando…' : 'Registrar venta'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        Registrando
+                        <Spinner />
+                      </span>
+                    ) : (
+                      'Registrar venta'
+                    )}
                   </Button>
                 </div>
               </ResponsiveModalFooter>

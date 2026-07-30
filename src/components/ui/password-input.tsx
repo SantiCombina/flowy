@@ -12,7 +12,7 @@ function PasswordInput({ className, ...props }: Omit<React.ComponentProps<'input
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
-      <Input type={show ? 'text' : 'password'} className={cn('pr-9', className)} {...props} />
+      <Input type={show ? 'text' : 'password'} className={cn('pr-10', className)} {...props} />
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -20,7 +20,7 @@ function PasswordInput({ className, ...props }: Omit<React.ComponentProps<'input
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+              className="absolute right-1 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={() => setShow((prev) => !prev)}
               tabIndex={-1}
               aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
