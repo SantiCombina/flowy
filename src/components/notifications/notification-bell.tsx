@@ -77,7 +77,6 @@ export function NotificationBell() {
   const { data } = useServerActionQuery({
     queryKey: queryKeys.notifications.list(),
     queryFn: getNotificationsAction,
-    enabled: open,
     staleTime: 5_000,
   });
 
