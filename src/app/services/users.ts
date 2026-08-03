@@ -1,6 +1,7 @@
 'use server';
 
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import type { User } from '@/payload-types';
 
 interface CreateUserData {
@@ -158,8 +159,18 @@ interface UpdateSellerData {
   ivaCondition?: 'responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable';
 }
 
-export async function updateSeller(sellerId: number, data: UpdateSellerData): Promise<User> {
+export async function updateSeller(sellerId: number, data: UpdateSellerData, ownerId: number): Promise<User> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'users',
+    id: sellerId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Vendedor no encontrado');
+  }
 
   const user = await payload.update({
     collection: 'users',
@@ -171,8 +182,18 @@ export async function updateSeller(sellerId: number, data: UpdateSellerData): Pr
   return user as User;
 }
 
-export async function deleteSeller(sellerId: number): Promise<void> {
+export async function deleteSeller(sellerId: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'users',
+    id: sellerId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Vendedor no encontrado');
+  }
 
   await payload.update({
     collection: 'users',

@@ -4,13 +4,19 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { acquireTenantLock, type LockContext, type LockDependencies } from '@/lib/entitlements/locks';
 import { calculatePrice, multiplyMoney, roundMoney } from '@/lib/money';
-import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
-import type { Budget } from '@/payload-types';
+import { formatCurrency } from '@/lib/utils';
+import type { Budget, ProductVariant, Sale } from '@/payload-types';
 import type { BudgetValues } from '@/schemas/budgets/budget-schema';
 
 import { getSaleOptions } from './sales';
+
+async function getPayloadClient() {
+  const payload = await import('@/lib/payload');
+  return payload.getPayloadClient();
+}
 
 export interface BudgetItemDetail {
   variantId: number;
@@ -65,12 +71,20 @@ export async function createBudget(sellerId: number, ownerId: number, data: Budg
 
   if (data.saveClientPhone && data.clientPhone && data.clientId) {
     try {
-      await payload.update({
+      const client = await payload.findByID({
         collection: 'clients',
         id: data.clientId,
-        data: { phone: data.clientPhone },
+        depth: 0,
         overrideAccess: true,
       });
+      if (client && resolveId(client.owner) === ownerId) {
+        await payload.update({
+          collection: 'clients',
+          id: data.clientId,
+          data: { phone: data.clientPhone },
+          overrideAccess: true,
+        });
+      }
     } catch {}
   }
 
@@ -295,7 +309,7 @@ export async function getPaginatedBudgets(
   )();
 }
 
-export async function getBudgetById(budgetId: number): Promise<Budget | null> {
+export async function getBudgetById(budgetId: number, ownerId: number): Promise<Budget | null> {
   const payload = await getPayloadClient();
 
   const budget = await payload.findByID({
@@ -305,14 +319,28 @@ export async function getBudgetById(budgetId: number): Promise<Budget | null> {
     overrideAccess: true,
   });
 
+  if (!budget) return null;
+  if (resolveId(budget.owner) !== ownerId) return null;
+
   return budget as Budget | null;
 }
 
 export async function updateBudgetStatus(
   budgetId: number,
   status: 'pending' | 'approved' | 'rejected' | 'converted',
+  ownerId: number,
 ): Promise<void> {
   const payload = await getPayloadClient();
+
+  const budget = await payload.findByID({
+    collection: 'budgets',
+    id: budgetId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!budget || resolveId(budget.owner) !== ownerId) {
+    throw new Error('Presupuesto no encontrado');
+  }
 
   await payload.update({
     collection: 'budgets',
@@ -326,8 +354,18 @@ export async function updateBudgetStatus(
   } catch {}
 }
 
-export async function updateBudget(budgetId: number, data: BudgetValues): Promise<void> {
+export async function updateBudget(budgetId: number, data: BudgetValues, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const budget = await payload.findByID({
+    collection: 'budgets',
+    id: budgetId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!budget || resolveId(budget.owner) !== ownerId) {
+    throw new Error('Presupuesto no encontrado');
+  }
 
   const total = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
 
@@ -351,12 +389,20 @@ export async function updateBudget(budgetId: number, data: BudgetValues): Promis
 
   if (data.saveClientPhone && data.clientPhone && data.clientId) {
     try {
-      await payload.update({
+      const clientCheck = await payload.findByID({
         collection: 'clients',
         id: data.clientId,
-        data: { phone: data.clientPhone },
+        depth: 0,
         overrideAccess: true,
       });
+      if (clientCheck && resolveId(clientCheck.owner) === ownerId) {
+        await payload.update({
+          collection: 'clients',
+          id: data.clientId,
+          data: { phone: data.clientPhone },
+          overrideAccess: true,
+        });
+      }
     } catch {}
   }
 
@@ -365,8 +411,18 @@ export async function updateBudget(budgetId: number, data: BudgetValues): Promis
   } catch {}
 }
 
-export async function deleteBudget(budgetId: number): Promise<void> {
+export async function deleteBudget(budgetId: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const budget = await payload.findByID({
+    collection: 'budgets',
+    id: budgetId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!budget || resolveId(budget.owner) !== ownerId) {
+    throw new Error('Presupuesto no encontrado');
+  }
 
   await payload.delete({
     collection: 'budgets',
@@ -400,7 +456,11 @@ export interface BudgetConvertData {
   items: BudgetConvertItem[];
 }
 
-export async function getBudgetConvertData(budgetId: number, sellerId: number): Promise<BudgetConvertData> {
+export async function getBudgetConvertData(
+  budgetId: number,
+  sellerId: number,
+  ownerId: number,
+): Promise<BudgetConvertData> {
   const payload = await getPayloadClient();
 
   const budget = await payload.findByID({
@@ -411,13 +471,16 @@ export async function getBudgetConvertData(budgetId: number, sellerId: number): 
   });
 
   if (!budget) throw new Error('Presupuesto no encontrado');
+  if (resolveId(budget.owner) !== ownerId) {
+    throw new Error('Presupuesto no encontrado');
+  }
 
   const variantIds = budget.items.map((item) => resolveId(item.variant) ?? 0);
 
   const [variantsResult, inventoryResult] = await Promise.all([
     payload.find({
       collection: 'product-variants',
-      where: { id: { in: variantIds } },
+      where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
       depth: 2,
       limit: variantIds.length,
       overrideAccess: true,
@@ -484,3 +547,215 @@ export async function getBudgetConvertData(budgetId: number, sellerId: number): 
 }
 
 export { getSaleOptions as getBudgetOptions };
+
+export interface ConvertBudgetDependencies {
+  transactionID: string | number;
+  now: string;
+  lock: LockDependencies;
+  lockContext: LockContext;
+  findBudgetById(args: unknown): Promise<Budget>;
+  findVariants(args: unknown): Promise<{ docs: ProductVariant[] }>;
+  updateVariant(args: unknown): Promise<ProductVariant>;
+  createStockMovement(args: unknown): Promise<unknown>;
+  createSale(args: unknown): Promise<Sale>;
+  updateBudget(args: unknown): Promise<Budget>;
+  findUserById(args: unknown): Promise<{ name: string }>;
+  notifyEvent(args: unknown): Promise<unknown>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+}
+
+export async function convertBudgetToSale(
+  budgetId: number,
+  sellerId: number,
+  ownerId: number,
+  options: { clientId?: number; notes?: string; immediateDelivery?: boolean },
+  dependencies?: ConvertBudgetDependencies,
+): Promise<Sale> {
+  if (dependencies) {
+    return runConvertBudgetToSale(budgetId, sellerId, ownerId, options, dependencies);
+  }
+
+  const deps = await defaultConvertBudgetDependencies(ownerId);
+  try {
+    const sale = await runConvertBudgetToSale(budgetId, sellerId, ownerId, options, deps);
+    await deps.commit();
+    return sale;
+  } catch (error) {
+    await deps.rollback();
+    throw error;
+  }
+}
+
+async function runConvertBudgetToSale(
+  budgetId: number,
+  sellerId: number,
+  ownerId: number,
+  options: { clientId?: number; notes?: string; immediateDelivery?: boolean },
+  dependencies: ConvertBudgetDependencies,
+): Promise<Sale> {
+  await acquireTenantLock(dependencies.lock, dependencies.lockContext);
+
+  const budget = await dependencies.findBudgetById({
+    collection: 'budgets',
+    id: budgetId,
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  if (budget.status === 'converted') {
+    throw new Error('El presupuesto ya fue convertido');
+  }
+  if (budget.status === 'rejected') {
+    throw new Error('El presupuesto fue rechazado');
+  }
+
+  if (resolveId(budget.owner) !== ownerId) {
+    throw new Error('Presupuesto no encontrado');
+  }
+
+  const variantIds = budget.items.map((item) => resolveId(item.variant) ?? 0);
+  const variantsResult = await dependencies.findVariants({
+    collection: 'product-variants',
+    where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
+    limit: variantIds.length,
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+  const variantMap = new Map(variantsResult.docs.map((variant) => [variant.id, variant]));
+
+  for (const item of budget.items) {
+    const variantId = resolveId(item.variant) ?? 0;
+    const variant = variantMap.get(variantId);
+    if (!variant) {
+      throw new Error(`Variante ${variantId} no encontrada`);
+    }
+    if (variant.stock < item.quantity) {
+      throw new Error(
+        `Stock insuficiente en depósito para ${variant.code ?? variantId}. ` +
+          `Disponible: ${variant.stock}, requerido: ${item.quantity}`,
+      );
+    }
+
+    const previousStock = variant.stock;
+    const newStock = previousStock - item.quantity;
+    variant.stock = newStock;
+
+    await dependencies.updateVariant({
+      collection: 'product-variants',
+      id: variantId,
+      data: { stock: newStock },
+      overrideAccess: true,
+      req: { transactionID: dependencies.transactionID },
+    });
+
+    await dependencies.createStockMovement({
+      collection: 'stock-movements',
+      data: {
+        variant: variantId,
+        type: 'sale',
+        quantity: item.quantity,
+        previousStock,
+        newStock,
+        owner: ownerId,
+        createdBy: sellerId,
+      },
+      overrideAccess: true,
+      req: { transactionID: dependencies.transactionID },
+    });
+  }
+
+  const total = budget.total;
+  const now = dependencies.now;
+
+  const sale = await dependencies.createSale({
+    collection: 'sales',
+    data: {
+      seller: sellerId,
+      owner: ownerId,
+      sourceBudget: budgetId,
+      date: now,
+      items: budget.items.map((item) => ({
+        variant: resolveId(item.variant) ?? 0,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        stockSource: 'warehouse',
+      })),
+      total,
+      amountPaid: 0,
+      paymentStatus: 'pending',
+      ownerAmountPaid: 0,
+      ownerPaymentStatus: 'pending',
+      deliveryStatus: options.immediateDelivery ? 'delivered' : 'pending',
+      ...(options.immediateDelivery ? { deliveredAt: now } : {}),
+      ...(options.clientId ? { client: options.clientId } : {}),
+      ...(options.notes ? { notes: options.notes } : {}),
+    },
+    overrideAccess: true,
+    context: { entitlementMutation: true },
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  await dependencies.updateBudget({
+    collection: 'budgets',
+    id: budgetId,
+    data: { status: 'converted' },
+    overrideAccess: true,
+    context: { entitlementMutation: true },
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  const sellerUser = await dependencies.findUserById({
+    collection: 'users',
+    id: sellerId,
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  await dependencies.notifyEvent({
+    recipientId: ownerId,
+    ownerId,
+    sellerId,
+    type: 'sale_created',
+    title: 'Nueva venta',
+    body: `Nueva venta de ${sellerUser.name} por ${formatCurrency(total)}`,
+    metadata: { saleId: sale.id, total, sellerId, sourceBudget: budgetId },
+  });
+
+  return sale;
+}
+
+async function defaultConvertBudgetDependencies(ownerId: number): Promise<ConvertBudgetDependencies> {
+  const payload = await getPayloadClient();
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
+  }
+
+  const { defaultLockDependencies } = await import('@/lib/entitlements/locks');
+  const lock = await defaultLockDependencies();
+
+  return {
+    transactionID,
+    now: new Date().toISOString(),
+    lock,
+    lockContext: { transactionID, tenantId: ownerId },
+    findBudgetById: async (args) => payload.findByID(args as never) as unknown as Promise<Budget>,
+    findVariants: async (args) => payload.find(args as never) as unknown as Promise<{ docs: ProductVariant[] }>,
+    updateVariant: async (args) => payload.update(args as never) as unknown as Promise<ProductVariant>,
+    createStockMovement: async (args) => payload.create(args as never) as unknown,
+    createSale: async (args) => payload.create(args as never) as unknown as Promise<Sale>,
+    updateBudget: async (args) => payload.update(args as never) as unknown as Promise<Budget>,
+    findUserById: async (args) => payload.findByID(args as never) as unknown as Promise<{ name: string }>,
+    notifyEvent: async (args) => {
+      const { notifyEvent } = await import('@/lib/notify');
+      return notifyEvent(args as never);
+    },
+    commit: async () => {
+      await payload.db.commitTransaction(transactionID);
+    },
+    rollback: async () => {
+      await payload.db.rollbackTransaction(transactionID);
+    },
+  };
+}

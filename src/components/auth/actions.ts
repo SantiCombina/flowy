@@ -2,9 +2,8 @@
 
 import { cookies } from 'next/headers';
 
-import { markInvitationAsUsed, validateInvitation } from '@/app/services/invitations';
+import { acceptInvitation, validateInvitation } from '@/app/services/invitations';
 import {
-  createUser,
   forgotPassword as forgotPasswordService,
   loginUser as loginUserService,
   resetPassword as resetPasswordService,
@@ -47,23 +46,7 @@ export const registerUser = actionClient.schema(registerSchema).action(async ({ 
 
   const { invitation } = invitationResult;
 
-  if (invitation.email !== email) {
-    return { error: 'El email no coincide con la invitación' };
-  }
-
-  const userResult = await createUser({
-    name: invitation.name,
-    email,
-    password,
-    role: invitation.role,
-    ...(invitation.role === 'seller' && invitation.createdBy ? { owner: invitation.createdBy } : {}),
-  });
-
-  if (!userResult.success) {
-    return { error: userResult.error ?? 'Error al crear la cuenta' };
-  }
-
-  await markInvitationAsUsed(invitation.id);
+  await acceptInvitation(token, invitation.name, email, password);
 
   return { success: true };
 });

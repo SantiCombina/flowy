@@ -13,8 +13,18 @@ export const Qualities: CollectionConfig = {
       if (user.role === 'admin') return true;
       return { owner: { equals: user.id } };
     },
-    update: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'owner',
-    delete: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'owner',
+    update: ({ req: { user } }) => {
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      if (user.role === 'owner') return { owner: { equals: user.id } };
+      return false;
+    },
+    delete: ({ req: { user } }) => {
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      if (user.role === 'owner') return { owner: { equals: user.id } };
+      return false;
+    },
   },
   fields: [
     {

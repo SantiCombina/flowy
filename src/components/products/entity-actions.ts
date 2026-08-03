@@ -42,7 +42,7 @@ export const updateBrandAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const brand: Brand = await updateBrand(parsedInput.id, parsedInput.name);
+    const brand: Brand = await updateBrand(parsedInput.id, parsedInput.name, user.id);
     revalidatePath('/products');
     return { success: true, brand };
   });
@@ -68,7 +68,7 @@ export const updateCategoryAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const category: Category = await updateCategory(parsedInput.id, parsedInput.name);
+    const category: Category = await updateCategory(parsedInput.id, parsedInput.name, user.id);
     revalidatePath('/products');
     return { success: true, category };
   });
@@ -94,7 +94,7 @@ export const updateQualityAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const quality: Quality = await updateQuality(parsedInput.id, parsedInput.name);
+    const quality: Quality = await updateQuality(parsedInput.id, parsedInput.name, user.id);
     revalidatePath('/products');
     return { success: true, quality };
   });
@@ -120,7 +120,7 @@ export const updatePresentationAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const presentation: Presentation = await updatePresentation(parsedInput.id, parsedInput.label);
+    const presentation: Presentation = await updatePresentation(parsedInput.id, parsedInput.label, user.id);
     revalidatePath('/products');
     return { success: true, presentation };
   });
@@ -131,7 +131,7 @@ export const deleteBrandAction = actionClient.schema(z.object({ id: z.number() }
     throw new Error('No autorizado');
   }
 
-  await deleteBrand(parsedInput.id);
+  await deleteBrand(parsedInput.id, user.id);
   revalidatePath('/products');
   return { success: true };
 });
@@ -144,7 +144,7 @@ export const deleteCategoryAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await deleteCategory(parsedInput.id);
+    await deleteCategory(parsedInput.id, user.id);
     revalidatePath('/products');
     return { success: true };
   });
@@ -155,7 +155,7 @@ export const deleteQualityAction = actionClient.schema(z.object({ id: z.number()
     throw new Error('No autorizado');
   }
 
-  await deleteQuality(parsedInput.id);
+  await deleteQuality(parsedInput.id, user.id);
   revalidatePath('/products');
   return { success: true };
 });
@@ -168,7 +168,7 @@ export const deletePresentationAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await deletePresentation(parsedInput.id);
+    await deletePresentation(parsedInput.id, user.id);
     revalidatePath('/products');
     return { success: true };
   });

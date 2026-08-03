@@ -24,6 +24,7 @@ import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
 
 import { deleteClientAction } from './actions';
+import { resolveClientActionVisibility } from './client-action-visibility';
 
 interface ClientsTableProps {
   clients: Client[];
@@ -39,7 +40,9 @@ interface ClientsTableProps {
   provinciaFilter?: string;
   onProvinciaFilterChange?: (value: string) => void;
   showSellerColumn?: boolean;
+  showContactColumns?: boolean;
   onEdit?: (client: Client) => void;
+  canDelete: boolean;
   itemsPerPage?: ItemsPerPageOption;
   onItemsPerPageChange?: (n: ItemsPerPageOption) => void;
 }
@@ -58,10 +61,13 @@ export function ClientsTable({
   provinciaFilter = '',
   onProvinciaFilterChange,
   showSellerColumn = false,
+  showContactColumns = true,
   onEdit,
+  canDelete,
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   onItemsPerPageChange,
 }: ClientsTableProps) {
+  const actionVisibility = resolveClientActionVisibility(onEdit !== undefined, canDelete);
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('clients');
   const { invalidateQueries } = useInvalidateQueries();
@@ -71,15 +77,18 @@ export function ClientsTable({
     let result = clients;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
+      result = result.filter((c) => {
+        const baseMatch = c.name.toLowerCase().includes(q);
+        if (!showContactColumns) return baseMatch;
+        return (
+          baseMatch ||
           (c.localidad ?? '').toLowerCase().includes(q) ||
           (c.provincia ?? '').toLowerCase().includes(q) ||
           (c.cuit ?? '').toLowerCase().includes(q) ||
           (c.phone ?? '').toLowerCase().includes(q) ||
-          (c.email ?? '').toLowerCase().includes(q),
-      );
+          (c.email ?? '').toLowerCase().includes(q)
+        );
+      });
     }
     if (zoneFilter) {
       const zoneId = Number(zoneFilter);
@@ -223,20 +232,43 @@ export function ClientsTable({
     cell: (c) => (
       <ActionMenu
         items={[
-          { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(c) },
-          { label: 'Eliminar', icon: Trash2, onClick: () => setClientToDelete(c), variant: 'destructive' },
+          actionVisibility.showEdit && {
+            label: 'Editar',
+            icon: Pencil,
+            onClick: () => onEdit?.(c),
+          },
+          actionVisibility.showDelete && {
+            label: 'Eliminar',
+            icon: Trash2,
+            onClick: () => setClientToDelete(c),
+            variant: 'destructive',
+          },
         ]}
       />
     ),
     className: 'w-16',
   };
 
+  const allowedKeys = new Set<string>(['name', 'debt']);
+  if (showContactColumns) {
+    allowedKeys.add('cuit');
+    allowedKeys.add('phone');
+    allowedKeys.add('email');
+    allowedKeys.add('address');
+    allowedKeys.add('localidad');
+    allowedKeys.add('provincia');
+    allowedKeys.add('zone');
+  }
+  if (showSellerColumn) {
+    allowedKeys.add('seller');
+  }
+
   const columns: Column<Client>[] = [
     ...Object.entries(allColumns)
-      .filter(([key]) => visibleColumns.includes(key))
+      .filter(([key]) => visibleColumns.includes(key) && allowedKeys.has(key))
       .map(([, col]) => col),
     ...(showSellerColumn ? [sellerColumn] : []),
-    actionsColumn,
+    ...(actionVisibility.showActions ? [actionsColumn] : []),
   ];
 
   return (

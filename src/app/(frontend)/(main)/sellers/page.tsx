@@ -2,39 +2,47 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getSellersCommissionSummaries } from '@/app/services/commissions';
-import { getVariantsWithProducts } from '@/app/services/products';
-import { getSellers } from '@/app/services/users';
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
+import { loadSellers } from '@/app/loaders/sellers';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { SellersSection } from '@/components/sellers/sellers-section';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 
 export const metadata: Metadata = {
   title: 'Vendedores',
 };
 
-async function SellersData() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+const moduleAccess = MODULE_ACCESS['/sellers'];
 
-  const [sellers, variantsResult, commissionSummaries] = await Promise.all([
-    getSellers(user.id),
-    getVariantsWithProducts(user.id, undefined, { limit: 1000 }),
-    getSellersCommissionSummaries(user.id),
-  ]);
+async function SellersData() {
+  const guardedUser = await loadActiveGuardedUser();
+
+  const { sellers, variants, commissionSummaries } = await loadSellers();
 
   return (
     <SellersSection
       initialSellers={{ success: true, sellers }}
-      variants={variantsResult.docs}
-      commissionBalances={Object.fromEntries(commissionSummaries)}
+      variants={variants}
+      commissionBalances={commissionSummaries}
+      capabilities={[...guardedUser.capabilities]}
     />
   );
 }
 
 export default async function SellersPage() {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader

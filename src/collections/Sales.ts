@@ -1,5 +1,7 @@
 import type { CollectionConfig, Where } from 'payload';
 
+import { assertTrustedWrite } from '@/lib/entitlements/invariants';
+
 export const Sales: CollectionConfig = {
   slug: 'sales',
   admin: {
@@ -36,6 +38,42 @@ export const Sales: CollectionConfig = {
       return false;
     },
   },
+  hooks: {
+    beforeChange: [
+      ({ data, context, operation, originalDoc }) => {
+        if (data && 'sourceBudget' in data) {
+          const nextBudgetId = relationshipId(data.sourceBudget);
+          const originalBudgetId = relationshipId(originalDoc?.sourceBudget);
+
+          if (nextBudgetId === undefined) {
+            if (operation === 'update' && originalBudgetId !== undefined) {
+              throw new Error('Sale sourceBudget cannot be cleared');
+            }
+            return data;
+          }
+          assertTrustedWrite(context, 'Sale budget conversion');
+          if (operation === 'update' && originalBudgetId !== undefined && originalBudgetId !== nextBudgetId) {
+            throw new Error('Sale sourceBudget is immutable');
+          }
+        }
+        return data;
+      },
+    ],
+    beforeDelete: [
+      async ({ id, req }) => {
+        const sale = await req.payload.findByID({
+          collection: 'sales',
+          id,
+          overrideAccess: true,
+          req,
+        });
+
+        if (sale.sourceBudget) {
+          throw new Error('A budget-derived sale cannot be deleted');
+        }
+      },
+    ],
+  },
   fields: [
     {
       name: 'seller',
@@ -59,6 +97,11 @@ export const Sales: CollectionConfig = {
       name: 'client',
       type: 'relationship',
       relationTo: 'clients',
+    },
+    {
+      name: 'sourceBudget',
+      type: 'relationship',
+      relationTo: 'budgets',
     },
     {
       name: 'date',
@@ -221,3 +264,9 @@ export const Sales: CollectionConfig = {
     },
   ],
 };
+
+function relationshipId(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object' && value !== null && 'id' in value && typeof value.id === 'number') return value.id;
+  return undefined;
+}

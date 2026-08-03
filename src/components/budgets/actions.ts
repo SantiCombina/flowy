@@ -11,7 +11,9 @@ import {
   updateBudgetStatus,
   updateBudget,
   deleteBudget,
+  convertBudgetToSale,
 } from '@/app/services/budgets';
+import { assertUserCapability, hasCapability, resolveUserEntitlementContext } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { getBudgetsListSchema } from '@/schemas/budgets/budget-list-schema';
@@ -23,6 +25,8 @@ export const getBudgetOptionsAction = actionClient.action(async () => {
   if (!user || (user.role !== 'seller' && user.role !== 'owner')) {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'budget.manage');
 
   const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
@@ -43,13 +47,31 @@ export const createBudgetAction = actionClient.schema(budgetSchema).action(async
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'budget.manage');
+
   const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
   if (!ownerId) {
     throw new Error('No se pudo determinar el dueño del negocio');
   }
 
-  await createBudget(user.id, ownerId, parsedInput);
+  const entitlementContext = await resolveUserEntitlementContext(user);
+  const canUseRecipientPhone = hasCapability(
+    user,
+    entitlementContext.dbSnapshot,
+    'budget.recipient-phone',
+    entitlementContext.entitlementState,
+  );
+
+  if (!canUseRecipientPhone && (parsedInput.clientPhone || parsedInput.saveClientPhone)) {
+    throw new Error('No autorizado');
+  }
+
+  const budgetData = canUseRecipientPhone
+    ? parsedInput
+    : { ...parsedInput, clientPhone: undefined, saveClientPhone: undefined };
+
+  await createBudget(user.id, ownerId, budgetData);
 
   return { success: true };
 });
@@ -60,6 +82,8 @@ export const getBudgetsAction = actionClient.schema(getBudgetsListSchema).action
   if (!user) {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'budget.manage');
 
   const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
@@ -94,7 +118,11 @@ export const getBudgetByIdAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const budget = await getBudgetById(parsedInput.budgetId);
+    await assertUserCapability(user, 'budget.manage');
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    const budget = await getBudgetById(parsedInput.budgetId, ownerId ?? 0);
 
     if (!budget) {
       throw new Error('Presupuesto no encontrado');
@@ -117,7 +145,11 @@ export const updateBudgetStatusAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await updateBudgetStatus(parsedInput.budgetId, parsedInput.status);
+    await assertUserCapability(user, 'budget.manage');
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    await updateBudgetStatus(parsedInput.budgetId, parsedInput.status, ownerId ?? 0);
 
     return { success: true };
   });
@@ -131,7 +163,27 @@ export const updateBudgetAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await updateBudget(parsedInput.budgetId, parsedInput.data);
+    await assertUserCapability(user, 'budget.manage');
+
+    const entitlementContext = await resolveUserEntitlementContext(user);
+    const canUseRecipientPhone = hasCapability(
+      user,
+      entitlementContext.dbSnapshot,
+      'budget.recipient-phone',
+      entitlementContext.entitlementState,
+    );
+
+    if (!canUseRecipientPhone && (parsedInput.data.clientPhone || parsedInput.data.saveClientPhone)) {
+      throw new Error('No autorizado');
+    }
+
+    const budgetData = canUseRecipientPhone
+      ? parsedInput.data
+      : { ...parsedInput.data, clientPhone: undefined, saveClientPhone: undefined };
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    await updateBudget(parsedInput.budgetId, budgetData, ownerId ?? 0);
 
     return { success: true };
   });
@@ -145,7 +197,11 @@ export const deleteBudgetAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await deleteBudget(parsedInput.budgetId);
+    await assertUserCapability(user, 'budget.manage');
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    await deleteBudget(parsedInput.budgetId, ownerId ?? 0);
 
     return { success: true };
   });
@@ -159,7 +215,53 @@ export const getBudgetConvertDataAction = actionClient
       throw new Error('No autorizado');
     }
 
-    const data = await getBudgetConvertData(parsedInput.budgetId, user.id);
+    await assertUserCapability(user, 'budget.manage');
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+
+    const data = await getBudgetConvertData(parsedInput.budgetId, user.id, ownerId ?? 0);
 
     return { success: true, data };
+  });
+
+export const convertBudgetAction = actionClient
+  .schema(
+    z.object({
+      budgetId: z.number({
+        required_error: 'El ID del presupuesto es requerido.',
+        invalid_type_error: 'El ID del presupuesto debe ser un número.',
+      }),
+      clientId: z.number({ invalid_type_error: 'El cliente debe ser un número.' }).optional(),
+      notes: z
+        .string({ invalid_type_error: 'Las notas deben ser texto.' })
+        .trim()
+        .max(500, { message: 'Las notas no pueden superar los 500 caracteres.' })
+        .optional(),
+      immediateDelivery: z
+        .boolean({ invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.' })
+        .optional(),
+    }),
+  )
+  .action(async ({ parsedInput }) => {
+    const user = await getCurrentUser();
+
+    if (!user || (user.role !== 'seller' && user.role !== 'owner')) {
+      throw new Error('No autorizado');
+    }
+
+    await assertUserCapability(user, 'budget.manage');
+    await assertUserCapability(user, 'sale.create');
+
+    const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
+    if (!ownerId) {
+      throw new Error('No se pudo determinar el dueño del negocio');
+    }
+
+    await convertBudgetToSale(parsedInput.budgetId, user.id, ownerId, {
+      clientId: parsedInput.clientId,
+      notes: parsedInput.notes,
+      immediateDelivery: parsedInput.immediateDelivery,
+    });
+
+    return { success: true };
   });

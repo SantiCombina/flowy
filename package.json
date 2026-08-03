@@ -18,7 +18,9 @@
     "migrate:check": "node scripts/migrate-check.mjs",
     "migrate": "node scripts/migrate-check.mjs && cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "migrate:force": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
-    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload"
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "seed:plans": "tsx scripts/seed-plan-versions.ts",
+    "test:entitlements": "tsx --test test/entitlements/schema.test.ts test/entitlements/primitives.test.ts test/entitlements/invariants.test.ts test/entitlements/migration.test.ts test/entitlements/services.test.ts test/entitlements/unit2.test.ts test/entitlements/unit3-boundaries.test.ts test/entitlements/unit4-rollout.test.ts test/entitlements/unit4-postgres.test.ts test/entitlements/admin-plan-management.test.ts test/entitlements/plan-presets.test.ts test/entitlements/seller-login.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -47,6 +49,7 @@
     "next-safe-action": "^8.0.11",
     "nodemailer": "^8.0.1",
     "payload": "3.75.0",
+    "pg": "8.16.3",
     "postcss": "^8.5.6",
     "pusher": "^5.3.3",
     "pusher-js": "^8.4.3",
@@ -72,6 +75,7 @@
     "@react-email/preview-server": "5.2.9",
     "@types/node": "22.19.9",
     "@types/nodemailer": "^7.0.9",
+    "@types/pg": "8.10.2",
     "@types/react": "19.2.9",
     "@types/react-dom": "19.2.3",
     "@types/web-push": "^3.6.4",

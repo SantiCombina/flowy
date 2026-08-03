@@ -9,13 +9,14 @@ import { AppTopbar } from './app-topbar';
 interface AppLayoutProps {
   children: React.ReactNode;
   features: FeatureFlags;
+  capabilities?: string[];
   defaultSidebarOpen?: boolean;
 }
 
-export function AppLayout({ children, features, defaultSidebarOpen = true }: AppLayoutProps) {
+export function AppLayout({ children, features, capabilities, defaultSidebarOpen = true }: AppLayoutProps) {
   return (
     <SidebarProvider defaultOpen={defaultSidebarOpen}>
-      <AppSidebar features={features} />
+      <AppSidebar features={features} capabilities={capabilities} />
       <SidebarInset>
         <AppTopbar />
         {children}

@@ -13,10 +13,13 @@ import { Budgets } from './collections/Budgets';
 import { Categories } from './collections/Categories';
 import { Clients } from './collections/Clients';
 import { CommissionPayments } from './collections/CommissionPayments';
+import { EntitlementOutbox } from './collections/EntitlementOutbox';
+import { EntitlementQuotaLocks } from './collections/EntitlementQuotaLocks';
 import { Invitations } from './collections/Invitations';
 import { Media } from './collections/Media';
 import { MobileSellerInventory } from './collections/MobileSellerInventory';
 import { Notifications } from './collections/Notifications';
+import { PlanVersions } from './collections/PlanVersions';
 import { Presentations } from './collections/Presentations';
 import { ProductCustomFields } from './collections/ProductCustomFields';
 import { Products } from './collections/Products';
@@ -26,6 +29,7 @@ import { Qualities } from './collections/Qualities';
 import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
 import { StockMovements } from './collections/StockMovements';
+import { TenantEntitlementSnapshots } from './collections/TenantEntitlementSnapshots';
 import { Users } from './collections/Users';
 import { Zones } from './collections/Zones';
 
@@ -39,6 +43,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
+      afterDashboard: ['@/components/admin/plan-management'],
       graphics: {
         Logo: '@/components/admin/logo',
       },
@@ -46,6 +51,10 @@ export default buildConfig({
   },
   collections: [
     Users,
+    PlanVersions,
+    TenantEntitlementSnapshots,
+    EntitlementQuotaLocks,
+    EntitlementOutbox,
     Invitations,
     Media,
     Brands,

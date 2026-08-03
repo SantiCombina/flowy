@@ -2,19 +2,22 @@ import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getPaginatedSales } from '@/app/services/sales';
-import { getZones } from '@/app/services/zones';
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
+import { loadSales } from '@/app/loaders/sales';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { SalesSection } from '@/components/sales/sales-section';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
 export const metadata: Metadata = {
   title: 'Ventas',
 };
+
+const moduleAccess = MODULE_ACCESS['/sales'];
 
 const SORT_VALUES = new Set<string>([
   'date',
@@ -65,12 +68,10 @@ async function SalesDataFetcher({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-  if (user.role !== 'seller' && user.role !== 'owner') redirect('/dashboard');
+  const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
 
   const isSeller = user.role === 'seller';
-  const ownerId = isSeller ? (typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0)) : user.id;
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
   const params = await paramsPromise;
@@ -105,26 +106,22 @@ async function SalesDataFetcher({
     ),
   };
 
-  const [zones, initialResult] = await Promise.all([
-    getZones(ownerId),
-    getPaginatedSales(
-      isSeller ? { sellerId: user.id } : { ownerId: user.id },
-      {
-        dateFrom: initialFilters.dateFrom,
-        dateTo: initialFilters.dateTo,
-        paymentStatus: initialFilters.paymentStatus,
-        zone: initialFilters.zone,
-        paymentMethod: initialFilters.paymentMethod,
-        deliveryStatus: initialFilters.deliveryStatus,
-      },
-      {
-        page: initialFilters.page,
-        limit: initialFilters.limit,
-        sort: initialFilters.sort,
-        sortDir: initialFilters.sortDir,
-      },
-    ),
-  ]);
+  const { zones, result: initialResult } = await loadSales(
+    {
+      dateFrom: initialFilters.dateFrom,
+      dateTo: initialFilters.dateTo,
+      paymentStatus: initialFilters.paymentStatus,
+      zone: initialFilters.zone,
+      paymentMethod: initialFilters.paymentMethod,
+      deliveryStatus: initialFilters.deliveryStatus,
+    },
+    {
+      page: initialFilters.page,
+      limit: initialFilters.limit,
+      sort: initialFilters.sort,
+      sortDir: initialFilters.sortDir,
+    },
+  );
 
   return (
     <>
@@ -134,8 +131,8 @@ async function SalesDataFetcher({
         initialResult={initialResult}
         zones={zones}
         showSellerColumn={!isSeller}
-        canCollect
-        canManage
+        canCollect={guardedUser.capabilities.has('sale.collect')}
+        canManage={guardedUser.capabilities.has('sale.create')}
         isSeller={isSeller}
         initialStatusFilter={paymentStatus}
       />
@@ -148,6 +145,16 @@ export default async function SalesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader

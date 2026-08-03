@@ -66,8 +66,18 @@ export async function createClient(sellerId: number, ownerId: number, data: Clie
   return client as Client;
 }
 
-export async function updateClient(clientId: number, data: ClientValues): Promise<Client> {
+export async function updateClient(clientId: number, data: ClientValues, ownerId: number): Promise<Client> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'clients',
+    id: clientId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Cliente no encontrado');
+  }
 
   const client = await payload.update({
     collection: 'clients',
@@ -95,7 +105,7 @@ export async function updateClient(clientId: number, data: ClientValues): Promis
   return client as Client;
 }
 
-export async function deleteClient(clientId: number): Promise<void> {
+export async function deleteClient(clientId: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
 
   const client = await payload.findByID({
@@ -104,6 +114,10 @@ export async function deleteClient(clientId: number): Promise<void> {
     depth: 0,
     overrideAccess: true,
   });
+
+  if (resolveId(client.owner) !== ownerId) {
+    throw new Error('Cliente no encontrado');
+  }
 
   await payload.delete({
     collection: 'clients',

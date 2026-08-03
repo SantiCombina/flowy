@@ -4,6 +4,12 @@ import { render } from '@react-email/render';
 import type { CollectionConfig } from 'payload';
 
 import { InvitationEmail } from '@/emails/invitation-email';
+import {
+  assertInvitationTransition,
+  assertTrustedWrite,
+  denyInvitationDelete,
+  resolveInvitationCreator,
+} from '@/lib/entitlements/invariants';
 import { resend } from '@/lib/resend';
 
 export const Invitations: CollectionConfig = {
@@ -25,11 +31,7 @@ export const Invitations: CollectionConfig = {
       return { createdBy: { equals: user.id } };
     },
     update: () => false,
-    delete: ({ req: { user } }) => {
-      if (!user) return false;
-      if (user.role === 'admin') return true;
-      return { createdBy: { equals: user.id } };
-    },
+    delete: denyInvitationDelete,
   },
   hooks: {
     beforeValidate: [
@@ -43,7 +45,57 @@ export const Invitations: CollectionConfig = {
       },
     ],
     beforeChange: [
-      async ({ data, req, operation }) => {
+      async ({ data, req, context, operation, originalDoc }) => {
+        if (
+          data &&
+          ('token' in data ||
+            'expiresAt' in data ||
+            'state' in data ||
+            'acceptedUser' in data ||
+            'cancelledAt' in data ||
+            'replacedAt' in data ||
+            'replacedBy' in data ||
+            'usedAt' in data)
+        ) {
+          const isAdminOwnerInitialization =
+            operation === 'create' &&
+            req.user?.role === 'admin' &&
+            data.role === 'owner' &&
+            data.state === 'pending' &&
+            data.acceptedUser == null &&
+            data.usedAt == null &&
+            data.cancelledAt == null &&
+            data.replacedAt == null &&
+            data.replacedBy == null;
+
+          if (!isAdminOwnerInitialization) {
+            assertTrustedWrite(context, 'Invitation lifecycle mutation');
+          }
+          assertInvitationTransition({
+            previousState: originalDoc?.state,
+            nextState: data.state ?? originalDoc?.state,
+            acceptedUser: data.acceptedUser ?? originalDoc?.acceptedUser,
+            usedAt: data.usedAt ?? originalDoc?.usedAt,
+            cancelledAt: data.cancelledAt ?? originalDoc?.cancelledAt,
+            replacedAt: data.replacedAt ?? originalDoc?.replacedAt,
+            replacedBy: data.replacedBy ?? originalDoc?.replacedBy,
+            expiresAt: data.expiresAt ?? originalDoc?.expiresAt,
+            now: new Date().toISOString(),
+          });
+        }
+
+        if (operation === 'update' && data?.role !== undefined) {
+          throw new Error('Invitation role is immutable');
+        }
+
+        if (
+          operation === 'update' &&
+          data &&
+          (data.token !== undefined || data.email !== undefined || data.createdBy !== undefined)
+        ) {
+          throw new Error('Invitation token, creator, and email are immutable');
+        }
+
         if (operation === 'create' && req.user && data) {
           if (req.user.role === 'owner' && data.role !== 'seller') {
             throw new Error('Solo podés invitar vendedores');
@@ -54,6 +106,11 @@ export const Invitations: CollectionConfig = {
           }
         }
         return data;
+      },
+    ],
+    beforeDelete: [
+      () => {
+        throw new Error('Invitation hard deletion is denied');
       },
     ],
     afterChange: [
@@ -120,7 +177,7 @@ export const Invitations: CollectionConfig = {
         position: 'sidebar',
       },
       hooks: {
-        beforeChange: [({ req }) => req.user?.id],
+        beforeChange: [({ req, value, context }) => resolveInvitationCreator(value, req.user?.id, context)],
       },
     },
     {
@@ -133,6 +190,38 @@ export const Invitations: CollectionConfig = {
           pickerAppearance: 'dayAndTime',
         },
       },
+    },
+    {
+      name: 'state',
+      type: 'select',
+      required: true,
+      defaultValue: 'pending',
+      index: true,
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Accepted', value: 'accepted' },
+        { label: 'Cancelled', value: 'cancelled' },
+        { label: 'Replaced', value: 'replaced' },
+        { label: 'Expired', value: 'expired' },
+      ],
+    },
+    {
+      name: 'acceptedUser',
+      type: 'relationship',
+      relationTo: 'users',
+    },
+    {
+      name: 'cancelledAt',
+      type: 'date',
+    },
+    {
+      name: 'replacedAt',
+      type: 'date',
+    },
+    {
+      name: 'replacedBy',
+      type: 'relationship',
+      relationTo: 'invitations',
     },
     {
       name: 'usedAt',

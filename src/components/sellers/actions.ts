@@ -1,12 +1,13 @@
 'use server';
 
-import { createInvitation } from '@/app/services/invitations';
+import { createSellerInvitation } from '@/app/services/invitations';
 import {
   dispatchStockToMobileSeller,
   getMobileSellerInventoryForOwner,
   returnStockFromMobileSeller,
 } from '@/app/services/mobile-seller';
 import { deleteSeller, getSellers, updateSeller } from '@/app/services/users';
+import { assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { dispatchStockSchema } from '@/schemas/sellers/dispatch-stock-schema';
@@ -21,9 +22,11 @@ export const inviteSellerAction = actionClient.schema(inviteSellerSchema).action
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'seller.invite');
+
   const ownerId = user.id;
 
-  await createInvitation(parsedInput.name, parsedInput.email, ownerId);
+  await createSellerInvitation(parsedInput.name, parsedInput.email, ownerId);
 
   return { success: true };
 });
@@ -35,8 +38,10 @@ export const updateSellerAction = actionClient.schema(updateSellerActionSchema).
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'seller.manage');
+
   const { id, ...data } = parsedInput;
-  const seller = await updateSeller(id, data);
+  const seller = await updateSeller(id, data, user.id);
 
   return { success: true, seller };
 });
@@ -48,7 +53,9 @@ export const deleteSellerAction = actionClient.schema(deleteSellerActionSchema).
     throw new Error('No autorizado');
   }
 
-  await deleteSeller(parsedInput.id);
+  await assertUserCapability(user, 'seller.manage');
+
+  await deleteSeller(parsedInput.id, user.id);
 
   return { success: true };
 });
@@ -59,6 +66,8 @@ export const dispatchStockAction = actionClient.schema(dispatchStockSchema).acti
   if (!user || user.role !== 'owner') {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'inventory.assignment');
 
   await dispatchStockToMobileSeller(parsedInput.sellerId, user.id, parsedInput.items);
 
@@ -72,6 +81,8 @@ export const returnStockAction = actionClient.schema(dispatchStockSchema).action
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'inventory.assignment');
+
   await returnStockFromMobileSeller(parsedInput.sellerId, user.id, parsedInput.items);
 
   return { success: true };
@@ -83,6 +94,8 @@ export const getSellersAction = actionClient.action(async () => {
   if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'seller.manage');
 
   const sellers = await getSellers(user.id);
 
@@ -97,6 +110,8 @@ export const getMobileSellerInventoryAction = actionClient
     if (!user || user.role !== 'owner') {
       throw new Error('No autorizado');
     }
+
+    await assertUserCapability(user, 'inventory.assignment');
 
     const items = await getMobileSellerInventoryForOwner(parsedInput.sellerId, user.id);
 

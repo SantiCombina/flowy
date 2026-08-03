@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/dashboard';
 import type { Period } from '@/app/services/dashboard';
+import { assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 
@@ -18,6 +19,8 @@ export const getOwnerDashboardStatsAction = actionClient.schema(periodSchema).ac
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'dashboard.owner');
+
   const stats = await getOwnerDashboardStats(user.id, parsedInput.period as Period);
 
   return { success: true, stats };
@@ -31,6 +34,8 @@ export const getSellerDashboardStatsAction = actionClient
     if (!user || user.role !== 'seller') {
       throw new Error('No autorizado');
     }
+
+    await assertUserCapability(user, 'dashboard.seller');
 
     const stats = await getSellerDashboardStats(user.id, parsedInput.ownerId, parsedInput.period as Period);
 

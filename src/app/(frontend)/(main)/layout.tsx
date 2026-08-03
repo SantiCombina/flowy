@@ -10,15 +10,17 @@ import { QueryProvider } from '@/components/providers/query-provider';
 import { UserProvider } from '@/components/providers/user-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { SettingsProvider } from '@/contexts/settings-context';
+import { getCurrentUserWithCapabilities, capabilitiesArray } from '@/lib/entitlements/guards';
 import { getFeatureFlags } from '@/lib/features';
-import { getCurrentUser } from '@/lib/payload';
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const guardedUser = await getCurrentUserWithCapabilities();
 
-  if (!user) {
+  if (!guardedUser) {
     redirect('/login');
   }
+
+  const { user, capabilities } = guardedUser;
 
   const features = getFeatureFlags();
   const cookieStore = await cookies();
@@ -29,10 +31,12 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const businessName = user.role === 'owner' ? (user.businessName ?? null) : (ownerForSeller?.businessName ?? null);
 
+  const capabilityList = capabilitiesArray(capabilities);
+
   const fallback = (
     <SettingsProvider initialSettings={null}>
       <QueryProvider>
-        <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
+        <AppLayout features={features} capabilities={capabilityList} defaultSidebarOpen={sidebarOpen}>
           {children}
         </AppLayout>
       </QueryProvider>
@@ -47,12 +51,13 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         email: user.email,
         role: user.role,
         businessName,
+        capabilities: capabilityList,
       }}
     >
       <Suspense fallback={fallback}>
         <SettingsFetcher userId={user.id}>
           <QueryProvider>
-            <AppLayout features={features} defaultSidebarOpen={sidebarOpen}>
+            <AppLayout features={features} capabilities={capabilityList} defaultSidebarOpen={sidebarOpen}>
               {children}
             </AppLayout>
           </QueryProvider>

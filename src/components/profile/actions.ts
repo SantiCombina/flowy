@@ -2,6 +2,7 @@
 
 import { changePassword, getOwnerById, loginUser as loginUserService, updateSeller } from '@/app/services/users';
 import { getCurrentUser } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
 import { changePasswordSchema } from '@/schemas/profile/change-password-schema';
 import { updateBusinessDataSchema } from '@/schemas/profile/update-business-data-schema';
@@ -32,7 +33,10 @@ export const updateProfileAction = actionClient.schema(updateProfileSchema).acti
 
   if (!user) throw new Error('No autenticado');
 
-  await updateSeller(user.id, parsedInput);
+  const ownerId = user.role === 'owner' ? user.id : resolveId(user.owner);
+  if (!ownerId) throw new Error('No autorizado');
+
+  await updateSeller(user.id, parsedInput, ownerId);
 
   return { success: true };
 });
@@ -46,7 +50,7 @@ export const updateBusinessDataAction = actionClient
 
     if (user.role !== 'owner') throw new Error('Solo los dueños pueden actualizar los datos de empresa');
 
-    await updateSeller(user.id, parsedInput);
+    await updateSeller(user.id, parsedInput, user.id);
 
     return { success: true };
   });
@@ -60,7 +64,7 @@ export const updateBusinessNameAction = actionClient
 
     if (user.role !== 'owner') throw new Error('Solo los dueños pueden actualizar el nombre del negocio');
 
-    await updateSeller(user.id, { businessName: parsedInput.businessName });
+    await updateSeller(user.id, { businessName: parsedInput.businessName }, user.id);
 
     return { success: true };
   });

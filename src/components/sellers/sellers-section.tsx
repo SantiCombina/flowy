@@ -25,11 +25,12 @@ interface SellersSectionProps {
   initialSellers: { success: true; sellers: User[] };
   variants: PopulatedProductVariant[];
   commissionBalances: Record<number, CommissionSummary>;
+  capabilities?: string[];
 }
 
-export function SellersSection({ initialSellers, variants, commissionBalances }: SellersSectionProps) {
+export function SellersSection({ initialSellers, variants, commissionBalances, capabilities }: SellersSectionProps) {
   const user = useUserOptional();
-  const canInviteSeller = user?.role === 'owner' || user?.role === 'admin';
+  const canInviteSeller = capabilities?.includes('seller.invite') ?? (user?.role === 'owner' || user?.role === 'admin');
   const { invalidateQueries } = useInvalidateQueries();
 
   const { data } = useServerActionQuery({

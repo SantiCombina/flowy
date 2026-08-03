@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon, Trash2, XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -59,11 +59,13 @@ function ItemRow({
   variants,
   onRemove,
   form,
+  canUsePersonalStock,
 }: {
   index: number;
   variants: SaleVariantOption[];
   onRemove: () => void;
   form: ReturnType<typeof useForm<SaleValues>>;
+  canUsePersonalStock: boolean;
 }) {
   const { control, setValue, watch } = form;
   const variantId = watch(`items.${index}.variantId`);
@@ -74,6 +76,12 @@ function ItemRow({
   const warehouseStock = selectedVariant?.warehouseStock ?? 0;
   const personalStock = selectedVariant?.personalStock ?? 0;
   const availableStock = stockSource === 'personal' ? personalStock : warehouseStock;
+
+  useEffect(() => {
+    if (!canUsePersonalStock && stockSource === 'personal') {
+      setValue(`items.${index}.stockSource`, 'warehouse');
+    }
+  }, [canUsePersonalStock, stockSource, setValue, index]);
 
   const handleVariantChange = (value: string) => {
     const id = Number(value);
@@ -86,8 +94,10 @@ function ItemRow({
 
       if (variant.warehouseStock > 0) {
         setValue(`items.${index}.stockSource`, 'warehouse');
-      } else if (variant.personalStock > 0) {
+      } else if (canUsePersonalStock && variant.personalStock > 0) {
         setValue(`items.${index}.stockSource`, 'personal');
+      } else {
+        setValue(`items.${index}.stockSource`, 'warehouse');
       }
     }
   };
@@ -113,16 +123,17 @@ function ItemRow({
                 <Combobox
                   options={variants.map((v) => {
                     const totalStock = v.warehouseStock + v.personalStock;
+                    const availableStockForUser = canUsePersonalStock ? totalStock : v.warehouseStock;
                     const parts = [
                       v.brandName ?? null,
                       v.productName,
                       v.presentationLabel ?? null,
-                      totalStock === 0 ? '(sin stock)' : null,
+                      availableStockForUser === 0 ? '(sin stock)' : null,
                     ].filter(Boolean);
                     return {
                       value: String(v.variantId),
                       label: parts.join(' · '),
-                      disabled: totalStock === 0,
+                      disabled: availableStockForUser === 0,
                     };
                   })}
                   value={field.value ? String(field.value) : ''}
@@ -211,9 +222,11 @@ function ItemRow({
                     <SelectItem value="warehouse" disabled={warehouseStock === 0}>
                       Depósito ({warehouseStock})
                     </SelectItem>
-                    <SelectItem value="personal" disabled={personalStock === 0}>
-                      Mi inventario ({personalStock})
-                    </SelectItem>
+                    {canUsePersonalStock && (
+                      <SelectItem value="personal" disabled={personalStock === 0}>
+                        Mi inventario ({personalStock})
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </FormControl>
@@ -231,6 +244,8 @@ function ItemRow({
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
   const user = useUser();
   const isOwner = user?.role === 'owner';
+  const canUseCredit = user.capabilities?.includes('sale.credit') ?? isOwner;
+  const canUsePersonalStock = user.capabilities?.includes('inventory.mobile') ?? isOwner;
 
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
     queryKey: queryKeys.sales.options('seller'),
@@ -272,6 +287,14 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const hasUnselectedVariant = (watchedItems ?? []).some((item) => !item.variantId || item.variantId === 0);
+
+  const availablePaymentOptions = canUseCredit ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.value !== 'credit');
+
+  useEffect(() => {
+    if (!canUseCredit && paymentMethod === 'credit') {
+      form.setValue('paymentMethod', 'cash');
+    }
+  }, [canUseCredit, paymentMethod, form]);
 
   const handleClose = () => {
     setClientsOverride(null);
@@ -360,6 +383,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     variants={variants}
                     onRemove={() => remove(index)}
                     form={form}
+                    canUsePersonalStock={canUsePersonalStock}
                   />
                 ))}
 
@@ -430,7 +454,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {PAYMENT_OPTIONS.map((option) => (
+                            {availablePaymentOptions.map((option) => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -564,6 +588,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
         onSuccess={handleNewClientSuccess}
+        canUseContactFields={user.capabilities?.includes('client.contact-fields') ?? isOwner}
+        canManageZones={user.capabilities?.includes('zones.manage') ?? isOwner}
       />
     </>
   );

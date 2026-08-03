@@ -1,6 +1,7 @@
 'use server';
 
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import type { Zone } from '@/payload-types';
 import type { CreateZoneValues } from '@/schemas/zones/zone-schema';
 
@@ -47,8 +48,18 @@ export async function createZone(ownerId: number, data: CreateZoneValues): Promi
   return zone as Zone;
 }
 
-export async function updateZone(zoneId: number, name: string): Promise<Zone> {
+export async function updateZone(zoneId: number, name: string, ownerId: number): Promise<Zone> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'zones',
+    id: zoneId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Zona no encontrada');
+  }
 
   const zone = await payload.update({
     collection: 'zones',
@@ -76,8 +87,18 @@ export async function getZoneById(zoneId: number, ownerId: number): Promise<Zone
   return result.docs[0] as Zone | null;
 }
 
-export async function deleteZone(zoneId: number): Promise<void> {
+export async function deleteZone(zoneId: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'zones',
+    id: zoneId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Zona no encontrada');
+  }
 
   const clientsWithZone = await payload.find({
     collection: 'clients',

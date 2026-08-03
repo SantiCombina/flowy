@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
 };
 
+import { loadGuardedUser } from '@/app/loaders/entitlements';
 import { getOwnerDashboardStats, getSellerDashboardStats } from '@/app/services/dashboard';
 import type { Period } from '@/app/services/dashboard';
 import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import { BlockedAccount } from '@/components/entitlements/blocked-account';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
-import { getCurrentUser } from '@/lib/payload';
 
 const VALID_PERIODS: Period[] = ['day', 'week', 'month', 'year'];
 
@@ -20,11 +20,16 @@ function resolvePeriod(raw: string | undefined): Period {
 }
 
 async function DashboardContent({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
+  const guardedUser = await loadGuardedUser(true);
+  const user = guardedUser.user;
+  const dashboardCapability = user.role === 'seller' ? 'dashboard.seller' : 'dashboard.owner';
+
+  if (guardedUser.entitlementState === 'blocked' || !guardedUser.capabilities.has(dashboardCapability)) {
+    return <BlockedAccount />;
+  }
+
   const params = await searchParams;
   const initialPeriod = resolvePeriod(params.period);
-
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
 
   if (user.role === 'owner' || user.role === 'admin') {
     return (

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { getHistoryMovements, type MovementType } from '@/app/services/stock-movements';
+import { assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 
@@ -24,6 +25,8 @@ export const getHistoryAction = actionClient.schema(historyFiltersSchema).action
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'warehouse.history');
 
   const result = await getHistoryMovements(user.id, {
     ...(parsedInput.from ? { from: new Date(parsedInput.from) } : {}),

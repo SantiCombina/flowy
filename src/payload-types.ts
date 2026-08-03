@@ -68,6 +68,10 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    'plan-versions': PlanVersion;
+    'tenant-entitlement-snapshots': TenantEntitlementSnapshot;
+    'entitlement-quota-locks': EntitlementQuotaLock;
+    'entitlement-outbox': EntitlementOutbox;
     invitations: Invitation;
     media: Media;
     brands: Brand;
@@ -95,6 +99,10 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    'plan-versions': PlanVersionsSelect<false> | PlanVersionsSelect<true>;
+    'tenant-entitlement-snapshots': TenantEntitlementSnapshotsSelect<false> | TenantEntitlementSnapshotsSelect<true>;
+    'entitlement-quota-locks': EntitlementQuotaLocksSelect<false> | EntitlementQuotaLocksSelect<true>;
+    'entitlement-outbox': EntitlementOutboxSelect<false> | EntitlementOutboxSelect<true>;
     invitations: InvitationsSelect<false> | InvitationsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     brands: BrandsSelect<false> | BrandsSelect<true>;
@@ -206,6 +214,8 @@ export interface User {
    * Condición ante IVA
    */
   ivaCondition?: ('responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable') | null;
+  activeEntitlementSnapshot?: (number | null) | TenantEntitlementSnapshot;
+  entitlementState?: ('provisioning' | 'active' | 'blocked') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -227,6 +237,165 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenant-entitlement-snapshots".
+ */
+export interface TenantEntitlementSnapshot {
+  id: number;
+  tenant: number | User;
+  sequence: number;
+  idempotencyKey: string;
+  kind: 'plan' | 'custom';
+  planVersion?: (number | null) | PlanVersion;
+  pool?:
+    | {
+        capability:
+          | 'catalog.manage'
+          | 'warehouse.stock'
+          | 'warehouse.history'
+          | 'client.read'
+          | 'client.manage'
+          | 'client.contact-fields'
+          | 'client.delete'
+          | 'zones.manage'
+          | 'budget.manage'
+          | 'budget.recipient-phone'
+          | 'sale.create'
+          | 'sale.credit'
+          | 'sale.collect'
+          | 'seller.manage'
+          | 'seller.invite'
+          | 'inventory.mobile'
+          | 'inventory.assignment'
+          | 'commission.manage'
+          | 'dashboard.owner'
+          | 'dashboard.seller'
+          | 'notification.read';
+        id?: string | null;
+      }[]
+    | null;
+  userGrants?:
+    | {
+        user: number | User;
+        capabilities?:
+          | {
+              capability:
+                | 'catalog.manage'
+                | 'warehouse.stock'
+                | 'warehouse.history'
+                | 'client.read'
+                | 'client.manage'
+                | 'client.contact-fields'
+                | 'client.delete'
+                | 'zones.manage'
+                | 'budget.manage'
+                | 'budget.recipient-phone'
+                | 'sale.create'
+                | 'sale.credit'
+                | 'sale.collect'
+                | 'seller.manage'
+                | 'seller.invite'
+                | 'inventory.mobile'
+                | 'inventory.assignment'
+                | 'commission.manage'
+                | 'dashboard.owner'
+                | 'dashboard.seller'
+                | 'notification.read';
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  pendingGrants?:
+    | {
+        invitation: number | Invitation;
+        capabilities?:
+          | {
+              capability:
+                | 'catalog.manage'
+                | 'warehouse.stock'
+                | 'warehouse.history'
+                | 'client.read'
+                | 'client.manage'
+                | 'client.contact-fields'
+                | 'client.delete'
+                | 'zones.manage'
+                | 'budget.manage'
+                | 'budget.recipient-phone'
+                | 'sale.create'
+                | 'sale.credit'
+                | 'sale.collect'
+                | 'seller.manage'
+                | 'seller.invite'
+                | 'inventory.mobile'
+                | 'inventory.assignment'
+                | 'commission.manage'
+                | 'dashboard.owner'
+                | 'dashboard.seller'
+                | 'notification.read';
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  quotas?: {
+    maxSellerSeats?: number | null;
+    maxProducts?: number | null;
+    maxVariantsPerProduct?: number | null;
+    maxVariantsPerTenant?: number | null;
+  };
+  predecessor?: (number | null) | TenantEntitlementSnapshot;
+  createdBy: number | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plan-versions".
+ */
+export interface PlanVersion {
+  id: number;
+  planCode: 'basic' | 'medium' | 'professional';
+  version: number;
+  capabilities: {
+    capability:
+      | 'catalog.manage'
+      | 'warehouse.stock'
+      | 'warehouse.history'
+      | 'client.read'
+      | 'client.manage'
+      | 'client.contact-fields'
+      | 'client.delete'
+      | 'zones.manage'
+      | 'budget.manage'
+      | 'budget.recipient-phone'
+      | 'sale.create'
+      | 'sale.credit'
+      | 'sale.collect'
+      | 'seller.manage'
+      | 'seller.invite'
+      | 'inventory.mobile'
+      | 'inventory.assignment'
+      | 'commission.manage'
+      | 'dashboard.owner'
+      | 'dashboard.seller'
+      | 'notification.read';
+    id?: string | null;
+  }[];
+  quotas: {
+    maxSellerSeats: number;
+    maxProducts: number;
+    maxVariantsPerProduct: number;
+    maxVariantsPerTenant: number;
+  };
+  publishedAt: string;
+  createdBy: number | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "invitations".
  */
 export interface Invitation {
@@ -237,10 +406,53 @@ export interface Invitation {
   token?: string | null;
   createdBy?: (number | null) | User;
   expiresAt?: string | null;
+  state: 'pending' | 'accepted' | 'cancelled' | 'replaced' | 'expired';
+  acceptedUser?: (number | null) | User;
+  cancelledAt?: string | null;
+  replacedAt?: string | null;
+  replacedBy?: (number | null) | Invitation;
   /**
    * Fecha en que se usó la invitación
    */
   usedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "entitlement-quota-locks".
+ */
+export interface EntitlementQuotaLock {
+  id: number;
+  tenant: number | User;
+  nonce: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "entitlement-outbox".
+ */
+export interface EntitlementOutbox {
+  id: number;
+  idempotencyKey: string;
+  kind: string;
+  aggregate: string;
+  payload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  state: 'pending' | 'processing' | 'sent' | 'failed';
+  attempts: number;
+  availableAt: string;
+  claimedAt?: string | null;
+  sentAt?: string | null;
+  lastError?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -251,6 +463,12 @@ export interface Invitation {
 export interface Media {
   id: number;
   alt: string;
+  tenant?: (number | null) | User;
+  uploadRequestId?: string | null;
+  stagedAt?: string | null;
+  claimedAt?: string | null;
+  claimedByProduct?: (number | null) | Product;
+  cleanupAfter?: string | null;
   _key?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -263,6 +481,26 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  name: string;
+  description?: string | null;
+  brand?: (number | null) | Brand;
+  category?: (number | null) | Category;
+  quality?: (number | null) | Quality;
+  image?: (number | null) | Media;
+  owner?: (number | null) | User;
+  /**
+   * Desmarcar para ocultar el producto
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -317,26 +555,6 @@ export interface Presentation {
   unit: string;
   product?: (number | null) | Product;
   owner?: (number | null) | User;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "products".
- */
-export interface Product {
-  id: number;
-  name: string;
-  description?: string | null;
-  brand?: (number | null) | Brand;
-  category?: (number | null) | Category;
-  quality?: (number | null) | Quality;
-  image?: (number | null) | Media;
-  owner?: (number | null) | User;
-  /**
-   * Desmarcar para ocultar el producto
-   */
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -499,6 +717,7 @@ export interface Sale {
   seller: number | User;
   owner: number | User;
   client?: (number | null) | Client;
+  sourceBudget?: (number | null) | Budget;
   date: string;
   paymentMethod?: ('cash' | 'transfer' | 'check') | null;
   items: {
@@ -781,6 +1000,22 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'plan-versions';
+        value: number | PlanVersion;
+      } | null)
+    | ({
+        relationTo: 'tenant-entitlement-snapshots';
+        value: number | TenantEntitlementSnapshot;
+      } | null)
+    | ({
+        relationTo: 'entitlement-quota-locks';
+        value: number | EntitlementQuotaLock;
+      } | null)
+    | ({
+        relationTo: 'entitlement-outbox';
+        value: number | EntitlementOutbox;
+      } | null)
+    | ({
         relationTo: 'invitations';
         value: number | Invitation;
       } | null)
@@ -917,6 +1152,8 @@ export interface UsersSelect<T extends boolean = true> {
   businessPhone?: T;
   businessAddress?: T;
   ivaCondition?: T;
+  activeEntitlementSnapshot?: T;
+  entitlementState?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -936,6 +1173,113 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plan-versions_select".
+ */
+export interface PlanVersionsSelect<T extends boolean = true> {
+  planCode?: T;
+  version?: T;
+  capabilities?:
+    | T
+    | {
+        capability?: T;
+        id?: T;
+      };
+  quotas?:
+    | T
+    | {
+        maxSellerSeats?: T;
+        maxProducts?: T;
+        maxVariantsPerProduct?: T;
+        maxVariantsPerTenant?: T;
+      };
+  publishedAt?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenant-entitlement-snapshots_select".
+ */
+export interface TenantEntitlementSnapshotsSelect<T extends boolean = true> {
+  tenant?: T;
+  sequence?: T;
+  idempotencyKey?: T;
+  kind?: T;
+  planVersion?: T;
+  pool?:
+    | T
+    | {
+        capability?: T;
+        id?: T;
+      };
+  userGrants?:
+    | T
+    | {
+        user?: T;
+        capabilities?:
+          | T
+          | {
+              capability?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  pendingGrants?:
+    | T
+    | {
+        invitation?: T;
+        capabilities?:
+          | T
+          | {
+              capability?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  quotas?:
+    | T
+    | {
+        maxSellerSeats?: T;
+        maxProducts?: T;
+        maxVariantsPerProduct?: T;
+        maxVariantsPerTenant?: T;
+      };
+  predecessor?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "entitlement-quota-locks_select".
+ */
+export interface EntitlementQuotaLocksSelect<T extends boolean = true> {
+  tenant?: T;
+  nonce?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "entitlement-outbox_select".
+ */
+export interface EntitlementOutboxSelect<T extends boolean = true> {
+  idempotencyKey?: T;
+  kind?: T;
+  aggregate?: T;
+  payload?: T;
+  state?: T;
+  attempts?: T;
+  availableAt?: T;
+  claimedAt?: T;
+  sentAt?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "invitations_select".
  */
 export interface InvitationsSelect<T extends boolean = true> {
@@ -945,6 +1289,11 @@ export interface InvitationsSelect<T extends boolean = true> {
   token?: T;
   createdBy?: T;
   expiresAt?: T;
+  state?: T;
+  acceptedUser?: T;
+  cancelledAt?: T;
+  replacedAt?: T;
+  replacedBy?: T;
   usedAt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -955,6 +1304,12 @@ export interface InvitationsSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  tenant?: T;
+  uploadRequestId?: T;
+  stagedAt?: T;
+  claimedAt?: T;
+  claimedByProduct?: T;
+  cleanupAfter?: T;
   _key?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1117,6 +1472,7 @@ export interface SalesSelect<T extends boolean = true> {
   seller?: T;
   owner?: T;
   client?: T;
+  sourceBudget?: T;
   date?: T;
   paymentMethod?: T;
   items?:

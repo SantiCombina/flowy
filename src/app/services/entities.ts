@@ -3,6 +3,7 @@
 import { revalidateTag, unstable_cache } from 'next/cache';
 
 import { getPayloadClient } from '@/lib/payload';
+import { resolveId } from '@/lib/payload-utils';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 export const getBrands = unstable_cache(
@@ -36,8 +37,18 @@ export async function createBrand(name: string, ownerId: number): Promise<Brand>
   return brand;
 }
 
-export async function updateBrand(id: number, name: string): Promise<Brand> {
+export async function updateBrand(id: number, name: string, ownerId: number): Promise<Brand> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'brands',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Marca no encontrada');
+  }
 
   const brand = await payload.update({
     collection: 'brands',
@@ -50,8 +61,18 @@ export async function updateBrand(id: number, name: string): Promise<Brand> {
   return brand;
 }
 
-export async function deleteBrand(id: number): Promise<void> {
+export async function deleteBrand(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'brands',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Marca no encontrada');
+  }
 
   await payload.delete({ collection: 'brands', id, overrideAccess: true });
   revalidateTag('entities-brands');
@@ -88,8 +109,18 @@ export async function createCategory(name: string, ownerId: number): Promise<Cat
   return category;
 }
 
-export async function updateCategory(id: number, name: string): Promise<Category> {
+export async function updateCategory(id: number, name: string, ownerId: number): Promise<Category> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'categories',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Categoría no encontrada');
+  }
 
   const category = await payload.update({
     collection: 'categories',
@@ -102,8 +133,18 @@ export async function updateCategory(id: number, name: string): Promise<Category
   return category;
 }
 
-export async function deleteCategory(id: number): Promise<void> {
+export async function deleteCategory(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'categories',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Categoría no encontrada');
+  }
 
   await payload.delete({ collection: 'categories', id, overrideAccess: true });
   revalidateTag('entities-categories');
@@ -140,8 +181,18 @@ export async function createQuality(name: string, ownerId: number): Promise<Qual
   return quality;
 }
 
-export async function updateQuality(id: number, name: string): Promise<Quality> {
+export async function updateQuality(id: number, name: string, ownerId: number): Promise<Quality> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'qualities',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Calidad no encontrada');
+  }
 
   const quality = await payload.update({
     collection: 'qualities',
@@ -154,8 +205,18 @@ export async function updateQuality(id: number, name: string): Promise<Quality> 
   return quality;
 }
 
-export async function deleteQuality(id: number): Promise<void> {
+export async function deleteQuality(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'qualities',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Calidad no encontrada');
+  }
 
   await payload.delete({ collection: 'qualities', id, overrideAccess: true });
   revalidateTag('entities-qualities');
@@ -196,8 +257,18 @@ export async function createPresentation(
   return presentation;
 }
 
-export async function updatePresentation(id: number, label: string): Promise<Presentation> {
+export async function updatePresentation(id: number, label: string, ownerId: number): Promise<Presentation> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'presentations',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Presentación no encontrada');
+  }
 
   const presentation = await payload.update({
     collection: 'presentations',
@@ -210,8 +281,18 @@ export async function updatePresentation(id: number, label: string): Promise<Pre
   return presentation;
 }
 
-export async function deletePresentation(id: number): Promise<void> {
+export async function deletePresentation(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'presentations',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Presentación no encontrada');
+  }
 
   await payload.delete({ collection: 'presentations', id, overrideAccess: true });
   revalidateTag('entities-presentations');

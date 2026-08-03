@@ -10,7 +10,13 @@
 !/.idea/runConfigurations
 
 # testing
-/coverage
+/coverage/
+/test/
+/tests/
+**/__tests__/
+*.test.*
+*.spec.*
+/test-*.mjs
 
 # next.js
 /.next/

@@ -6,12 +6,12 @@ import { z } from 'zod';
 import {
   getProducts,
   getProductById,
-  createProduct,
+  createProductWithQuota,
   updateProduct,
   deleteProduct,
   getVariantsByProduct,
   getVariantsWithProducts,
-  createVariant,
+  createVariantWithQuota,
   updateVariant,
   deleteVariant,
   type CreateProductData,
@@ -21,6 +21,7 @@ import {
   type VariantFilters,
 } from '@/app/services/products';
 import { getProductDemandSummary, getVariantSalesHistory } from '@/app/services/sales';
+import { assertAnyUserCapability, assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
@@ -55,6 +56,8 @@ export const getProductsAction = actionClient
     if (user.role !== 'admin' && user.role !== 'owner') {
       throw new Error('No autorizado');
     }
+
+    await assertUserCapability(user, 'catalog.manage');
 
     const ownerId = user.id;
 
@@ -91,6 +94,8 @@ export const getVariantsAction = actionClient
       throw new Error('No autorizado');
     }
 
+    await assertAnyUserCapability(user, ['catalog.manage', 'warehouse.stock']);
+
     const filters: VariantFilters = {
       search: parsedInput.filters?.search,
       brand: parsedInput.filters?.brand,
@@ -116,19 +121,22 @@ export const getProductByIdAction = actionClient
       throw new Error('No autenticado');
     }
 
+    await assertAnyUserCapability(user, ['catalog.manage', 'warehouse.stock']);
+
     const product = await getProductById(parsedInput.id);
 
     if (!product) {
       throw new Error('Producto no encontrado');
     }
 
-    const ownerId =
-      user.role === 'admin' ? resolveId(product.owner) : user.role === 'owner' ? user.id : resolveId(user.owner);
-    if (typeof product.owner === 'number' && product.owner !== ownerId) {
+    const productOwnerId = resolveId(product.owner);
+    const callerOwnerId =
+      user.role === 'admin' ? productOwnerId : user.role === 'owner' ? user.id : resolveId(user.owner);
+    if (productOwnerId !== callerOwnerId) {
       throw new Error('No autorizado');
     }
 
-    const variants = await getVariantsByProduct(parsedInput.id);
+    const variants = await getVariantsByProduct(parsedInput.id, productOwnerId!);
 
     return {
       success: true,
@@ -146,7 +154,12 @@ export const getVariantsByProductIdAction = actionClient
       throw new Error('No autenticado');
     }
 
-    const variants = await getVariantsByProduct(parsedInput.productId);
+    await assertAnyUserCapability(user, ['catalog.manage', 'warehouse.stock']);
+
+    const ownerId = user.role === 'owner' ? user.id : resolveId(user.owner);
+    if (!ownerId) throw new Error('No autorizado');
+
+    const variants = await getVariantsByProduct(parsedInput.productId, ownerId);
 
     return {
       success: true,
@@ -161,6 +174,8 @@ export const createProductAction = actionClient.schema(createProductActionSchema
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'catalog.manage');
+
   const productData: CreateProductData = {
     name: parsedInput.name,
     description: parsedInput.description,
@@ -170,7 +185,7 @@ export const createProductAction = actionClient.schema(createProductActionSchema
     image: parsedInput.image,
     isActive: parsedInput.isActive,
   };
-  const product = await createProduct(productData, user.id);
+  const product = await createProductWithQuota(productData, user.id);
 
   revalidatePath('/products');
 
@@ -187,6 +202,8 @@ export const updateProductAction = actionClient.schema(updateProductActionSchema
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'catalog.manage');
+
   const { id, ...data } = parsedInput;
   const productData: UpdateProductData = {
     name: data.name,
@@ -197,7 +214,7 @@ export const updateProductAction = actionClient.schema(updateProductActionSchema
     image: data.image ?? null,
     isActive: data.isActive,
   };
-  const product = await updateProduct(id, productData);
+  const product = await updateProduct(id, productData, user.id);
 
   revalidatePath('/products');
 
@@ -214,7 +231,9 @@ export const deleteProductAction = actionClient.schema(deleteProductActionSchema
     throw new Error('No autorizado');
   }
 
-  await deleteProduct(parsedInput.id);
+  await assertUserCapability(user, 'catalog.manage');
+
+  await deleteProduct(parsedInput.id, user.id);
 
   revalidatePath('/products');
 
@@ -229,6 +248,8 @@ export const createEntityAction = actionClient.schema(createEntitySchema).action
   if (!user || (user.role !== 'owner' && user.role !== 'admin')) {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'catalog.manage');
 
   const { createBrand, createCategory, createQuality, createPresentation } = await import('@/app/services/entities');
   const ownerId = user.id;
@@ -279,6 +300,8 @@ export const getReferenceDataAction = actionClient.action(async () => {
     throw new Error('Solo los due\u00f1os pueden crear productos');
   }
 
+  await assertUserCapability(user, 'catalog.manage');
+
   const { getBrands, getCategories, getQualities, getPresentations } = await import('@/app/services/entities');
   const ownerId = user.id;
 
@@ -301,6 +324,7 @@ export const getReferenceDataAction = actionClient.action(async () => {
 export const getProductDemandSummaryAction = actionClient.action(async () => {
   const user = await getCurrentUser();
   if (!user || user.role !== 'owner') throw new Error('No autorizado');
+  await assertUserCapability(user, 'catalog.manage');
   const demand = await getProductDemandSummary(user.id);
   return { success: true, demand };
 });
@@ -310,6 +334,7 @@ export const getVariantSalesHistoryAction = actionClient
   .action(async ({ parsedInput }) => {
     const user = await getCurrentUser();
     if (!user || user.role !== 'owner') throw new Error('No autorizado');
+    await assertUserCapability(user, 'catalog.manage');
     const history = await getVariantSalesHistory(parsedInput.variantId, user.id);
     return { success: true, history };
   });
@@ -323,7 +348,12 @@ export const getProductVariantsAction = actionClient
       throw new Error('No autenticado');
     }
 
-    const variants = await getVariantsByProduct(parsedInput.productId);
+    await assertAnyUserCapability(user, ['catalog.manage', 'warehouse.stock']);
+
+    const ownerId = user.role === 'owner' ? user.id : resolveId(user.owner);
+    if (!ownerId) throw new Error('No autorizado');
+
+    const variants = await getVariantsByProduct(parsedInput.productId, ownerId);
 
     return {
       success: true,
@@ -338,6 +368,8 @@ export const createVariantAction = actionClient.schema(createVariantActionSchema
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'catalog.manage');
+
   const variantData: CreateVariantData = {
     code: parsedInput.code ?? '',
     product: parsedInput.product,
@@ -347,7 +379,7 @@ export const createVariantAction = actionClient.schema(createVariantActionSchema
     costPrice: parsedInput.costPrice,
     profitMargin: parsedInput.profitMargin,
   };
-  const variant = await createVariant(variantData, user.id);
+  const variant = await createVariantWithQuota(variantData, user.id);
 
   revalidatePath('/products');
 
@@ -364,6 +396,8 @@ export const updateVariantAction = actionClient.schema(updateVariantActionSchema
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'catalog.manage');
+
   const { id, ...data } = parsedInput;
   const variantData: UpdateVariantData = {
     code: data.code,
@@ -373,7 +407,7 @@ export const updateVariantAction = actionClient.schema(updateVariantActionSchema
     costPrice: data.costPrice,
     profitMargin: data.profitMargin,
   };
-  const variant = await updateVariant(id, variantData);
+  const variant = await updateVariant(id, variantData, user.id);
 
   revalidatePath('/products');
 
@@ -390,7 +424,9 @@ export const deleteVariantAction = actionClient.schema(deleteVariantActionSchema
     throw new Error('No autorizado');
   }
 
-  await deleteVariant(parsedInput.id);
+  await assertUserCapability(user, 'catalog.manage');
+
+  await deleteVariant(parsedInput.id, user.id);
 
   revalidatePath('/products');
 
@@ -408,7 +444,11 @@ export const bulkUpdateVariantPricesAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await Promise.all(parsedInput.updates.map(({ variantId, costPrice }) => updateVariant(variantId, { costPrice })));
+    await assertUserCapability(user, 'catalog.manage');
+
+    await Promise.all(
+      parsedInput.updates.map(({ variantId, costPrice }) => updateVariant(variantId, { costPrice }, user.id)),
+    );
 
     revalidatePath('/products');
 
@@ -425,7 +465,9 @@ export const bulkToggleProductsAction = actionClient.schema(bulkToggleActiveSche
     throw new Error('No autorizado');
   }
 
-  await Promise.all(parsedInput.productIds.map((id) => updateProduct(id, { isActive: parsedInput.isActive })));
+  await assertUserCapability(user, 'catalog.manage');
+
+  await Promise.all(parsedInput.productIds.map((id) => updateProduct(id, { isActive: parsedInput.isActive }, user.id)));
 
   revalidatePath('/products');
 

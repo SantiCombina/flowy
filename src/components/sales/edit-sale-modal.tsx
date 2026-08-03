@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import type { SaleRow, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -217,6 +218,9 @@ function ItemRow({
 }
 
 export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
+  const user = useUser();
+  const canUseContactFields = user.capabilities?.includes('client.contact-fields') ?? false;
+  const canManageZones = user.capabilities?.includes('zones.manage') ?? false;
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
     queryKey: queryKeys.sales.options('seller'),
     queryFn: () => getSaleOptionsAction(),
@@ -514,6 +518,8 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
         onSuccess={handleNewClientSuccess}
+        canUseContactFields={canUseContactFields}
+        canManageZones={canManageZones}
       />
     </>
   );

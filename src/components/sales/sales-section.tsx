@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  FileText,
   Inbox,
   Pencil,
   RefreshCw,
@@ -20,6 +21,7 @@ import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
+import { useUser } from '@/components/providers/user-provider';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -46,6 +48,7 @@ import { useSalesUrlSync } from '@/hooks/use-sales-url-sync';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
+import { getSaleWhatsAppLink } from '@/lib/sale-whatsapp';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
 import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
@@ -163,6 +166,7 @@ function SalesSectionComponent({
   isSeller,
   initialStatusFilter,
 }: SalesSectionProps) {
+  const user = useUser();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
   const { invalidateQueries } = useInvalidateQueries();
@@ -224,6 +228,10 @@ function SalesSectionComponent({
     invalidateQueries([queryKeys.sales.list(filters)]);
     setCollectingModal(null);
   }, [invalidateQueries, filters, setCollectingModal]);
+
+  const handleWhatsApp = (sale: SaleRow) => {
+    window.open(getSaleWhatsAppLink(sale, user?.businessName ?? null), '_blank');
+  };
 
   const handleMarkDelivered = async (saleId: number) => {
     const result = await executeMarkDelivered({ saleId });
@@ -316,8 +324,10 @@ function SalesSectionComponent({
     ).length + (showSeller ? 1 : 0);
 
   const canMarkDelivery = canCollect || isSeller;
-  const hasActions = canManage || canCollect || canMarkDelivery;
-  const totalCols = visibleOptionalCount + 1 + 1 + (hasActions ? 1 : 0);
+  const deliveryStatusColumnCount = 1;
+  const actionColumnCount = 1;
+  const expansionColumnCount = 1;
+  const totalCols = visibleOptionalCount + deliveryStatusColumnCount + actionColumnCount + expansionColumnCount;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -460,7 +470,7 @@ function SalesSectionComponent({
                     onFilterChange={(v) => handleFilterChange('deliveryStatus', v || undefined)}
                     className="w-px"
                   />
-                  {hasActions && <TableHead className="w-px" />}
+                  <TableHead className="w-px" />
                   <TableHead className="w-px" />
                 </TableRow>
               </TableHeader>
@@ -560,43 +570,46 @@ function SalesSectionComponent({
                           <TableCell>
                             <DeliveryStatusBadge status={sale.deliveryStatus} />
                           </TableCell>
-                          {hasActions && (
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <ActionMenu
-                                items={[
-                                  canCollect &&
-                                    isPending && {
-                                      label: 'Cobrar',
-                                      icon: Banknote,
-                                      onClick: () =>
-                                        setCollectingModal({
-                                          saleId: sale.id,
-                                          total: sale.total,
-                                          amountPaid: displayAmountPaid,
-                                        }),
-                                    },
-                                  canMarkDelivery &&
-                                    sale.deliveryStatus === 'pending' && {
-                                      label: 'Marcar entregada',
-                                      icon: Truck,
-                                      onClick: () => setDeliverConfirmId(sale.id),
-                                    },
-                                  canManage && {
-                                    label: 'Editar',
-                                    icon: Pencil,
-                                    onClick: () => setEditingSale(sale),
-                                    separator: !!(canCollect || canMarkDelivery),
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <ActionMenu
+                              items={[
+                                {
+                                  label: 'Enviar por WhatsApp',
+                                  icon: FileText,
+                                  onClick: () => handleWhatsApp(sale),
+                                },
+                                canCollect &&
+                                  isPending && {
+                                    label: 'Cobrar',
+                                    icon: Banknote,
+                                    onClick: () =>
+                                      setCollectingModal({
+                                        saleId: sale.id,
+                                        total: sale.total,
+                                        amountPaid: displayAmountPaid,
+                                      }),
                                   },
-                                  canManage && {
-                                    label: 'Eliminar',
-                                    icon: Trash2,
-                                    onClick: () => setDeleteConfirmId(sale.id),
-                                    variant: 'destructive' as const,
+                                canMarkDelivery &&
+                                  sale.deliveryStatus === 'pending' && {
+                                    label: 'Marcar entregada',
+                                    icon: Truck,
+                                    onClick: () => setDeliverConfirmId(sale.id),
                                   },
-                                ]}
-                              />
-                            </TableCell>
-                          )}
+                                canManage && {
+                                  label: 'Editar',
+                                  icon: Pencil,
+                                  onClick: () => setEditingSale(sale),
+                                  separator: !!(canCollect || canMarkDelivery),
+                                },
+                                canManage && {
+                                  label: 'Eliminar',
+                                  icon: Trash2,
+                                  onClick: () => setDeleteConfirmId(sale.id),
+                                  variant: 'destructive' as const,
+                                },
+                              ]}
+                            />
+                          </TableCell>
                           <TableCell className="text-right pr-2">
                             <Button
                               variant="ghost"
