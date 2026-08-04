@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import { calculateCommission, subtractMoney } from '@/lib/money';
 import { cn, formatCurrency } from '@/lib/utils';
 import { collectSaleSchema, type CollectSaleValues } from '@/schemas/sales/collect-sale-schema';
@@ -235,7 +236,14 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
               Cancelar
             </Button>
             <Button type="submit" disabled={isExecuting || isOverRemaining}>
-              {isExecuting ? 'Registrando…' : 'Registrar cobro'}
+              {isExecuting ? (
+                <span className="flex items-center gap-2">
+                  Registrando
+                  <Spinner />
+                </span>
+              ) : (
+                'Registrar cobro'
+              )}
             </Button>
           </ResponsiveModalFooter>
         </form>

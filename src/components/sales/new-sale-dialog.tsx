@@ -1,45 +1,40 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { CalendarIcon, Trash2, XCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
+import type { SaleClientOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Combobox } from '@/components/ui/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PriceInput } from '@/components/ui/price-input';
-import { QuantityInput } from '@/components/ui/quantity-input';
+import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
-  ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
-import { cn } from '@/lib/utils';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 
 import { getClientsForSaleAction } from '../clients/actions';
 
 import { createSaleAction, getSaleOptionsAction, getSaleOptionsAsOwnerAction } from './actions';
+import {
+  AddProductSheet,
+  DetailsTab,
+  ProductsTab,
+  SaleFooter,
+  SaleFormSkeleton,
+  useFirstItemsErrorMessage,
+} from './sale-form-parts';
 
 interface NewSaleDialogProps {
   isOpen: boolean;
@@ -246,6 +241,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const isOwner = user?.role === 'owner';
   const canUseCredit = user.capabilities?.includes('sale.credit') ?? isOwner;
   const canUsePersonalStock = user.capabilities?.includes('inventory.mobile') ?? isOwner;
+  const isMobile = useIsMobile();
 
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
     queryKey: queryKeys.sales.options('seller'),
@@ -264,29 +260,35 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
   const optionsResult = isOwner ? ownerOptions : sellerOptions;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
+
   const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [addProductKey, setAddProductKey] = useState(0);
+  const [activeTab, setActiveTab] = useState('products');
 
-  const variants: SaleVariantOption[] = optionsResult?.variants ?? [];
-  const localClients: SaleClientOption[] = clientsOverride ?? optionsResult?.clients ?? [];
+  const variants = optionsResult?.variants ?? [];
+  const localClients = clientsOverride ?? optionsResult?.clients ?? [];
 
   const form = useForm<SaleValues>({
     resolver: zodResolver(saleSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
-      items: [{ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' }],
+      items: [],
       immediateDelivery: false,
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' });
-
+  const { fields, prepend, remove } = useFieldArray({
+    control: form.control,
+    name: 'items',
+  });
   const watchedItems = useWatch({ control: form.control, name: 'items' });
-  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
-  const hasUnselectedVariant = (watchedItems ?? []).some((item) => !item.variantId || item.variantId === 0);
+  const itemCount = watchedItems?.length ?? 0;
+  const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
 
   const availablePaymentOptions = canUseCredit ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.value !== 'credit');
 
@@ -299,7 +301,13 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const handleClose = () => {
     setClientsOverride(null);
     setServerError(null);
+    setActiveTab('products');
     onClose();
+  };
+
+  const handleOpenAddProduct = () => {
+    setAddProductKey((k) => k + 1);
+    setIsAddProductOpen(true);
   };
 
   const handleNewClientSuccess = async (newClient: Client) => {
@@ -312,6 +320,50 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     form.setValue('clientId', newClient.id);
     setIsClientModalOpen(false);
   };
+
+  const handleAddProduct = (item: {
+    variantId: number;
+    quantity: number;
+    unitPrice: number;
+    stockSource: 'warehouse' | 'personal';
+  }) => {
+    prepend(item);
+  };
+
+  const focusFirstError = useCallback(() => {
+    const errors = form.formState.errors;
+    if (errors.items) {
+      setActiveTab('products');
+      if (Array.isArray(errors.items)) {
+        for (let i = 0; i < errors.items.length; i++) {
+          const row = errors.items[i];
+          if (row?.variantId) {
+            setTimeout(() => form.setFocus(`items.${i}.variantId`), 50);
+            return;
+          }
+          if (row?.quantity) {
+            setTimeout(() => form.setFocus(`items.${i}.quantity`), 50);
+            return;
+          }
+          if (row?.unitPrice) {
+            setTimeout(() => form.setFocus(`items.${i}.unitPrice`), 50);
+            return;
+          }
+          if (row?.stockSource) {
+            setTimeout(() => form.setFocus(`items.${i}.stockSource`), 50);
+            return;
+          }
+        }
+      }
+      return;
+    }
+
+    setActiveTab('details');
+    const firstError = Object.keys(errors)[0] as keyof SaleValues;
+    if (firstError) {
+      setTimeout(() => form.setFocus(firstError), 50);
+    }
+  }, [form]);
 
   const onSubmit = useCallback(
     async (data: SaleValues) => {
@@ -332,26 +384,29 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     [submitSale, onSuccess, onClose],
   );
 
-  const formatTotal = (value: number) =>
-    value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   const handleFormSubmit = form.handleSubmit(onSubmit, (errors) => {
-    const firstError = Object.keys(errors)[0] as keyof SaleValues;
-    if (firstError) form.setFocus(firstError);
+    if (errors.items) {
+      setActiveTab('products');
+      focusFirstError();
+    } else {
+      setActiveTab('details');
+      focusFirstError();
+    }
   });
 
   return (
     <>
-      <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-3xl">
+      <ResponsiveModal
+        open={isOpen}
+        onOpenChange={handleClose}
+        className="flex flex-col gap-0 overflow-hidden h-[100dvh] sm:max-w-5xl sm:h-[85vh]"
+      >
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
-          <ResponsiveModalDescription>Completá los datos de la venta para registrarla.</ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         {isLoadingOptions ? (
-          <ResponsiveModalBody className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">Cargando productos…</p>
-          </ResponsiveModalBody>
+          <SaleFormSkeleton isMobile={isMobile} />
         ) : (
           <Form {...form}>
             <form
@@ -365,7 +420,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   e.preventDefault();
                 }
               }}
-              className="flex flex-col flex-1 min-h-0"
+              className="flex flex-1 flex-col min-h-0"
             >
               <ResponsiveModalBody className="flex flex-col gap-3">
                 <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_80px_110px_140px_32px] gap-2">
@@ -551,38 +606,33 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                 />
 
                 {serverError && (
-                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2">
-                    <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-                    <p className="text-sm text-destructive">{serverError}</p>
+                  <div className="flex items-start gap-2 px-6 pb-4">
+                    <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 w-full">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <p className="text-sm text-destructive">{serverError}</p>
+                    </div>
                   </div>
                 )}
               </ResponsiveModalBody>
 
-              <ResponsiveModalFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground">Total</span>
-                  <span className="text-base font-semibold text-primary">$ {formatTotal(total)}</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <span className="flex items-center gap-2">
-                        Registrando
-                        <Spinner />
-                      </span>
-                    ) : (
-                      'Registrar venta'
-                    )}
-                  </Button>
-                </div>
-              </ResponsiveModalFooter>
+              <SaleFooter
+                total={total}
+                isSubmitting={isSubmitting}
+                onCancel={handleClose}
+                submitLabel="Registrar venta"
+              />
             </form>
           </Form>
         )}
       </ResponsiveModal>
+
+      <AddProductSheet
+        key={addProductKey}
+        open={isAddProductOpen}
+        onClose={() => setIsAddProductOpen(false)}
+        variants={variants}
+        onAdd={handleAddProduct}
+      />
 
       <ClientModal
         isOpen={isClientModalOpen}

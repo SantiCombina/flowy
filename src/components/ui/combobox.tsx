@@ -23,6 +23,7 @@ interface ComboboxProps {
   emptyMessage?: string;
   disabled?: boolean;
   className?: string;
+  id?: string;
   footer?: React.ReactNode;
 }
 
@@ -42,6 +43,7 @@ export function Combobox({
   emptyMessage = 'Sin resultados.',
   disabled,
   className,
+  id,
   footer,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -49,7 +51,10 @@ export function Combobox({
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const anchorRef = React.useRef<HTMLDivElement>(null);
   const { portalContainer } = useResponsiveModalContext();
+
+  const isAnchorTarget = (target: EventTarget | null) => anchorRef.current?.contains(target as Node) ?? false;
 
   const selected = options.find((o) => o.value === value);
   const displayValue = selected ? selected.label : '';
@@ -137,17 +142,18 @@ export function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
-        <div className={cn('relative', className)} onClick={handleContainerClick}>
+        <div ref={anchorRef} className={cn('relative', className)} onClick={handleContainerClick}>
           <div className="relative">
             <Input
               ref={inputRef}
+              id={id}
               type="text"
               disabled={disabled}
               placeholder={open ? searchPlaceholder : placeholder}
               value={open ? search : displayValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              className="pr-16"
+              className="pr-16 max-sm:pr-10 truncate"
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
@@ -171,11 +177,17 @@ export function Combobox({
       </PopoverAnchor>
 
       <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-0"
+        className="w-(--radix-popover-trigger-width) p-0 max-sm:min-w-[260px]"
         align="start"
         sideOffset={4}
         portalContainer={portalContainer}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => {
+          if (isAnchorTarget(e.target)) e.preventDefault();
+        }}
+        onFocusOutside={(e) => {
+          if (isAnchorTarget(e.target)) e.preventDefault();
+        }}
       >
         <div className="max-h-[min(300px,40svh)] overflow-y-auto py-1">
           {filtered.length === 0 ? (
