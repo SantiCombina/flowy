@@ -1,16 +1,33 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { XCircle } from 'lucide-react';
+import { CalendarIcon, XCircle, Trash2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-import type { SaleClientOption } from '@/app/services/sales';
+import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
-import { Form } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Combobox } from '@/components/ui/combobox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PriceInput } from '@/components/ui/price-input';
+import { QuantityInput } from '@/components/ui/quantity-input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -20,6 +37,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import { cn } from '@/lib/utils';
 import { queryKeys } from '@/lib/query-keys';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
@@ -289,8 +307,10 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
+  const paymentMethod = form.watch('paymentMethod');
 
   const availablePaymentOptions = canUseCredit ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.value !== 'credit');
+  const hasUnselectedVariant = watchedItems?.some((item) => !item.variantId);
 
   useEffect(() => {
     if (!canUseCredit && paymentMethod === 'credit') {
@@ -451,7 +471,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   variant="outline"
                   size="sm"
                   className="self-start"
-                  onClick={() => append({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
+                  onClick={() => prepend({ variantId: 0, quantity: 1, unitPrice: 0, stockSource: 'warehouse' })}
                   disabled={variants.length === 0 || hasUnselectedVariant}
                 >
                   + Agregar producto
