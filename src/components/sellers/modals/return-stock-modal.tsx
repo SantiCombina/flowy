@@ -16,6 +16,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { Spinner } from '@/components/ui/spinner';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -153,7 +154,14 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
             Cancelar
           </Button>
           <Button type="submit" disabled={isExecuting || isLoading || inventory.length === 0}>
-            {isExecuting ? 'Registrando...' : 'Confirmar devolución'}
+            {isExecuting ? (
+              <span className="flex items-center gap-2">
+                Registrando
+                <Spinner />
+              </span>
+            ) : (
+              'Confirmar devolución'
+            )}
           </Button>
         </ResponsiveModalFooter>
       </form>

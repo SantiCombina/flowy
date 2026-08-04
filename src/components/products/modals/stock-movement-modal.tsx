@@ -18,6 +18,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
@@ -203,7 +204,14 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
             Cancelar
           </Button>
           <Button type="submit" disabled={!isValid || isExecuting}>
-            {isExecuting ? 'Registrando...' : 'Registrar movimiento'}
+            {isExecuting ? (
+              <span className="flex items-center gap-2">
+                Registrando
+                <Spinner />
+              </span>
+            ) : (
+              'Registrar movimiento'
+            )}
           </Button>
         </ResponsiveModalFooter>
       </form>

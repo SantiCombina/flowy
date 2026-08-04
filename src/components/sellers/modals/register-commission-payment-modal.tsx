@@ -24,6 +24,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
@@ -233,7 +234,14 @@ export function RegisterCommissionPaymentModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={isExecuting}>
-              {isExecuting ? 'Registrando…' : 'Registrar pago'}
+              {isExecuting ? (
+                <span className="flex items-center gap-2">
+                  Registrando
+                  <Spinner />
+                </span>
+              ) : (
+                'Registrar pago'
+              )}
             </Button>
           </ResponsiveModalFooter>
         </form>

@@ -39,6 +39,7 @@ import { ColumnHeaderFilter } from '@/components/ui/column-header-filter';
 import type { DateRangeValue } from '@/components/ui/date-range-filter';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
@@ -803,8 +804,17 @@ function SalesSectionComponent({
               disabled={isMarkingDelivered}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              <Truck className="mr-2 h-4 w-4" />
-              {isMarkingDelivered ? 'Registrando…' : 'Confirmar entrega'}
+              {isMarkingDelivered ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Registrando
+                </span>
+              ) : (
+                <>
+                  <Truck className="mr-2 h-4 w-4" />
+                  Confirmar entrega
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
