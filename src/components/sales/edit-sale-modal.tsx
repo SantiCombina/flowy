@@ -10,11 +10,7 @@ import { toast } from 'sonner';
 import type { SaleClientOption, SaleRow } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
-import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { PriceInput } from '@/components/ui/price-input';
-import { QuantityInput } from '@/components/ui/quantity-input';
+import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -56,6 +52,8 @@ interface EditSaleModalProps {
 
 export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: EditSaleModalProps) {
   const user = useUser();
+  const canUseCredit = user.capabilities?.includes('sale.credit') ?? user?.role === 'owner';
+  const canUsePersonalStock = user.capabilities?.includes('inventory.mobile') ?? user?.role === 'owner';
   const canUseContactFields = user.capabilities?.includes('client.contact-fields') ?? false;
   const canManageZones = user.capabilities?.includes('zones.manage') ?? false;
   const isMobile = useIsMobile();
@@ -113,6 +111,13 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
+  const paymentMethod = form.watch('paymentMethod');
+
+  useEffect(() => {
+    if (!canUseCredit && paymentMethod === 'credit') {
+      form.setValue('paymentMethod', 'cash');
+    }
+  }, [canUseCredit, paymentMethod, form]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -277,6 +282,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         variants={variants}
                         onAddProduct={handleOpenAddProduct}
                         itemError={itemsError}
+                        canUsePersonalStock={canUsePersonalStock}
                       />
                     </TabsContent>
                     <TabsContent value="details" className="mt-0 flex-1 overflow-hidden px-6 py-4">
@@ -284,6 +290,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         form={form as unknown as UseFormReturn<SaleValues>}
                         clients={localClients}
                         onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
                       />
                     </TabsContent>
                   </Tabs>
@@ -297,6 +304,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         variants={variants}
                         onAddProduct={handleOpenAddProduct}
                         itemError={itemsError}
+                        canUsePersonalStock={canUsePersonalStock}
                       />
                     </div>
                     <div className="flex min-h-0 flex-col">
@@ -304,6 +312,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         form={form as unknown as UseFormReturn<SaleValues>}
                         clients={localClients}
                         onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
                       />
                     </div>
                   </div>
