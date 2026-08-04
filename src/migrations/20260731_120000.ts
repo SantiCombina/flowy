@@ -2,11 +2,26 @@ import { MigrateDownArgs, MigrateUpArgs, sql } from '@payloadcms/db-postgres';
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
-    CREATE TYPE IF NOT EXISTS "public"."enum_plan_versions_plan_code" AS ENUM('basic', 'medium', 'professional');
-    CREATE TYPE IF NOT EXISTS "public"."enum_tenant_entitlement_snapshots_kind" AS ENUM('plan', 'custom');
-    CREATE TYPE IF NOT EXISTS "public"."enum_entitlement_outbox_state" AS ENUM('pending', 'processing', 'sent', 'failed');
-    CREATE TYPE IF NOT EXISTS "public"."enum_users_entitlement_state" AS ENUM('provisioning', 'active', 'blocked');
-    CREATE TYPE IF NOT EXISTS "public"."enum_invitations_state" AS ENUM('pending', 'accepted', 'cancelled', 'replaced', 'expired');
+    DO $$ BEGIN
+      CREATE TYPE "public"."enum_plan_versions_plan_code" AS ENUM('basic', 'medium', 'professional');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      CREATE TYPE "public"."enum_tenant_entitlement_snapshots_kind" AS ENUM('plan', 'custom');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      CREATE TYPE "public"."enum_entitlement_outbox_state" AS ENUM('pending', 'processing', 'sent', 'failed');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      CREATE TYPE "public"."enum_users_entitlement_state" AS ENUM('provisioning', 'active', 'blocked');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      CREATE TYPE "public"."enum_invitations_state" AS ENUM('pending', 'accepted', 'cancelled', 'replaced', 'expired');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
 
     CREATE TABLE IF NOT EXISTS "plan_versions" (
       "id" serial PRIMARY KEY NOT NULL,
@@ -168,26 +183,66 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     END $$;
     ALTER TABLE "sales" ADD COLUMN IF NOT EXISTS "source_budget_id" integer;
 
-    ALTER TABLE "plan_versions" ADD CONSTRAINT "plan_versions_created_by_id_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "plan_versions_capabilities" ADD CONSTRAINT "plan_versions_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."plan_versions"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_plan_version_id_plan_versions_id_fk" FOREIGN KEY ("plan_version_id") REFERENCES "public"."plan_versions"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_predecessor_id_tenant_entitlement_snapshots_id_fk" FOREIGN KEY ("predecessor_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_created_by_id_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_pool" ADD CONSTRAINT "tenant_entitlement_snapshots_pool_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_user_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_user_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_user_grants_capabilities" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots_user_grants"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_pending_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_pending_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_invitation_id_invitations_id_fk" FOREIGN KEY ("invitation_id") REFERENCES "public"."invitations"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "tenant_entitlement_snapshots_pending_grants_capabilities" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots_pending_grants"("id") ON DELETE cascade ON UPDATE no action;
-    ALTER TABLE "entitlement_quota_locks" ADD CONSTRAINT "entitlement_quota_locks_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "users" ADD CONSTRAINT "users_active_entitlement_snapshot_id_tenant_entitlement_snapshots_id_fk" FOREIGN KEY ("active_entitlement_snapshot_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "invitations" ADD CONSTRAINT "invitations_accepted_user_id_users_id_fk" FOREIGN KEY ("accepted_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "invitations" ADD CONSTRAINT "invitations_replaced_by_id_invitations_id_fk" FOREIGN KEY ("replaced_by_id") REFERENCES "public"."invitations"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "media" ADD CONSTRAINT "media_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "media" ADD CONSTRAINT "media_claimed_by_product_id_products_id_fk" FOREIGN KEY ("claimed_by_product_id") REFERENCES "public"."products"("id") ON DELETE restrict ON UPDATE no action;
-    ALTER TABLE "sales" ADD CONSTRAINT "sales_source_budget_id_budgets_id_fk" FOREIGN KEY ("source_budget_id") REFERENCES "public"."budgets"("id") ON DELETE restrict ON UPDATE no action;
+    DO $$ BEGIN
+      ALTER TABLE "plan_versions" ADD CONSTRAINT "plan_versions_created_by_id_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "plan_versions_capabilities" ADD CONSTRAINT "plan_versions_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."plan_versions"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_plan_version_id_plan_versions_id_fk" FOREIGN KEY ("plan_version_id") REFERENCES "public"."plan_versions"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_predecessor_id_tenant_entitlement_snapshots_id_fk" FOREIGN KEY ("predecessor_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_created_by_id_users_id_fk" FOREIGN KEY ("created_by_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_pool" ADD CONSTRAINT "tenant_entitlement_snapshots_pool_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_user_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_user_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_user_grants_capabilities" ADD CONSTRAINT "tenant_entitlement_snapshots_user_grants_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots_user_grants"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_pending_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_pending_grants" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_invitation_id_invitations_id_fk" FOREIGN KEY ("invitation_id") REFERENCES "public"."invitations"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "tenant_entitlement_snapshots_pending_grants_capabilities" ADD CONSTRAINT "tenant_entitlement_snapshots_pending_grants_capabilities_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenant_entitlement_snapshots_pending_grants"("id") ON DELETE cascade ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "entitlement_quota_locks" ADD CONSTRAINT "entitlement_quota_locks_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "users" ADD CONSTRAINT "users_active_entitlement_snapshot_id_tenant_entitlement_snapshots_id_fk" FOREIGN KEY ("active_entitlement_snapshot_id") REFERENCES "public"."tenant_entitlement_snapshots"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "invitations" ADD CONSTRAINT "invitations_accepted_user_id_users_id_fk" FOREIGN KEY ("accepted_user_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "invitations" ADD CONSTRAINT "invitations_replaced_by_id_invitations_id_fk" FOREIGN KEY ("replaced_by_id") REFERENCES "public"."invitations"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "media" ADD CONSTRAINT "media_tenant_id_users_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "media" ADD CONSTRAINT "media_claimed_by_product_id_products_id_fk" FOREIGN KEY ("claimed_by_product_id") REFERENCES "public"."products"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      ALTER TABLE "sales" ADD CONSTRAINT "sales_source_budget_id_budgets_id_fk" FOREIGN KEY ("source_budget_id") REFERENCES "public"."budgets"("id") ON DELETE restrict ON UPDATE no action;
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
     ALTER TABLE "tenant_entitlement_snapshots" ADD CONSTRAINT "tenant_entitlement_snapshots_kind_shape_check" CHECK (
       ("kind" = 'plan' AND "plan_version_id" IS NOT NULL AND "quotas_max_seller_seats" IS NULL AND "quotas_max_products" IS NULL AND "quotas_max_variants_per_product" IS NULL AND "quotas_max_variants_per_tenant" IS NULL)
@@ -273,47 +328,47 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       END IF;
     END $$;
 
-    CREATE UNIQUE INDEX "plan_versions_plan_code_version_idx" ON "plan_versions" USING btree ("plan_code", "version");
-    CREATE INDEX "plan_versions_created_by_idx" ON "plan_versions" USING btree ("created_by_id");
-    CREATE INDEX "plan_versions_updated_at_idx" ON "plan_versions" USING btree ("updated_at");
-    CREATE INDEX "plan_versions_created_at_idx" ON "plan_versions" USING btree ("created_at");
-    CREATE INDEX "plan_versions_capabilities_order_idx" ON "plan_versions_capabilities" USING btree ("_order");
-    CREATE INDEX "plan_versions_capabilities_parent_id_idx" ON "plan_versions_capabilities" USING btree ("_parent_id");
-    CREATE UNIQUE INDEX "tenant_entitlement_snapshots_tenant_sequence_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id", "sequence");
-    CREATE UNIQUE INDEX "tenant_entitlement_snapshots_tenant_idempotency_key_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id", "idempotency_key");
-    CREATE INDEX "tenant_entitlement_snapshots_tenant_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id");
-    CREATE INDEX "tenant_entitlement_snapshots_plan_version_idx" ON "tenant_entitlement_snapshots" USING btree ("plan_version_id");
-    CREATE INDEX "tenant_entitlement_snapshots_predecessor_idx" ON "tenant_entitlement_snapshots" USING btree ("predecessor_id");
-    CREATE INDEX "tenant_entitlement_snapshots_created_by_idx" ON "tenant_entitlement_snapshots" USING btree ("created_by_id");
-    CREATE INDEX "tenant_entitlement_snapshots_updated_at_idx" ON "tenant_entitlement_snapshots" USING btree ("updated_at");
-    CREATE INDEX "tenant_entitlement_snapshots_created_at_idx" ON "tenant_entitlement_snapshots" USING btree ("created_at");
-    CREATE INDEX "tenant_entitlement_snapshots_pool_order_idx" ON "tenant_entitlement_snapshots_pool" USING btree ("_order");
-    CREATE INDEX "tenant_entitlement_snapshots_pool_parent_id_idx" ON "tenant_entitlement_snapshots_pool" USING btree ("_parent_id");
-    CREATE INDEX "tenant_entitlement_snapshots_user_grants_order_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("_order");
-    CREATE INDEX "tenant_entitlement_snapshots_user_grants_parent_id_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("_parent_id");
-    CREATE INDEX "tenant_entitlement_snapshots_user_grants_user_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("user_id");
-    CREATE INDEX "tenant_entitlement_snapshots_user_grants_capabilities_order_idx" ON "tenant_entitlement_snapshots_user_grants_capabilities" USING btree ("_order");
-    CREATE INDEX "tenant_entitlement_snapshots_user_grants_capabilities_parent_id_idx" ON "tenant_entitlement_snapshots_user_grants_capabilities" USING btree ("_parent_id");
-    CREATE INDEX "tenant_entitlement_snapshots_pending_grants_order_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("_order");
-    CREATE INDEX "tenant_entitlement_snapshots_pending_grants_parent_id_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("_parent_id");
-    CREATE INDEX "tenant_entitlement_snapshots_pending_grants_invitation_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("invitation_id");
-    CREATE INDEX "tenant_entitlement_snapshots_pending_grants_capabilities_order_idx" ON "tenant_entitlement_snapshots_pending_grants_capabilities" USING btree ("_order");
-    CREATE INDEX "tenant_entitlement_snapshots_pending_grants_capabilities_parent_id_idx" ON "tenant_entitlement_snapshots_pending_grants_capabilities" USING btree ("_parent_id");
-    CREATE UNIQUE INDEX "entitlement_quota_locks_tenant_idx" ON "entitlement_quota_locks" USING btree ("tenant_id");
-    CREATE INDEX "entitlement_quota_locks_updated_at_idx" ON "entitlement_quota_locks" USING btree ("updated_at");
-    CREATE INDEX "entitlement_quota_locks_created_at_idx" ON "entitlement_quota_locks" USING btree ("created_at");
-    CREATE UNIQUE INDEX "entitlement_outbox_idempotency_key_idx" ON "entitlement_outbox" USING btree ("idempotency_key");
-    CREATE INDEX "entitlement_outbox_claim_idx" ON "entitlement_outbox" USING btree ("state", "available_at");
-    CREATE INDEX "entitlement_outbox_updated_at_idx" ON "entitlement_outbox" USING btree ("updated_at");
-    CREATE INDEX "entitlement_outbox_created_at_idx" ON "entitlement_outbox" USING btree ("created_at");
-    CREATE INDEX "users_active_entitlement_snapshot_idx" ON "users" USING btree ("active_entitlement_snapshot_id");
-    CREATE INDEX "invitations_creator_email_state_expiry_idx" ON "invitations" USING btree ("created_by_id", lower("email"), "state", "expires_at");
-    CREATE UNIQUE INDEX "invitations_accepted_user_idx" ON "invitations" USING btree ("accepted_user_id") WHERE "accepted_user_id" IS NOT NULL;
-    CREATE INDEX "media_tenant_idx" ON "media" USING btree ("tenant_id");
-    CREATE UNIQUE INDEX "media_tenant_upload_request_idx" ON "media" USING btree ("tenant_id", "upload_request_id") WHERE "upload_request_id" IS NOT NULL;
-    CREATE INDEX "media_cleanup_after_idx" ON "media" USING btree ("cleanup_after");
-    CREATE UNIQUE INDEX "product_variants_product_presentation_idx" ON "product_variants" USING btree ("product_id", "presentation_id") WHERE "presentation_id" IS NOT NULL;
-    CREATE UNIQUE INDEX "sales_source_budget_idx" ON "sales" USING btree ("source_budget_id") WHERE "source_budget_id" IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS "plan_versions_plan_code_version_idx" ON "plan_versions" USING btree ("plan_code", "version");
+    CREATE INDEX IF NOT EXISTS "plan_versions_created_by_idx" ON "plan_versions" USING btree ("created_by_id");
+    CREATE INDEX IF NOT EXISTS "plan_versions_updated_at_idx" ON "plan_versions" USING btree ("updated_at");
+    CREATE INDEX IF NOT EXISTS "plan_versions_created_at_idx" ON "plan_versions" USING btree ("created_at");
+    CREATE INDEX IF NOT EXISTS "plan_versions_capabilities_order_idx" ON "plan_versions_capabilities" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "plan_versions_capabilities_parent_id_idx" ON "plan_versions_capabilities" USING btree ("_parent_id");
+    CREATE UNIQUE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_tenant_sequence_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id", "sequence");
+    CREATE UNIQUE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_tenant_idempotency_key_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id", "idempotency_key");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_tenant_idx" ON "tenant_entitlement_snapshots" USING btree ("tenant_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_plan_version_idx" ON "tenant_entitlement_snapshots" USING btree ("plan_version_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_predecessor_idx" ON "tenant_entitlement_snapshots" USING btree ("predecessor_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_created_by_idx" ON "tenant_entitlement_snapshots" USING btree ("created_by_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_updated_at_idx" ON "tenant_entitlement_snapshots" USING btree ("updated_at");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_created_at_idx" ON "tenant_entitlement_snapshots" USING btree ("created_at");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pool_order_idx" ON "tenant_entitlement_snapshots_pool" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pool_parent_id_idx" ON "tenant_entitlement_snapshots_pool" USING btree ("_parent_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_user_grants_order_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_user_grants_parent_id_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("_parent_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_user_grants_user_idx" ON "tenant_entitlement_snapshots_user_grants" USING btree ("user_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_user_grants_capabilities_order_idx" ON "tenant_entitlement_snapshots_user_grants_capabilities" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_user_grants_capabilities_parent_id_idx" ON "tenant_entitlement_snapshots_user_grants_capabilities" USING btree ("_parent_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pending_grants_order_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pending_grants_parent_id_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("_parent_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pending_grants_invitation_idx" ON "tenant_entitlement_snapshots_pending_grants" USING btree ("invitation_id");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pending_grants_capabilities_order_idx" ON "tenant_entitlement_snapshots_pending_grants_capabilities" USING btree ("_order");
+    CREATE INDEX IF NOT EXISTS "tenant_entitlement_snapshots_pending_grants_capabilities_parent_id_idx" ON "tenant_entitlement_snapshots_pending_grants_capabilities" USING btree ("_parent_id");
+    CREATE UNIQUE INDEX IF NOT EXISTS "entitlement_quota_locks_tenant_idx" ON "entitlement_quota_locks" USING btree ("tenant_id");
+    CREATE INDEX IF NOT EXISTS "entitlement_quota_locks_updated_at_idx" ON "entitlement_quota_locks" USING btree ("updated_at");
+    CREATE INDEX IF NOT EXISTS "entitlement_quota_locks_created_at_idx" ON "entitlement_quota_locks" USING btree ("created_at");
+    CREATE UNIQUE INDEX IF NOT EXISTS "entitlement_outbox_idempotency_key_idx" ON "entitlement_outbox" USING btree ("idempotency_key");
+    CREATE INDEX IF NOT EXISTS "entitlement_outbox_claim_idx" ON "entitlement_outbox" USING btree ("state", "available_at");
+    CREATE INDEX IF NOT EXISTS "entitlement_outbox_updated_at_idx" ON "entitlement_outbox" USING btree ("updated_at");
+    CREATE INDEX IF NOT EXISTS "entitlement_outbox_created_at_idx" ON "entitlement_outbox" USING btree ("created_at");
+    CREATE INDEX IF NOT EXISTS "users_active_entitlement_snapshot_idx" ON "users" USING btree ("active_entitlement_snapshot_id");
+    CREATE INDEX IF NOT EXISTS "invitations_creator_email_state_expiry_idx" ON "invitations" USING btree ("created_by_id", lower("email"), "state", "expires_at");
+    CREATE UNIQUE INDEX IF NOT EXISTS "invitations_accepted_user_idx" ON "invitations" USING btree ("accepted_user_id") WHERE "accepted_user_id" IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS "media_tenant_idx" ON "media" USING btree ("tenant_id");
+    CREATE UNIQUE INDEX IF NOT EXISTS "media_tenant_upload_request_idx" ON "media" USING btree ("tenant_id", "upload_request_id") WHERE "upload_request_id" IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS "media_cleanup_after_idx" ON "media" USING btree ("cleanup_after");
+    CREATE UNIQUE INDEX IF NOT EXISTS "product_variants_product_presentation_idx" ON "product_variants" USING btree ("product_id", "presentation_id") WHERE "presentation_id" IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS "sales_source_budget_idx" ON "sales" USING btree ("source_budget_id") WHERE "source_budget_id" IS NOT NULL;
   `);
 }
 
