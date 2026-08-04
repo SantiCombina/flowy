@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { deleteMedia } from '@/app/services/media';
+import { assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 
@@ -22,7 +23,9 @@ export const deleteMediaAction = actionClient
       throw new Error('No autorizado');
     }
 
-    await deleteMedia(parsedInput.id);
+    await assertUserCapability(user, 'catalog.manage');
+
+    await deleteMedia(parsedInput.id, user.id);
 
     return { success: true };
   });

@@ -159,11 +159,20 @@ interface BudgetsSectionProps {
   };
   showSellerColumn: boolean;
   isSeller: boolean;
+  capabilities?: string[];
 }
 
-function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColumn, isSeller }: BudgetsSectionProps) {
+function BudgetsSectionComponent({
+  initialFilters,
+  initialResult,
+  showSellerColumn,
+  isSeller,
+  capabilities,
+}: BudgetsSectionProps) {
   const user = useUser();
   const isOwner = !isSeller;
+  const canManageBudgets = capabilities?.includes('budget.manage') ?? isOwner;
+  const canCreateSales = capabilities?.includes('sale.create') ?? isOwner;
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('budgets');
   const { invalidateQueries } = useInvalidateQueries();
@@ -319,9 +328,11 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
             </Alert>
           )}
 
-          <div className="flex justify-end">
-            <NewBudgetButton onOpen={handleOpenNew} />
-          </div>
+          {canManageBudgets && (
+            <div className="flex justify-end">
+              <NewBudgetButton onOpen={handleOpenNew} />
+            </div>
+          )}
 
           <div className="rounded-xl bg-card shadow-md overflow-hidden">
             <div className="overflow-x-auto">
@@ -425,7 +436,8 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
                       const isExpired =
                         budget.status === 'pending' && budget.validUntil && isPast(new Date(budget.validUntil));
                       const isExpanded = expandedId === budget.id;
-                      const canManage = isOwner || budget.sellerName === user?.name;
+                      const canManage = canManageBudgets && (isOwner || budget.sellerName === user?.name);
+                      const canConvert = canManageBudgets && canCreateSales && budget.status === 'pending';
 
                       return (
                         <Fragment key={budget.id}>
@@ -491,7 +503,7 @@ function BudgetsSectionComponent({ initialFilters, initialResult, showSellerColu
                                     icon: FileText,
                                     onClick: () => handleWhatsApp(budget),
                                   },
-                                  budget.status === 'pending' && {
+                                  canConvert && {
                                     label: 'Convertir a venta',
                                     icon: ShoppingCart,
                                     onClick: () => setConvertingBudgetId(budget.id),

@@ -13,6 +13,12 @@ import {
   markAsDelivered,
   registerPayment,
 } from '@/app/services/sales';
+import {
+  assertAnyUserCapability,
+  assertUserCapability,
+  hasCapability,
+  resolveUserEntitlementContext,
+} from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 import { collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
@@ -28,6 +34,8 @@ export const getSaleOptionsAction = actionClient.action(async () => {
   if (!user || user.role !== 'seller') {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'sale.create');
 
   const ownerId = typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
@@ -49,6 +57,8 @@ export const getSaleOptionsForOwnerAction = actionClient
       throw new Error('No autorizado');
     }
 
+    await assertUserCapability(user, 'sale.create');
+
     const options = await getSaleOptionsForOwner(parsedInput.sellerId, user.id);
 
     return { success: true, ...options };
@@ -61,6 +71,8 @@ export const getSaleOptionsAsOwnerAction = actionClient.action(async () => {
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'sale.create');
+
   const options = await getSaleOptions(user.id, user.id);
 
   return { success: true, ...options };
@@ -70,6 +82,26 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
   const user = await getCurrentUser();
 
   if (!user || (user.role !== 'seller' && user.role !== 'owner')) {
+    throw new Error('No autorizado');
+  }
+
+  await assertUserCapability(user, 'sale.create');
+
+  if (parsedInput.paymentMethod === 'credit') {
+    await assertUserCapability(user, 'sale.credit');
+    if (!parsedInput.clientId) {
+      throw new Error('Las ventas a crédito requieren un cliente');
+    }
+  }
+
+  const entitlementContext = await resolveUserEntitlementContext(user);
+  const canUsePersonalStock = hasCapability(
+    user,
+    entitlementContext.dbSnapshot,
+    'inventory.mobile',
+    entitlementContext.entitlementState,
+  );
+  if (!canUsePersonalStock && parsedInput.items.some((item) => item.stockSource === 'personal')) {
     throw new Error('No autorizado');
   }
 
@@ -95,6 +127,8 @@ export const registerSalePaymentAction = actionClient.schema(collectSaleSchema).
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'sale.collect');
+
   const callerRole = user.role as 'owner' | 'seller';
   await registerPayment(
     parsedInput.saleId,
@@ -115,6 +149,8 @@ export const deleteSaleAction = actionClient.schema(deleteSaleSchema).action(asy
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'sale.create');
+
   const callerRole = user.role as 'owner' | 'seller';
   await deleteSale(parsedInput.saleId, user.id, callerRole);
 
@@ -125,6 +161,26 @@ export const editSaleFullAction = actionClient.schema(editSaleFullSchema).action
   const user = await getCurrentUser();
 
   if (!user || (user.role !== 'owner' && user.role !== 'seller')) {
+    throw new Error('No autorizado');
+  }
+
+  await assertUserCapability(user, 'sale.create');
+
+  if (parsedInput.paymentMethod === 'credit') {
+    await assertUserCapability(user, 'sale.credit');
+    if (!parsedInput.clientId) {
+      throw new Error('Las ventas a crédito requieren un cliente');
+    }
+  }
+
+  const entitlementContext = await resolveUserEntitlementContext(user);
+  const canUsePersonalStock = hasCapability(
+    user,
+    entitlementContext.dbSnapshot,
+    'inventory.mobile',
+    entitlementContext.entitlementState,
+  );
+  if (!canUsePersonalStock && parsedInput.items.some((item) => item.stockSource === 'personal')) {
     throw new Error('No autorizado');
   }
 
@@ -142,6 +198,8 @@ export const getClientsForOwnerAction = actionClient.action(async () => {
     throw new Error('No autorizado');
   }
 
+  await assertAnyUserCapability(user, ['client.read', 'client.manage']);
+
   const clients = await getClients({ ownerId: user.id });
 
   return {
@@ -157,6 +215,8 @@ export const markAsDeliveredAction = actionClient.schema(markAsDeliveredSchema).
     throw new Error('No autorizado');
   }
 
+  await assertUserCapability(user, 'sale.create');
+
   const callerRole = user.role as 'owner' | 'seller';
   await markAsDelivered(parsedInput.saleId, user.id, callerRole);
 
@@ -169,6 +229,8 @@ export const getSalesAction = actionClient.schema(getSalesListSchema).action(asy
   if (!user) {
     throw new Error('No autorizado');
   }
+
+  await assertUserCapability(user, 'sale.create');
 
   const filters = {
     dateFrom: parsedInput.dateFrom,

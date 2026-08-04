@@ -86,6 +86,9 @@ importers:
       payload:
         specifier: 3.75.0
         version: 3.75.0(graphql@16.14.0)(typescript@5.7.3)
+      pg:
+        specifier: 8.16.3
+        version: 8.16.3
       postcss:
         specifier: ^8.5.6
         version: 8.5.14
@@ -156,6 +159,9 @@ importers:
       '@types/nodemailer':
         specifier: ^7.0.9
         version: 7.0.11
+      '@types/pg':
+        specifier: 8.10.2
+        version: 8.10.2
       '@types/react':
         specifier: 19.2.9
         version: 19.2.9

@@ -160,9 +160,10 @@ interface ProductCardProps {
   variants: SaleVariantOption[];
   form: UseFormReturn<SaleValues>;
   onRemove: () => void;
+  canUsePersonalStock?: boolean;
 }
 
-function ProductCard({ index, variants, form, onRemove }: ProductCardProps) {
+function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = true }: ProductCardProps) {
   const variantId = form.watch(`items.${index}.variantId`);
   const quantity = form.watch(`items.${index}.quantity`);
   const unitPrice = form.watch(`items.${index}.unitPrice`);
@@ -277,7 +278,7 @@ function ProductCard({ index, variants, form, onRemove }: ProductCardProps) {
                     type="button"
                     variant={field.value === 'personal' ? 'default' : 'outline'}
                     onClick={() => handleStockSourceChange('personal')}
-                    disabled={!variantId || personalStock === 0}
+                    disabled={!canUsePersonalStock || !variantId || personalStock === 0}
                     className={cn('h-9 justify-start gap-2 text-xs', fieldState.error && 'border-destructive')}
                   >
                     <User className="h-3.5 w-3.5" />
@@ -467,12 +468,14 @@ interface PaymentMethodSelectorProps {
   value?: string;
   onChange: (value: string) => void;
   error?: boolean;
+  canUseCredit?: boolean;
 }
 
-function PaymentMethodSelector({ value, onChange, error }: PaymentMethodSelectorProps) {
+function PaymentMethodSelector({ value, onChange, error, canUseCredit = true }: PaymentMethodSelectorProps) {
+  const availableOptions = canUseCredit ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.value !== 'credit');
   return (
     <RadioGroup value={value} onValueChange={onChange} className="grid grid-cols-2 gap-2">
-      {PAYMENT_OPTIONS.map((option) => {
+      {availableOptions.map((option) => {
         const Icon = option.icon;
         const isSelected = value === option.value;
         return (
@@ -530,7 +533,7 @@ function ClientField({ form, clients, onNewClient }: ClientFieldProps) {
               emptyMessage="No se encontró el cliente."
             />
           </FormControl>
-          <div className="min-h-[20px]">
+          <div className="min-h-5">
             <FormMessage />
           </div>
         </FormItem>
@@ -593,9 +596,10 @@ interface DetailsTabProps {
   form: UseFormReturn<SaleValues>;
   clients: SaleClientOption[];
   onNewClient: () => void;
+  canUseCredit?: boolean;
 }
 
-function DetailsTab({ form, clients, onNewClient }: DetailsTabProps) {
+function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProps) {
   const paymentMethod = form.watch('paymentMethod');
 
   return (
@@ -618,9 +622,10 @@ function DetailsTab({ form, clients, onNewClient }: DetailsTabProps) {
                   if (v !== 'check') form.setValue('checkDueDate', undefined);
                 }}
                 error={!!fieldState.error}
+                canUseCredit={canUseCredit}
               />
             </FormControl>
-            <div className="min-h-[20px]">
+            <div className="min-h-5">
               <FormMessage />
             </div>
           </FormItem>
@@ -635,7 +640,7 @@ function DetailsTab({ form, clients, onNewClient }: DetailsTabProps) {
             <FormItem>
               <FormLabel>Fecha de cobro del cheque</FormLabel>
               <CheckDateField value={field.value} onChange={field.onChange} />
-              <div className="min-h-[20px]">
+              <div className="min-h-5">
                 <FormMessage />
               </div>
             </FormItem>
@@ -665,7 +670,7 @@ function DetailsTab({ form, clients, onNewClient }: DetailsTabProps) {
             <FormControl>
               <Textarea {...field} value={field.value ?? ''} placeholder="" rows={2} maxLength={500} />
             </FormControl>
-            <div className="flex min-h-[20px] items-start gap-2">
+            <div className="flex min-h-5 items-start gap-2">
               <FormMessage />
               <span className="ml-auto text-xs text-muted-foreground">{(field.value ?? '').length}/500</span>
             </div>
@@ -683,9 +688,18 @@ interface ProductsTabProps {
   variants: SaleVariantOption[];
   onAddProduct: () => void;
   itemError?: string;
+  canUsePersonalStock?: boolean;
 }
 
-function ProductsTab({ form, fields, remove, variants, onAddProduct, itemError }: ProductsTabProps) {
+function ProductsTab({
+  form,
+  fields,
+  remove,
+  variants,
+  onAddProduct,
+  itemError,
+  canUsePersonalStock,
+}: ProductsTabProps) {
   const items = form.watch('items');
   const itemCount = items?.length ?? 0;
 
@@ -718,7 +732,14 @@ function ProductsTab({ form, fields, remove, variants, onAddProduct, itemError }
       ) : (
         <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
           {fields.map((field, index) => (
-            <ProductCard key={field.id} index={index} variants={variants} form={form} onRemove={() => remove(index)} />
+            <ProductCard
+              key={field.id}
+              index={index}
+              variants={variants}
+              form={form}
+              onRemove={() => remove(index)}
+              canUsePersonalStock={canUsePersonalStock}
+            />
           ))}
         </div>
       )}

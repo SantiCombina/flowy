@@ -2,19 +2,31 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
 import { getAllSellersInventoryForOwner } from '@/app/services/mobile-seller';
 import { AssignmentsSection } from '@/components/assignments/assignments-section';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 
 export const metadata: Metadata = {
   title: 'Asignaciones',
 };
 
+const moduleAccess = MODULE_ACCESS['/assignments'];
+
 async function AssignmentsData() {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
+
+  if (user.role !== 'owner') {
+    redirect('/dashboard');
+  }
+
+  if (!guardedUser.capabilities.has(moduleAccess.capability)) {
+    redirect('/dashboard');
+  }
 
   const sellers = await getAllSellersInventoryForOwner(user.id);
 
@@ -27,6 +39,16 @@ async function AssignmentsData() {
 }
 
 export default async function AssignmentsPage() {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader title="Asignaciones" description="Stock en poder de tus vendedores" />

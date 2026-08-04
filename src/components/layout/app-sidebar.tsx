@@ -37,6 +37,9 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
+import type { Capability } from '@/lib/entitlements/capabilities';
+import { MODULE_ACCESS } from '@/lib/entitlements/module-access';
+import { filterNavigationItems } from '@/lib/entitlements/scoped-operations';
 import type { FeatureFlags } from '@/lib/features';
 import { queryKeys } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
@@ -49,6 +52,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   feature: FeatureKey;
   roleOnly?: 'admin' | 'owner' | 'seller';
+  capability?: Capability;
 }
 
 const mainNavItems: NavItem[] = [
@@ -58,39 +62,34 @@ const mainNavItems: NavItem[] = [
     icon: LayoutDashboard,
     feature: null,
   },
-  { title: 'Productos', href: '/products', icon: Package, feature: 'products' },
+  { ...MODULE_ACCESS['/products'], icon: Package, feature: 'products' },
   {
-    title: 'Vendedores',
-    href: '/sellers',
+    ...MODULE_ACCESS['/sellers'],
     icon: Users,
     feature: 'sellers',
     roleOnly: 'owner',
   },
   {
-    title: 'Asignaciones',
-    href: '/assignments',
+    ...MODULE_ACCESS['/assignments'],
     icon: ClipboardList,
     feature: 'assignments',
     roleOnly: 'owner',
   },
   {
-    title: 'Historial',
-    href: '/history',
+    ...MODULE_ACCESS['/history'],
     icon: History,
     feature: 'history',
     roleOnly: 'owner',
   },
-  { title: 'Ventas', href: '/sales', icon: ShoppingCart, feature: 'sales' },
+  { ...MODULE_ACCESS['/sales'], icon: ShoppingCart, feature: 'sales' },
   {
-    title: 'Presupuestos',
-    href: '/budgets',
+    ...MODULE_ACCESS['/budgets'],
     icon: FileText,
     feature: 'budgets',
   },
-  { title: 'Clientes', href: '/clients', icon: Contact, feature: 'clients' },
+  { ...MODULE_ACCESS['/clients'], icon: Contact, feature: 'clients' },
   {
-    title: 'Mi Inventario',
-    href: '/mobile-inventory',
+    ...MODULE_ACCESS['/mobile-inventory'],
     icon: PackageSearch,
     feature: null,
     roleOnly: 'seller',
@@ -99,9 +98,10 @@ const mainNavItems: NavItem[] = [
 
 interface AppSidebarProps {
   features: FeatureFlags;
+  capabilities?: string[];
 }
 
-export function AppSidebar({ features }: AppSidebarProps) {
+export function AppSidebar({ features, capabilities = [] }: AppSidebarProps) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile, toggleSidebar, state } = useSidebar();
   const user = useUserOptional();
@@ -187,12 +187,15 @@ export function AppSidebar({ features }: AppSidebarProps) {
 
   const filteredMainNav = useMemo(
     () =>
-      mainNavItems.filter((item) => {
-        if (item.feature !== null && !features[item.feature]) return false;
-        if (item.roleOnly && user?.role !== item.roleOnly) return false;
-        return true;
-      }),
-    [features, user],
+      filterNavigationItems(
+        mainNavItems.filter((item) => {
+          if (item.feature !== null && !features[item.feature]) return false;
+          if (item.roleOnly && user?.role !== item.roleOnly) return false;
+          return true;
+        }),
+        capabilities,
+      ),
+    [features, user, capabilities],
   );
 
   const getIsActive = (item: NavItem): boolean => {

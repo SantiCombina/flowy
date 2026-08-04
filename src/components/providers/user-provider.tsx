@@ -8,6 +8,7 @@ interface UserContextValue {
   email: string;
   role: 'admin' | 'owner' | 'seller';
   businessName?: string | null;
+  capabilities?: string[];
 }
 
 const UserContext = createContext<UserContextValue | null>(null);

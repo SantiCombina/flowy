@@ -6,18 +6,22 @@ export const metadata: Metadata = {
   title: 'Historial',
 };
 
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
 import { getHistoryMovements } from '@/app/services/stock-movements';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { HistorySection } from '@/components/history/history-section';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
+
+const moduleAccess = MODULE_ACCESS['/history'];
 
 async function HistoryDataFetcher() {
-  const user = await getCurrentUser();
+  const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
 
-  if (!user) redirect('/login');
   if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
   const initialData = await getHistoryMovements(user.id, {
@@ -37,6 +41,16 @@ async function HistoryDataFetcher() {
 }
 
 export default async function HistoryPage() {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'admin') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader

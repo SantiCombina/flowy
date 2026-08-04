@@ -37,6 +37,7 @@ export const ProductVariants: CollectionConfig = {
       type: 'relationship',
       relationTo: 'products',
       required: true,
+      index: true,
       label: 'Producto',
     },
     {
@@ -90,6 +91,7 @@ export const ProductVariants: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+      index: true,
       admin: {
         condition: () => false,
       },

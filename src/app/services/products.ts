@@ -2,9 +2,26 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
-import { getPayloadClient } from '@/lib/payload';
+import { acquireTenantLock, type LockContext, type LockDependencies } from '@/lib/entitlements/locks';
+import { countProducts, snapshotQuotas, type CountContext, type CountDependencies } from '@/lib/entitlements/quotas';
 import { resolveId } from '@/lib/payload-utils';
-import type { Brand, Category, Product, ProductVariant, Presentation, Quality } from '@/payload-types';
+import type {
+  Brand,
+  Category,
+  Product,
+  ProductVariant,
+  Presentation,
+  Quality,
+  TenantEntitlementSnapshot,
+  User,
+} from '@/payload-types';
+
+export { createVariantWithQuota } from './variants';
+
+async function getPayloadClient() {
+  const payload = await import('@/lib/payload');
+  return payload.getPayloadClient();
+}
 
 export interface PopulatedProductVariant extends Omit<ProductVariant, 'product' | 'presentation'> {
   product: Product & {
@@ -137,8 +154,18 @@ export async function createProduct(data: CreateProductData, ownerId: number): P
   return product;
 }
 
-export async function updateProduct(id: number, data: UpdateProductData): Promise<Product> {
+export async function updateProduct(id: number, data: UpdateProductData, ownerId: number): Promise<Product> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'products',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Producto no encontrado');
+  }
 
   const product = await payload.update({
     collection: 'products',
@@ -147,15 +174,15 @@ export async function updateProduct(id: number, data: UpdateProductData): Promis
     overrideAccess: true,
   });
 
-  const ownerId = resolveId(product.owner) ?? 0;
+  const productOwnerId = resolveId(product.owner) ?? 0;
   try {
-    revalidateTag(cacheTags.products(ownerId));
-    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.products(productOwnerId));
+    revalidateTag(cacheTags.saleOptions(productOwnerId));
   } catch {}
   return product;
 }
 
-export async function deleteProduct(id: number): Promise<void> {
+export async function deleteProduct(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
 
   const existingProduct = await payload.findByID({
@@ -164,6 +191,10 @@ export async function deleteProduct(id: number): Promise<void> {
     depth: 0,
     overrideAccess: true,
   });
+
+  if (resolveId(existingProduct.owner) !== ownerId) {
+    throw new Error('Producto no encontrado');
+  }
 
   const variants = await payload.find({
     collection: 'product-variants',
@@ -216,11 +247,11 @@ export async function deleteProduct(id: number): Promise<void> {
     overrideAccess: true,
   });
 
-  const ownerId = resolveId(existingProduct.owner) ?? 0;
+  const productOwnerId = resolveId(existingProduct.owner) ?? 0;
   try {
-    revalidateTag(cacheTags.products(ownerId));
-    revalidateTag(cacheTags.saleOptions(ownerId));
-    revalidateTag(cacheTags.history(ownerId));
+    revalidateTag(cacheTags.products(productOwnerId));
+    revalidateTag(cacheTags.saleOptions(productOwnerId));
+    revalidateTag(cacheTags.history(productOwnerId));
   } catch {}
 }
 
@@ -235,12 +266,14 @@ export interface UpdateVariantData {
   profitMargin?: number;
 }
 
-export async function getVariantsByProduct(productId: number): Promise<ProductVariant[]> {
+export async function getVariantsByProduct(productId: number, ownerId: number): Promise<ProductVariant[]> {
   const payload = await getPayloadClient();
 
   const result = await payload.find({
     collection: 'product-variants',
-    where: { product: { equals: productId } },
+    where: {
+      and: [{ product: { equals: productId } }, { owner: { equals: ownerId } }],
+    },
     sort: 'presentation',
     depth: 1,
     overrideAccess: true,
@@ -280,8 +313,18 @@ export async function createVariant(data: CreateVariantData, ownerId: number): P
   return variant;
 }
 
-export async function updateVariant(id: number, data: UpdateVariantData): Promise<ProductVariant> {
+export async function updateVariant(id: number, data: UpdateVariantData, ownerId: number): Promise<ProductVariant> {
   const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'product-variants',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || resolveId(existing.owner) !== ownerId) {
+    throw new Error('Variante no encontrada');
+  }
 
   const variant = await payload.update({
     collection: 'product-variants',
@@ -290,15 +333,15 @@ export async function updateVariant(id: number, data: UpdateVariantData): Promis
     overrideAccess: true,
   });
 
-  const ownerId = resolveId(variant.owner) ?? 0;
+  const variantOwnerId = resolveId(variant.owner) ?? 0;
   try {
-    revalidateTag(cacheTags.products(ownerId));
-    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.products(variantOwnerId));
+    revalidateTag(cacheTags.saleOptions(variantOwnerId));
   } catch {}
   return variant;
 }
 
-export async function deleteVariant(id: number): Promise<void> {
+export async function deleteVariant(id: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
 
   const existingVariant = await payload.findByID({
@@ -307,6 +350,10 @@ export async function deleteVariant(id: number): Promise<void> {
     depth: 0,
     overrideAccess: true,
   });
+
+  if (resolveId(existingVariant.owner) !== ownerId) {
+    throw new Error('Variante no encontrada');
+  }
 
   const { totalDocs } = await payload.find({
     collection: 'sales',
@@ -325,10 +372,10 @@ export async function deleteVariant(id: number): Promise<void> {
     overrideAccess: true,
   });
 
-  const ownerId = resolveId(existingVariant.owner) ?? 0;
+  const variantOwnerId = resolveId(existingVariant.owner) ?? 0;
   try {
-    revalidateTag(cacheTags.products(ownerId));
-    revalidateTag(cacheTags.saleOptions(ownerId));
+    revalidateTag(cacheTags.products(variantOwnerId));
+    revalidateTag(cacheTags.saleOptions(variantOwnerId));
   } catch {}
 }
 
@@ -508,4 +555,152 @@ export async function getVariantsWithProducts(
     ['variants-with-products', String(ownerId), JSON.stringify(filters), JSON.stringify(options)],
     { revalidate: 60 * 2, tags: [cacheTags.products(ownerId)] },
   )();
+}
+
+export interface ProductQuotaDependencies {
+  transactionID: string | number;
+  lock: LockDependencies;
+  lockContext: LockContext;
+  count: CountDependencies;
+  countContext: CountContext;
+  findUserById(args: unknown): Promise<User>;
+  findSnapshot(args: unknown): Promise<{ docs: TenantEntitlementSnapshot[] }>;
+  createProduct(args: unknown): Promise<Product>;
+  emitMutation(args: {
+    collection: 'entitlement-outbox';
+    data: Record<string, unknown>;
+    overrideAccess: true;
+    context: { entitlementMutation: true };
+    req: { transactionID: string | number };
+  }): Promise<unknown>;
+  commit(): Promise<void>;
+  rollback(): Promise<void>;
+}
+
+export async function createProductWithQuota(
+  data: CreateProductData,
+  ownerId: number,
+  dependencies?: ProductQuotaDependencies,
+): Promise<Product> {
+  if (dependencies) {
+    return runCreateProductWithQuota(data, ownerId, dependencies);
+  }
+
+  const deps = await defaultProductQuotaDependencies(ownerId);
+  try {
+    const product = await runCreateProductWithQuota(data, ownerId, deps);
+    await deps.commit();
+    return product;
+  } catch (error) {
+    await deps.rollback();
+    throw error;
+  }
+}
+
+async function runCreateProductWithQuota(
+  data: CreateProductData,
+  ownerId: number,
+  dependencies: ProductQuotaDependencies,
+): Promise<Product> {
+  const mutationNonce = await acquireTenantLock(dependencies.lock, dependencies.lockContext);
+
+  const snapshot = await resolveTenantSnapshot(dependencies, ownerId);
+  const quotas = snapshot ? snapshotQuotas(snapshot) : null;
+  const maxProducts = quotas?.maxProducts ?? 0;
+
+  if (maxProducts > 0) {
+    const count = await countProducts(dependencies.count, dependencies.countContext);
+    if (count >= maxProducts) {
+      throw new Error('Límite de productos alcanzado');
+    }
+  }
+
+  const product = await dependencies.createProduct({
+    collection: 'products',
+    data: { ...data, owner: ownerId },
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  await dependencies.emitMutation({
+    collection: 'entitlement-outbox',
+    data: {
+      idempotencyKey: `mutation:${ownerId}:${mutationNonce}`,
+      kind: 'entitlement.mutation',
+      aggregate: `tenant:${ownerId}`,
+      payload: { tenantId: ownerId, nonce: mutationNonce },
+      state: 'sent',
+      attempts: 0,
+      availableAt: dependencies.countContext.now,
+    },
+    overrideAccess: true,
+    context: { entitlementMutation: true },
+    req: { transactionID: dependencies.transactionID },
+  });
+
+  return product;
+}
+
+async function resolveTenantSnapshot(
+  dependencies: ProductQuotaDependencies,
+  tenantId: number,
+): Promise<TenantEntitlementSnapshot | null> {
+  const user = await dependencies.findUserById({
+    collection: 'users',
+    id: tenantId,
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+  const snapshotId =
+    typeof user.activeEntitlementSnapshot === 'number'
+      ? user.activeEntitlementSnapshot
+      : (user.activeEntitlementSnapshot?.id ?? null);
+  if (snapshotId === null) return null;
+
+  const result = await dependencies.findSnapshot({
+    collection: 'tenant-entitlement-snapshots',
+    where: {
+      and: [{ tenant: { equals: tenantId } }, { id: { equals: snapshotId } }],
+    },
+    depth: 1,
+    limit: 1,
+    overrideAccess: true,
+    req: { transactionID: dependencies.transactionID },
+  });
+  return result.docs[0] ?? null;
+}
+
+async function defaultProductQuotaDependencies(ownerId: number): Promise<ProductQuotaDependencies> {
+  const payload = await getPayloadClient();
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
+  }
+
+  const { defaultLockDependencies } = await import('@/lib/entitlements/locks');
+  const lock = await defaultLockDependencies();
+
+  return {
+    transactionID,
+    lock,
+    lockContext: { transactionID, tenantId: ownerId },
+    count: {
+      findUsers: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findInvitations: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findProducts: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findVariants: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+    },
+    countContext: { transactionID, tenantId: ownerId, now: new Date().toISOString() },
+    findUserById: async (args) => payload.findByID(args as never) as unknown as Promise<User>,
+    findSnapshot: async (args) =>
+      payload.find(args as never) as unknown as Promise<{ docs: TenantEntitlementSnapshot[] }>,
+    createProduct: async (args) => payload.create(args as never) as unknown as Promise<Product>,
+    emitMutation: async (args) => payload.create(args as never) as unknown,
+    commit: async () => {
+      await payload.db.commitTransaction(transactionID);
+    },
+    rollback: async () => {
+      await payload.db.rollbackTransaction(transactionID);
+    },
+  };
 }

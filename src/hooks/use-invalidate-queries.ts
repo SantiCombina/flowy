@@ -2,6 +2,8 @@
 
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
+import { getQueryKeysForCapabilities } from '@/lib/entitlements/cache-invalidation';
+
 export function useInvalidateQueries() {
   const queryClient = useQueryClient();
 
@@ -11,5 +13,10 @@ export function useInvalidateQueries() {
     }
   }
 
-  return { invalidateQueries };
+  function invalidateCapabilities(capabilities: readonly string[]) {
+    const keys = getQueryKeysForCapabilities(capabilities);
+    invalidateQueries(keys);
+  }
+
+  return { invalidateQueries, invalidateCapabilities };
 }

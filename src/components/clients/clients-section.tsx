@@ -22,10 +22,15 @@ interface ClientsSectionProps {
   clients: Client[];
   clientDebts: Record<number, number>;
   currentUser: Serialized<User>;
+  capabilities?: string[];
 }
 
-export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSectionProps) {
+export function ClientsSection({ clients, clientDebts, currentUser, capabilities }: ClientsSectionProps) {
   const isOwner = currentUser.role === 'owner';
+  const canManageClients = capabilities?.includes('client.manage') ?? isOwner;
+  const canDeleteClients = capabilities?.includes('client.delete') ?? isOwner;
+  const canManageZones = capabilities?.includes('zones.manage') ?? isOwner;
+  const canUseContactFields = capabilities?.includes('client.contact-fields') ?? isOwner;
   const { invalidateQueries } = useInvalidateQueries();
 
   const { data: zonesData } = useServerActionQuery({
@@ -72,7 +77,7 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar por nombre, localidad, CUIT..."
+              placeholder={canUseContactFields ? 'Buscar por nombre, localidad, CUIT...' : 'Buscar por nombre'}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -87,10 +92,12 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
             <span className="text-sm font-semibold text-foreground">{clients.length} clientes</span>
           </div>
 
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Agregar cliente
-          </Button>
+          {canManageClients && (
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Agregar cliente
+            </Button>
+          )}
         </div>
 
         <ClientsTable
@@ -107,15 +114,24 @@ export function ClientsSection({ clients, clientDebts, currentUser }: ClientsSec
           provinciaFilter={provinciaFilter}
           onProvinciaFilterChange={(v) => setProvinciaFilter(v === provinciaFilter ? '' : v)}
           showSellerColumn={isOwner}
-          onEdit={handleEdit}
+          showContactColumns={canUseContactFields}
+          onEdit={canManageClients ? handleEdit : undefined}
+          canDelete={canDeleteClients}
           itemsPerPage={itemsPerPage}
           onItemsPerPageChange={setItemsPerPage}
         />
       </main>
 
-      <ClientModal isOpen={isModalOpen} onClose={handleClose} onSuccess={handleSuccess} client={clientToEdit} />
+      <ClientModal
+        isOpen={isModalOpen}
+        onClose={handleClose}
+        onSuccess={handleSuccess}
+        client={clientToEdit}
+        canUseContactFields={canUseContactFields}
+        canManageZones={canManageZones}
+      />
 
-      {isOwner && (
+      {canManageZones && (
         <ManageZonesModal
           isOpen={isManageZonesOpen}
           onClose={() => setIsManageZonesOpen(false)}

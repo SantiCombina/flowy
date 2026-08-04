@@ -10,6 +10,7 @@ import {
   markNotificationRead,
   savePushSubscription,
 } from '@/app/services/notifications';
+import { assertUserCapability } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { pusherServer } from '@/lib/pusher-server';
 import { actionClient } from '@/lib/safe-action';
@@ -17,6 +18,8 @@ import { actionClient } from '@/lib/safe-action';
 export const getNotificationsAction = actionClient.action(async () => {
   const user = await getCurrentUser();
   if (!user) throw new Error('No autorizado');
+
+  await assertUserCapability(user, 'notification.read');
 
   const notifications = await getNotifications(user.id);
   const unreadCount = await getUnreadCount(user.id);
@@ -30,6 +33,8 @@ export const markReadAction = actionClient
     const user = await getCurrentUser();
     if (!user) throw new Error('No autorizado');
 
+    await assertUserCapability(user, 'notification.read');
+
     await markNotificationRead(parsedInput.id, user.id);
     return { success: true };
   });
@@ -37,6 +42,8 @@ export const markReadAction = actionClient
 export const markAllReadAction = actionClient.action(async () => {
   const user = await getCurrentUser();
   if (!user) throw new Error('No autorizado');
+
+  await assertUserCapability(user, 'notification.read');
 
   await markAllNotificationsRead(user.id);
   return { success: true };
@@ -47,6 +54,8 @@ export const authorizePusherChannelAction = actionClient
   .action(async ({ parsedInput }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error('No autorizado');
+
+    await assertUserCapability(user, 'notification.read');
 
     const { socketId, channelName } = parsedInput;
     const ownerMatch = channelName.match(/^private-owner-(\d+)$/);
@@ -72,6 +81,8 @@ export const subscribePushAction = actionClient
     const user = await getCurrentUser();
     if (!user) throw new Error('No autorizado');
 
+    await assertUserCapability(user, 'notification.read');
+
     await savePushSubscription(user.id, parsedInput);
     return { success: true };
   });
@@ -81,6 +92,8 @@ export const unsubscribePushAction = actionClient
   .action(async ({ parsedInput }) => {
     const user = await getCurrentUser();
     if (!user) throw new Error('No autorizado');
+
+    await assertUserCapability(user, 'notification.read');
 
     await deletePushSubscription(user.id, parsedInput.endpoint);
     return { success: true };

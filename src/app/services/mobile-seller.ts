@@ -74,7 +74,7 @@ export async function dispatchStockToMobileSeller(
     const [variantsResult, inventoryResult] = await Promise.all([
       payload.find({
         collection: 'product-variants',
-        where: { id: { in: variantIds } },
+        where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
         depth: 1,
         limit: variantIds.length,
         overrideAccess: true,
@@ -178,7 +178,7 @@ export async function dispatchStockToMobileSeller(
 
   const variantsResult = await payload.find({
     collection: 'product-variants',
-    where: { id: { in: activeItems.map((i) => i.variantId) } },
+    where: { and: [{ id: { in: activeItems.map((i) => i.variantId) } }, { owner: { equals: ownerId } }] },
     depth: 1,
     limit: activeItems.length,
     overrideAccess: true,
@@ -232,7 +232,7 @@ export async function returnStockFromMobileSeller(
     const [variantsResult, inventoryResult] = await Promise.all([
       payload.find({
         collection: 'product-variants',
-        where: { id: { in: variantIds } },
+        where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
         depth: 1,
         limit: variantIds.length,
         overrideAccess: true,

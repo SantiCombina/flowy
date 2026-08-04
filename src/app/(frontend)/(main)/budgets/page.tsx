@@ -2,19 +2,23 @@ import { type Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getPaginatedBudgets } from '@/app/services/budgets';
+import { loadBudgets } from '@/app/loaders/budgets';
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
 import { BudgetsSection } from '@/components/budgets/budgets-section';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { budgetsUrlConstants, parseEnum, parseLimit, parseOptionalDate, parsePage } from '@/lib/budgets-url-utils';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 
 export const metadata: Metadata = {
   title: 'Presupuestos',
 };
+
+const moduleAccess = MODULE_ACCESS['/budgets'];
 
 function getFirstParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -26,12 +30,10 @@ async function BudgetsDataFetcher({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
-  if (user.role !== 'seller' && user.role !== 'owner') redirect('/dashboard');
+  const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
 
   const isSeller = user.role === 'seller';
-  const ownerId = isSeller ? (typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0)) : user.id;
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
   const params = await paramsPromise;
@@ -60,8 +62,7 @@ async function BudgetsDataFetcher({
     ),
   };
 
-  const initialResult = await getPaginatedBudgets(
-    ownerId,
+  const initialResult = await loadBudgets(
     {
       dateFrom: initialFilters.dateFrom,
       dateTo: initialFilters.dateTo,
@@ -83,6 +84,7 @@ async function BudgetsDataFetcher({
         initialResult={initialResult}
         showSellerColumn={!isSeller}
         isSeller={isSeller}
+        capabilities={[...guardedUser.capabilities]}
       />
     </>
   );
@@ -93,6 +95,16 @@ export default async function BudgetsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader

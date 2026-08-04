@@ -45,11 +45,13 @@ interface Props {
     totalPages: number;
     page: number;
   };
+  capabilities?: string[];
 }
 
-export function ProductsSection({ initialRefData, initialVariants }: Props) {
+export function ProductsSection({ initialRefData, initialVariants, capabilities }: Props) {
   const user = useUserOptional();
-  const canCreateProduct = user?.role === 'owner' || user?.role === 'admin';
+  const canCreateProduct =
+    capabilities?.includes('catalog.manage') ?? (user?.role === 'owner' || user?.role === 'admin');
   const { invalidateQueries } = useInvalidateQueries();
 
   const [searchQuery, setSearchQuery] = useState('');

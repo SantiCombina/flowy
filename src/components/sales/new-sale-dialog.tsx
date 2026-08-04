@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -45,6 +45,10 @@ interface NewSaleDialogProps {
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
   const user = useUser();
   const isOwner = user?.role === 'owner';
+  const canUseCredit = user.capabilities?.includes('sale.credit') ?? isOwner;
+  const canUsePersonalStock = user.capabilities?.includes('inventory.mobile') ?? isOwner;
+  const canUseContactFields = user.capabilities?.includes('client.contact-fields') ?? false;
+  const canManageZones = user.capabilities?.includes('zones.manage') ?? false;
   const isMobile = useIsMobile();
 
   const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
@@ -93,6 +97,13 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
+  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
+
+  useEffect(() => {
+    if (!canUseCredit && paymentMethod === 'credit') {
+      form.setValue('paymentMethod', 'cash');
+    }
+  }, [canUseCredit, paymentMethod, form]);
 
   const handleClose = () => {
     setClientsOverride(null);
@@ -195,7 +206,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
       <ResponsiveModal
         open={isOpen}
         onOpenChange={handleClose}
-        className="flex flex-col gap-0 overflow-hidden h-[100dvh] sm:max-w-5xl sm:h-[85vh]"
+        className="flex flex-col gap-0 overflow-hidden h-dvh sm:max-w-5xl sm:h-[85vh]"
       >
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
@@ -242,10 +253,16 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         variants={variants}
                         onAddProduct={handleOpenAddProduct}
                         itemError={itemsError}
+                        canUsePersonalStock={canUsePersonalStock}
                       />
                     </TabsContent>
                     <TabsContent value="details" className="mt-0 px-6 py-4">
-                      <DetailsTab form={form} clients={localClients} onNewClient={() => setIsClientModalOpen(true)} />
+                      <DetailsTab
+                        form={form}
+                        clients={localClients}
+                        onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
+                      />
                     </TabsContent>
                   </Tabs>
                 ) : (
@@ -258,10 +275,16 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         variants={variants}
                         onAddProduct={handleOpenAddProduct}
                         itemError={itemsError}
+                        canUsePersonalStock={canUsePersonalStock}
                       />
                     </div>
                     <div className="flex min-h-0 min-w-0 flex-col p-2">
-                      <DetailsTab form={form} clients={localClients} onNewClient={() => setIsClientModalOpen(true)} />
+                      <DetailsTab
+                        form={form}
+                        clients={localClients}
+                        onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
+                      />
                     </div>
                   </div>
                 )}
@@ -299,6 +322,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
         onSuccess={handleNewClientSuccess}
+        canUseContactFields={canUseContactFields}
+        canManageZones={canManageZones}
       />
     </>
   );

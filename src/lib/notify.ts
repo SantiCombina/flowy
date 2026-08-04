@@ -1,7 +1,11 @@
 import webpush from 'web-push';
 
-import { getPayloadClient } from '@/lib/payload';
 import { pusherServer } from '@/lib/pusher-server';
+
+async function getPayloadClient() {
+  const payload = await import('@/lib/payload');
+  return payload.getPayloadClient();
+}
 
 export type NotificationType =
   | 'sale_created'

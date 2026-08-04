@@ -10,7 +10,13 @@
 !/.idea/runConfigurations
 
 # testing
-/coverage
+/coverage/
+/test/
+/tests/
+**/__tests__/
+*.test.*
+*.spec.*
+/test-*.mjs
 
 # next.js
 /.next/
@@ -51,6 +57,9 @@ node_modules/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Agent artifacts
+.atl/
 
 # Docker
 docker-compose.yml

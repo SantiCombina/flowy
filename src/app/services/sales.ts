@@ -6,11 +6,15 @@ import type { Where } from 'payload';
 import { cacheTags } from '@/lib/cache-tags';
 import { calculatePrice, moneyEquals, multiplyMoney, roundMoney } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
-import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { formatCurrency } from '@/lib/utils';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
+
+async function getPayloadClient() {
+  const payload = await import('@/lib/payload');
+  return payload.getPayloadClient();
+}
 
 type SaleCreateData = Omit<Sale, 'id' | 'createdAt' | 'updatedAt'> &
   Partial<Pick<Sale, 'id' | 'createdAt' | 'updatedAt'>>;
@@ -185,7 +189,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     const variantIds = data.items.map((item) => item.variantId);
     const variantsResult = await payload.find({
       collection: 'product-variants',
-      where: { id: { in: variantIds } },
+      where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
       depth: 1,
       limit: variantIds.length,
       overrideAccess: true,

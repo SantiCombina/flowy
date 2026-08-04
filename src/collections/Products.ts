@@ -68,6 +68,7 @@ export const Products: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+      index: true,
       admin: {
         condition: () => false,
       },

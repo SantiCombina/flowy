@@ -1,5 +1,8 @@
 import type { CollectionConfig, Where } from 'payload';
 
+import { assertTrustedWrite } from '@/lib/entitlements/invariants';
+import { enforceSellerLoginEntitlement } from '@/lib/entitlements/seller-login';
+
 export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
@@ -43,6 +46,67 @@ export const Users: CollectionConfig = {
     },
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
+  hooks: {
+    beforeLogin: [enforceSellerLoginEntitlement],
+    beforeChange: [
+      async ({ data, context, operation, originalDoc, req }) => {
+        if (data && ('activeEntitlementSnapshot' in data || 'entitlementState' in data)) {
+          assertTrustedWrite(context, 'User entitlement mutation');
+        }
+
+        if (
+          operation === 'update' &&
+          originalDoc?.role === 'owner' &&
+          originalDoc.activeEntitlementSnapshot &&
+          data?.role !== undefined &&
+          data.role !== 'owner'
+        ) {
+          throw new Error('An owner with an active entitlement snapshot cannot be demoted');
+        }
+
+        if (data?.activeEntitlementSnapshot !== undefined) {
+          const userId = operation === 'create' ? recordId(data) : originalDoc?.id;
+          const originalIsOwner = operation === 'create' || originalDoc?.role === 'owner';
+          const finalRole = data.role ?? originalDoc?.role;
+
+          if (!originalIsOwner || !userId) {
+            throw new Error(
+              operation === 'update'
+                ? 'Only an original owner can hold an entitlement snapshot'
+                : 'Only a new owner with an assigned ID can initialize an entitlement snapshot',
+            );
+          }
+          if (finalRole !== 'owner') {
+            throw new Error('The final role must remain owner when assigning an entitlement snapshot');
+          }
+          if (data.activeEntitlementSnapshot === null) {
+            if (originalDoc?.activeEntitlementSnapshot) {
+              throw new Error('The canonical entitlement snapshot cannot be cleared');
+            }
+            return data;
+          }
+
+          const snapshotId =
+            typeof data.activeEntitlementSnapshot === 'number'
+              ? data.activeEntitlementSnapshot
+              : data.activeEntitlementSnapshot.id;
+          const snapshot = await req.payload.findByID({
+            collection: 'tenant-entitlement-snapshots',
+            id: snapshotId,
+            overrideAccess: true,
+            req,
+          });
+          const tenantId = typeof snapshot.tenant === 'number' ? snapshot.tenant : snapshot.tenant.id;
+
+          if (tenantId !== userId) {
+            throw new Error('Entitlement snapshots must belong to their owner');
+          }
+        }
+
+        return data;
+      },
+    ],
+  },
   fields: [
     {
       name: 'name',
@@ -68,7 +132,9 @@ export const Users: CollectionConfig = {
       name: 'owner',
       type: 'relationship',
       relationTo: 'users',
-
+      access: {
+        update: ({ req: { user } }) => user?.role === 'admin',
+      },
       admin: {
         condition: (data) => data?.role === 'seller',
         description: 'El dueño al que pertenece este vendedor',
@@ -171,5 +237,42 @@ export const Users: CollectionConfig = {
         description: 'Condición ante IVA',
       },
     },
+    {
+      name: 'activeEntitlementSnapshot',
+      type: 'relationship',
+      relationTo: 'tenant-entitlement-snapshots',
+      index: true,
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        readOnly: true,
+      },
+    },
+    {
+      name: 'entitlementState',
+      type: 'select',
+      defaultValue: 'provisioning',
+      options: [
+        { label: 'Provisioning', value: 'provisioning' },
+        { label: 'Active', value: 'active' },
+        { label: 'Blocked', value: 'blocked' },
+      ],
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        readOnly: true,
+      },
+    },
   ],
 };
+
+function recordId(value: unknown): number | undefined {
+  if (typeof value === 'object' && value !== null && 'id' in value && typeof value.id === 'number') return value.id;
+  return undefined;
+}

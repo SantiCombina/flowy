@@ -2,46 +2,53 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { getClientDebts, getClients } from '@/app/services/clients';
+import { loadClients } from '@/app/loaders/clients';
+import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
 import { ClientsSection } from '@/components/clients/clients-section';
+import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { getCurrentUser } from '@/lib/payload';
+import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 import { serializeForClient } from '@/lib/serialization';
 
 export const metadata: Metadata = {
   title: 'Clientes',
 };
 
+const moduleAccess = MODULE_ACCESS['/clients'];
+
 async function ClientsContent() {
-  const user = await getCurrentUser();
+  const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
 
-  if (!user) {
-    redirect('/login');
-  }
-
-  let ownerId: number;
-  let sellerId: number | undefined;
-
-  if (user.role === 'owner') {
-    ownerId = user.id;
-  } else if (user.role === 'seller') {
-    ownerId = typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
-    sellerId = user.id;
-  } else {
+  if (user.role !== 'owner' && user.role !== 'seller') {
     redirect('/dashboard');
   }
 
-  const [clients, clientDebts] = await Promise.all([
-    getClients({ ownerId, sellerId }),
-    getClientDebts({ ownerId, sellerId }),
-  ]);
+  const { clients, clientDebts } = await loadClients();
 
-  return <ClientsSection clients={clients} clientDebts={clientDebts} currentUser={serializeForClient(user)} />;
+  return (
+    <ClientsSection
+      clients={clients}
+      clientDebts={clientDebts}
+      currentUser={serializeForClient(user)}
+      capabilities={[...guardedUser.capabilities]}
+    />
+  );
 }
 
 export default async function ClientsPage() {
+  const guardedUser = await loadActiveGuardedUser();
+
+  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   return (
     <>
       <PageHeader

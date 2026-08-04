@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -62,6 +63,9 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
   const [serverError, setServerError] = useState<string | null>(null);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const currentUser = useUser();
+  const canUseRecipientPhone =
+    currentUser.capabilities?.includes('budget.recipient-phone') ?? currentUser.role === 'owner';
 
   const { data: budgetData, isPending: isLoadingBudget } = useServerActionQuery({
     queryKey: queryKeys.budgets.detail(editBudgetId ?? 0),
@@ -132,7 +136,7 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
     form.setValue('clientId', id, { shouldValidate: true });
 
     const client = localClients.find((c) => c.id === id);
-    if (client?.phone) {
+    if (canUseRecipientPhone && client?.phone) {
       form.setValue('clientPhone', client.phone);
     } else {
       form.setValue('clientPhone', undefined);
@@ -377,38 +381,44 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="clientPhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Teléfono del cliente</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            placeholder={selectedClient?.phone ?? 'Ingresá un teléfono'}
-                            type="tel"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {canUseRecipientPhone && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="clientPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Teléfono del cliente</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                placeholder={selectedClient?.phone ?? 'Ingresá un teléfono'}
+                                type="tel"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  {phoneWasEdited && selectedClientId && (
-                    <FormField
-                      control={form.control}
-                      name="saveClientPhone"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center gap-2 space-y-0">
-                          <FormControl>
-                            <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <FormLabel className="font-normal cursor-pointer">Guardar teléfono en el cliente</FormLabel>
-                        </FormItem>
+                      {phoneWasEdited && selectedClientId && (
+                        <FormField
+                          control={form.control}
+                          name="saveClientPhone"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2 space-y-0">
+                              <FormControl>
+                                <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Guardar teléfono en el cliente
+                              </FormLabel>
+                            </FormItem>
+                          )}
+                        />
                       )}
-                    />
+                    </>
                   )}
 
                   <FormField
@@ -509,6 +519,10 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
         onSuccess={handleNewClientSuccess}
+        canUseContactFields={
+          currentUser.capabilities?.includes('client.contact-fields') ?? currentUser.role === 'owner'
+        }
+        canManageZones={currentUser.capabilities?.includes('zones.manage') ?? currentUser.role === 'owner'}
       />
     </>
   );
