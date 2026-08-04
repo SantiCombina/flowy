@@ -97,7 +97,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
-  const paymentMethod = form.watch('paymentMethod');
+  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
 
   useEffect(() => {
     if (!canUseCredit && paymentMethod === 'credit') {
@@ -206,7 +206,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
       <ResponsiveModal
         open={isOpen}
         onOpenChange={handleClose}
-        className="flex flex-col gap-0 overflow-hidden h-[100dvh] sm:max-w-5xl sm:h-[85vh]"
+        className="flex flex-col gap-0 overflow-hidden h-dvh sm:max-w-5xl sm:h-[85vh]"
       >
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
@@ -257,7 +257,12 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       />
                     </TabsContent>
                     <TabsContent value="details" className="mt-0 px-6 py-4">
-                      <DetailsTab form={form} clients={localClients} onNewClient={() => setIsClientModalOpen(true)} canUseCredit={canUseCredit} />
+                      <DetailsTab
+                        form={form}
+                        clients={localClients}
+                        onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
+                      />
                     </TabsContent>
                   </Tabs>
                 ) : (
@@ -274,7 +279,12 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       />
                     </div>
                     <div className="flex min-h-0 min-w-0 flex-col p-2">
-                      <DetailsTab form={form} clients={localClients} onNewClient={() => setIsClientModalOpen(true)} canUseCredit={canUseCredit} />
+                      <DetailsTab
+                        form={form}
+                        clients={localClients}
+                        onNewClient={() => setIsClientModalOpen(true)}
+                        canUseCredit={canUseCredit}
+                      />
                     </div>
                   </div>
                 )}

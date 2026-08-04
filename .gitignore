@@ -58,5 +58,8 @@ node_modules/
 # Claude Code worktrees
 .claude/worktrees/
 
+# Agent artifacts
+.atl/
+
 # Docker
 docker-compose.yml

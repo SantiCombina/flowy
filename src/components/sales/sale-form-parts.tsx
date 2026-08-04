@@ -533,7 +533,7 @@ function ClientField({ form, clients, onNewClient }: ClientFieldProps) {
               emptyMessage="No se encontró el cliente."
             />
           </FormControl>
-          <div className="min-h-[20px]">
+          <div className="min-h-5">
             <FormMessage />
           </div>
         </FormItem>
@@ -615,17 +615,17 @@ function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProp
               Método de pago <span className="text-sky">*</span>
             </FormLabel>
             <FormControl>
-                <PaymentMethodSelector
-                  value={field.value}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    if (v !== 'check') form.setValue('checkDueDate', undefined);
-                  }}
-                  error={!!fieldState.error}
-                  canUseCredit={canUseCredit}
-                />
+              <PaymentMethodSelector
+                value={field.value}
+                onChange={(v) => {
+                  field.onChange(v);
+                  if (v !== 'check') form.setValue('checkDueDate', undefined);
+                }}
+                error={!!fieldState.error}
+                canUseCredit={canUseCredit}
+              />
             </FormControl>
-            <div className="min-h-[20px]">
+            <div className="min-h-5">
               <FormMessage />
             </div>
           </FormItem>
@@ -640,7 +640,7 @@ function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProp
             <FormItem>
               <FormLabel>Fecha de cobro del cheque</FormLabel>
               <CheckDateField value={field.value} onChange={field.onChange} />
-              <div className="min-h-[20px]">
+              <div className="min-h-5">
                 <FormMessage />
               </div>
             </FormItem>
@@ -670,7 +670,7 @@ function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProp
             <FormControl>
               <Textarea {...field} value={field.value ?? ''} placeholder="" rows={2} maxLength={500} />
             </FormControl>
-            <div className="flex min-h-[20px] items-start gap-2">
+            <div className="flex min-h-5 items-start gap-2">
               <FormMessage />
               <span className="ml-auto text-xs text-muted-foreground">{(field.value ?? '').length}/500</span>
             </div>
@@ -691,7 +691,15 @@ interface ProductsTabProps {
   canUsePersonalStock?: boolean;
 }
 
-function ProductsTab({ form, fields, remove, variants, onAddProduct, itemError, canUsePersonalStock }: ProductsTabProps) {
+function ProductsTab({
+  form,
+  fields,
+  remove,
+  variants,
+  onAddProduct,
+  itemError,
+  canUsePersonalStock,
+}: ProductsTabProps) {
   const items = form.watch('items');
   const itemCount = items?.length ?? 0;
 
@@ -724,7 +732,14 @@ function ProductsTab({ form, fields, remove, variants, onAddProduct, itemError, 
       ) : (
         <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
           {fields.map((field, index) => (
-            <ProductCard key={field.id} index={index} variants={variants} form={form} onRemove={() => remove(index)} canUsePersonalStock={canUsePersonalStock} />
+            <ProductCard
+              key={field.id}
+              index={index}
+              variants={variants}
+              form={form}
+              onRemove={() => remove(index)}
+              canUsePersonalStock={canUsePersonalStock}
+            />
           ))}
         </div>
       )}
