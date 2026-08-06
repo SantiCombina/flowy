@@ -223,9 +223,9 @@ export function ContactSection() {
                               <FormControl>
                                 <Textarea placeholder="" rows={4} maxLength={2000} {...field} />
                               </FormControl>
-                              <div className="flex items-start justify-between gap-2 min-h-[20px]">
-                                <FormMessage className="flex-1" />
-                                <span className="text-xs text-foreground/40 tabular-nums shrink-0">
+                              <div className="flex items-start gap-2 min-h-[20px]">
+                                <FormMessage />
+                                <span className="ml-auto text-xs text-foreground/40 tabular-nums shrink-0">
                                   {field.value?.length ?? 0}/2000
                                 </span>
                               </div>

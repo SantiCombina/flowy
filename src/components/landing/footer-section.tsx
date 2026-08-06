@@ -81,7 +81,7 @@ export function FooterSection() {
               alt="Forge"
               width={56}
               height={16}
-              className="h-6 w-auto opacity-40 transition-opacity group-hover:opacity-60"
+              className="h-6 w-auto opacity-70 invert transition-opacity group-hover:opacity-90"
             />
           </a>
         </div>

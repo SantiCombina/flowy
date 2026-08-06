@@ -7,10 +7,10 @@ import { useEffect, useRef } from 'react';
 import { ScrollReveal } from '@/components/landing/scroll-reveal';
 
 const stats = [
-  { value: 500, prefix: '+', suffix: '', label: 'distribuidoras' },
-  { value: 2000000, prefix: '+', suffix: '', label: 'productos gestionados' },
-  { value: 99.9, prefix: '', suffix: '%', label: 'uptime', decimals: 1 },
-  { value: 24, prefix: '<', suffix: 'h', label: 'tiempo de respuesta' },
+  { value: 10, prefix: '+', suffix: '', label: 'comercios' },
+  { value: 8000, prefix: '+', suffix: '', label: 'productos' },
+  { value: 100, prefix: '', suffix: '%', label: 'humano' },
+  { value: 100, prefix: '', suffix: '%', label: 'seguro' },
 ];
 
 const testimonials = [
@@ -38,7 +38,7 @@ const testimonials = [
 
 function formatCount(value: number): string {
   if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-  if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+  if (value >= 10000) return `${(value / 1000).toFixed(0)}k`;
   return value.toFixed(0);
 }
 
@@ -48,7 +48,6 @@ function AnimatedStat({ stat, index }: { stat: (typeof stats)[number]; index: nu
   const count = useMotionValue(0);
   const rounded = useTransform(count, (v) => {
     if (stat.value >= 1000) return formatCount(Math.round(v));
-    if (stat.decimals) return v.toFixed(stat.decimals);
     return Math.round(v).toFixed(0);
   });
 
