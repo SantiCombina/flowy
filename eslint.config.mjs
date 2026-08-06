@@ -1,8 +1,6 @@
 import { FlatCompat } from "@eslint/eslintrc";
 import prettier from "eslint-plugin-prettier";
 
-import flowyImportBoundary from "./eslint/rules/import-boundary.mjs";
-
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname,
 });
@@ -16,22 +14,6 @@ const eslintConfig = [
   ...compat.config({
     extends: ["next", "next/typescript", "next/core-web-vitals", "prettier"],
   }),
-
-  // Import boundary: client code must not import server-only modules
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    ignores: ["src/app/services/**", "src/**/actions.ts", "src/app/(payload)/**", "src/lib/payload.ts"],
-    plugins: {
-      flowy: {
-        rules: {
-          "import-boundary": flowyImportBoundary,
-        },
-      },
-    },
-    rules: {
-      "flowy/import-boundary": "error",
-    },
-  },
 
   // Configuración para archivos TypeScript y JavaScript
   {

@@ -140,6 +140,9 @@ En hooks, SIEMPRE pasar `req` a operaciones anidadas para mantener atomicidad de
 
 Todos los paquetes `@payloadcms/*` deben estar pinneados a la misma versión exacta (actualmente 3.75.0) — **SIN** prefijo `^`.
 
-## Skills Instalados (`.claude/skills/`)
+## Workflow — Reglas de Operación
 
-- `next-best-practices` — Next.js 15 App Router patterns (Vercel Labs)
+- **NUNCA** hacer commit, push, ni PR sin permiso explícito del usuario
+- **NUNCA** ejecutar comandos de git que modifiquen el historial remoto sin confirmación
+- **SIEMPRE** preguntar antes de: `git commit`, `git push`, `git merge`, `git rebase -i`, `git cherry-pick`
+- El usuario decide cuándo y qué commitear; mi rol es preparar cambios, no publicarlos
