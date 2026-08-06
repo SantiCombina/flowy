@@ -705,23 +705,18 @@ function ProductsTab({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Productos agregados</h3>
-          <Badge variant="secondary" className="text-xs">
-            {itemCount}
-          </Badge>
-        </div>
+      <div className="flex shrink-0 items-center justify-between gap-3 sm:px-2">
+        <h3 className="text-sm font-medium text-muted-foreground">Lista de productos</h3>
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={onAddProduct}
           disabled={variants.length === 0}
-          className="gap-1"
+          className="gap-1.5"
         >
-          <Plus className="h-4 w-4" />
-          Agregar producto
+          <Plus className="h-3.5 w-3.5" />
+          Agregar
         </Button>
       </div>
 
@@ -730,7 +725,7 @@ function ProductsTab({
           <EmptyProductsState onAdd={onAddProduct} disabled={variants.length === 0} />
         </div>
       ) : (
-        <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto p-2">
+        <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:p-2">
           {fields.map((field, index) => (
             <ProductCard
               key={field.id}
