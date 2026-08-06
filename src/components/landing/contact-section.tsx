@@ -186,7 +186,7 @@ export function ContactSection() {
                               <FormControl>
                                 <Input placeholder="" autoComplete="name" maxLength={100} {...field} />
                               </FormControl>
-                              <div className="min-h-[20px]">
+                              <div className="min-h-5">
                                 <FormMessage />
                               </div>
                             </FormItem>
@@ -208,7 +208,7 @@ export function ContactSection() {
                                   {...field}
                                 />
                               </FormControl>
-                              <div className="min-h-[20px]">
+                              <div className="min-h-5">
                                 <FormMessage />
                               </div>
                             </FormItem>
@@ -223,7 +223,7 @@ export function ContactSection() {
                               <FormControl>
                                 <Textarea placeholder="" rows={4} maxLength={2000} {...field} />
                               </FormControl>
-                              <div className="flex items-start gap-2 min-h-[20px]">
+                              <div className="flex items-start gap-2 min-h-5">
                                 <FormMessage />
                                 <span className="ml-auto text-xs text-foreground/40 tabular-nums shrink-0">
                                   {field.value?.length ?? 0}/2000

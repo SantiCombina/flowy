@@ -229,7 +229,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
               }}
               className="flex flex-1 flex-col min-h-0"
             >
-              <ResponsiveModalBody className="flex-1 overflow-y-auto p-0 sm:block sm:overflow-hidden sm:px-6 sm:py-4">
+              <ResponsiveModalBody className="flex-1 overflow-y-auto p-0 sm:block sm:overflow-hidden sm:px-4 sm:py-4">
                 {isMobile ? (
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
                     <div className="sticky top-0 z-10 bg-background px-6 pt-4 pb-0">
@@ -266,8 +266,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                     </TabsContent>
                   </Tabs>
                 ) : (
-                  <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-2">
-                    <div className="flex min-h-0 min-w-0 flex-col p-2">
+                  <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="flex min-h-0 min-w-0 flex-col">
                       <ProductsTab
                         form={form}
                         fields={fields}
@@ -278,7 +278,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         canUsePersonalStock={canUsePersonalStock}
                       />
                     </div>
-                    <div className="flex min-h-0 min-w-0 flex-col p-2">
+                    <div className="flex min-h-0 min-w-0 flex-col">
                       <DetailsTab
                         form={form}
                         clients={localClients}

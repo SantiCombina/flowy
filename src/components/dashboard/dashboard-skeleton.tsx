@@ -13,7 +13,7 @@ export function DashboardSkeleton() {
       </div>
 
       <main className="flex-1 space-y-6 px-4 pb-6 sm:px-6">
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
@@ -27,7 +27,7 @@ export function DashboardSkeleton() {
           ))}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-40" />
@@ -46,7 +46,7 @@ export function DashboardSkeleton() {
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-40" />

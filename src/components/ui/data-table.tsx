@@ -131,7 +131,7 @@ function DataTableComponent<T>({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-card shadow-md overflow-hidden">
+      <div className="rounded-xl bg-card shadow-md overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

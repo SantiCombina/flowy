@@ -347,7 +347,7 @@ function SalesSectionComponent({
             </Alert>
           )}
 
-          <div className="rounded-xl bg-card shadow-md overflow-hidden">
+          <div className="rounded-xl bg-card shadow-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

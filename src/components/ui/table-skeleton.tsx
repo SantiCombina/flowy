@@ -25,7 +25,7 @@ export function TableSkeleton({
 
   return (
     <div className={cn('space-y-3', containerClassName)}>
-      <div className="rounded-xl bg-card shadow-md overflow-hidden border border-border/20">
+      <div className="rounded-xl bg-card shadow-md overflow-x-auto border border-border/20">
         <Table>
           <TableHeader>
             <TableRow>

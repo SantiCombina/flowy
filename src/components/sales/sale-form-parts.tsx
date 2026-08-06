@@ -603,7 +603,7 @@ function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProp
   const paymentMethod = form.watch('paymentMethod');
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
+    <div className="flex flex-col gap-4 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:px-2">
       <ClientField form={form} clients={clients} onNewClient={onNewClient} />
 
       <FormField
@@ -730,7 +730,7 @@ function ProductsTab({
           <EmptyProductsState onAdd={onAddProduct} disabled={variants.length === 0} />
         </div>
       ) : (
-        <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
+        <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto p-2">
           {fields.map((field, index) => (
             <ProductCard
               key={field.id}

@@ -122,6 +122,8 @@ export function ClientModal({
   const form = useForm<ClientValues>({
     resolver: zodResolver(clientSchema),
     values: defaultValues,
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
   });
 
   const provinciaValue = useWatch({ control: form.control, name: 'provincia' });
@@ -252,9 +254,11 @@ export function ClientModal({
                       Nombre / Razón social <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Empresa S.A." />
+                      <Input {...field} />
                     </FormControl>
-                    <FormMessage />
+                    <div className="min-h-5">
+                      <FormMessage />
+                    </div>
                   </FormItem>
                 )}
               />
@@ -271,7 +275,6 @@ export function ClientModal({
                           <FormControl>
                             <Input
                               inputMode="numeric"
-                              placeholder="20-12345678-9"
                               value={field.value ?? ''}
                               onChange={(e) => field.onChange(formatCuit(e.target.value))}
                               onBlur={field.onBlur}
@@ -279,7 +282,9 @@ export function ClientModal({
                               ref={field.ref}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <div className="min-h-5">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -293,12 +298,13 @@ export function ClientModal({
                           <FormControl>
                             <Input
                               inputMode="tel"
-                              placeholder="+54 9 11 1234-5678"
                               {...field}
                               onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <div className="min-h-5">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -311,9 +317,11 @@ export function ClientModal({
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder="contacto@empresa.com" />
+                          <Input {...field} type="email" />
                         </FormControl>
-                        <FormMessage />
+                        <div className="min-h-5">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -325,9 +333,11 @@ export function ClientModal({
                       <FormItem>
                         <FormLabel>Dirección</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Av. Corrientes 1234" />
+                          <Input {...field} />
                         </FormControl>
-                        <FormMessage />
+                        <div className="min-h-5">
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -352,7 +362,9 @@ export function ClientModal({
                               emptyMessage="No se encontró la provincia."
                             />
                           </FormControl>
-                          <FormMessage />
+                          <div className="min-h-5">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -381,7 +393,9 @@ export function ClientModal({
                               />
                             </FormControl>
                           )}
-                          <FormMessage />
+                          <div className="min-h-5">
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />
@@ -507,7 +521,9 @@ export function ClientModal({
                           </Select>
                         </FormControl>
                       )}
-                      <FormMessage />
+                      <div className="min-h-5">
+                        <FormMessage />
+                      </div>
                     </FormItem>
                   )}
                 />

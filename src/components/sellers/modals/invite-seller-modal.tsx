@@ -39,6 +39,8 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
       name: '',
       email: '',
     },
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
   });
 
   useEffect(() => {
@@ -90,11 +92,15 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nombre</FormLabel>
+                  <FormLabel>
+                    Nombre <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Juan Pérez" />
+                    <Input {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <div className="min-h-5">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -104,11 +110,15 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>
+                    Email <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" placeholder="vendedor@ejemplo.com" />
+                    <Input {...field} type="email" />
                   </FormControl>
-                  <FormMessage />
+                  <div className="min-h-5">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

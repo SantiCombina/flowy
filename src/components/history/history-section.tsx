@@ -183,7 +183,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
         <div className="space-y-3">
           <div
             className={cn(
-              'rounded-xl bg-card shadow-md overflow-hidden transition-opacity duration-150',
+              'rounded-xl bg-card shadow-md overflow-x-auto transition-opacity duration-150',
               isPending && 'opacity-50 pointer-events-none',
             )}
           >
