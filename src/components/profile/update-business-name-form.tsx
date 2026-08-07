@@ -53,7 +53,7 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
             <FormItem>
               <FormLabel>Nombre del negocio</FormLabel>
               <FormControl>
-                <Input placeholder="Ej: Distribuidora Pérez" {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -61,7 +61,7 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
         />
 
         <Button type="submit" disabled={isExecuting} className="ml-auto block">
-          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+          {isExecuting ? 'Guardando' : 'Guardar cambios'}
         </Button>
       </form>
     </Form>

@@ -78,7 +78,6 @@ export function EntitySelectField({
       {isCreating ? (
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
-            placeholder={`Nombre de la nueva ${label.toLowerCase()}`}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
@@ -96,7 +95,7 @@ export function EntitySelectField({
               onClick={() => void handleCreate()}
               disabled={!newName.trim() || isSubmitting}
             >
-              {isSubmitting ? 'Creando…' : 'Crear'}
+              {isSubmitting ? 'Creando' : 'Crear'}
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={handleCancelCreate} disabled={isSubmitting}>
               Cancelar
@@ -106,7 +105,7 @@ export function EntitySelectField({
       ) : (
         <Select onValueChange={handleValueChange} value={value ?? ''}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Seleccionar..." />
+            <SelectValue placeholder="" />
           </SelectTrigger>
           <SelectContent>
             {value && (

@@ -677,7 +677,7 @@ function BudgetsSectionComponent({
               onClick={() => deleteConfirmId !== null && void handleDelete(deleteConfirmId)}
               disabled={isDeleting}
             >
-              {isDeleting ? 'Eliminando…' : 'Eliminar'}
+              {isDeleting ? 'Eliminando' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -224,7 +224,7 @@ export function NotificationBell() {
               >
                 <BellRing className="h-3.5 w-3.5" />
                 {isSubscribing
-                  ? 'Activando...'
+                  ? 'Activando'
                   : pushPermission === 'granted'
                     ? 'Reactivar notificaciones push'
                     : 'Activar notificaciones push'}
@@ -257,7 +257,7 @@ export function NotificationBell() {
               >
                 <BellRing className="h-3.5 w-3.5" />
                 {isSubscribing
-                  ? 'Activando...'
+                  ? 'Activando'
                   : pushPermission === 'granted'
                     ? 'Reactivar notificaciones push'
                     : 'Activar notificaciones push'}

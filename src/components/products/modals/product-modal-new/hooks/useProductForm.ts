@@ -63,16 +63,10 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   const [previousImageId, setPreviousImageId] = useState<number | undefined>(undefined);
   const [pendingImageFile, setPendingImageFile] = useState<File | undefined>(undefined);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-    watch,
-  } = useForm<ProductFormData>({
+  const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -94,7 +88,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   });
 
   const { fields, append, remove } = useFieldArray({
-    control,
+    control: form.control,
     name: 'variants',
   });
 
@@ -112,7 +106,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
       const product = data.product;
       const variants = data.variants || [];
 
-      reset({
+      form.reset({
         name: product.name,
         description: product.description || '',
         brandId: typeof product.brand === 'object' && product.brand ? product.brand.id.toString() : '',
@@ -141,10 +135,10 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
         resetImageState();
       }
     });
-  }, [isEditing, productId, isOpen, data, reset]);
+  }, [isEditing, productId, isOpen, data, form.reset]);
 
   const handleClose = () => {
-    reset();
+    form.reset();
     setVariantsToDelete([]);
     resetImageState();
     onClose();
@@ -307,15 +301,11 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   };
 
   return {
+    form,
     isEditing,
     isSubmitting,
     isLoading,
-    register,
-    control,
-    handleSubmit: handleSubmit(onSubmit),
-    errors,
-    setValue,
-    watch,
+    errors: form.formState.errors,
     fields,
     handleAddVariant,
     handleRemoveVariant,
@@ -323,5 +313,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
     pendingImageFile,
     currentImageUrl,
     handleFileSelect,
+    onSubmit,
   };
 }

@@ -91,7 +91,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="••••••••" {...field} />
+                    <PasswordInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,7 +105,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
                 <FormItem>
                   <FormLabel>Confirmar contraseña</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="••••••••" {...field} />
+                    <PasswordInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -113,7 +113,7 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={status === 'executing'}>
-              {status === 'executing' ? 'Creando cuenta...' : 'Crear cuenta'}
+              {status === 'executing' ? 'Creando cuenta' : 'Crear cuenta'}
             </Button>
           </form>
         </Form>

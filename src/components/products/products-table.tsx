@@ -149,7 +149,7 @@ function ProductsTableComponent({
             </div>
           );
         },
-        className: 'w-16',
+        className: 'w-16 min-w-16',
       },
       name: {
         key: 'name',

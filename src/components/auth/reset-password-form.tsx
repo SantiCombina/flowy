@@ -68,7 +68,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <FormItem>
                   <FormLabel>Nueva contraseña</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="••••••••" {...field} />
+                    <PasswordInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,7 +82,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <FormItem>
                   <FormLabel>Confirmar contraseña</FormLabel>
                   <FormControl>
-                    <PasswordInput placeholder="••••••••" {...field} />
+                    <PasswordInput {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -90,7 +90,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={isExecuting}>
-              {isExecuting ? 'Guardando…' : 'Guardar contraseña'}
+              {isExecuting ? 'Guardando' : 'Guardar contraseña'}
             </Button>
           </form>
         </Form>

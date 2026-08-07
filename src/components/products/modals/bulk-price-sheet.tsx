@@ -86,7 +86,6 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
             <div className="relative">
               <Input
                 type="number"
-                placeholder="0"
                 value={percentage}
                 onChange={(e) => setPercentage(e.target.value)}
                 className="w-28 pr-7"
@@ -156,7 +155,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isExecuting || rows.length === 0}>
-            {isExecuting ? 'Guardando...' : `Guardar ${variants.length} variantes`}
+            {isExecuting ? 'Guardando' : `Guardar ${variants.length} variantes`}
           </Button>
         </div>
       </SheetContent>

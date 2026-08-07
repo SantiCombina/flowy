@@ -129,7 +129,7 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
               Cancelar
             </Button>
             <Button type="submit" disabled={isExecuting}>
-              {isExecuting ? 'Enviando…' : 'Enviar invitación'}
+              {isExecuting ? 'Enviando' : 'Enviar invitación'}
             </Button>
           </ResponsiveModalFooter>
         </form>

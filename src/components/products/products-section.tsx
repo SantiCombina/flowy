@@ -326,7 +326,7 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkToggleConfirm} disabled={isToggling}>
-              {isToggling ? 'Procesando...' : bulkToggleTarget ? 'Activar' : 'Pausar'}
+              {isToggling ? 'Procesando' : bulkToggleTarget ? 'Activar' : 'Pausar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

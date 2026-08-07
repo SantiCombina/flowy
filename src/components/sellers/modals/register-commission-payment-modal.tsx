@@ -184,7 +184,7 @@ export function RegisterCommissionPaymentModal({
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccioná..." />
+                        <SelectValue placeholder="" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -207,7 +207,7 @@ export function RegisterCommissionPaymentModal({
                 <FormItem>
                   <FormLabel>Referencia</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} placeholder="Número de transferencia, comprobante..." />
+                    <Input {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -221,7 +221,7 @@ export function RegisterCommissionPaymentModal({
                 <FormItem>
                   <FormLabel>Notas</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value ?? ''} placeholder="Notas opcionales..." rows={2} />
+                    <Textarea {...field} value={field.value ?? ''} rows={2} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

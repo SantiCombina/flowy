@@ -333,7 +333,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                 isSubmitting={isSubmitting}
                 onCancel={handleClose}
                 submitLabel="Actualizar venta"
-                loadingLabel="Guardando…"
+                loadingLabel="Guardando"
               />
             </form>
           </Form>

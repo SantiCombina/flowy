@@ -2,36 +2,22 @@
 
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import {
-  ArrowRightLeft,
-  Banknote,
-  CalendarIcon,
-  CheckIcon,
-  CreditCard,
-  FileText,
-  Minus,
-  PackageSearch,
-  Plus,
-  Store,
-  Trash2,
-  User,
-  UserPlus,
-  XCircle,
-} from 'lucide-react';
+import { CalendarIcon, Minus, PackageSearch, Plus, Trash2, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { type FieldErrors, type UseFormReturn } from 'react-hook-form';
+import type { FieldErrors, UseFormReturn } from 'react-hook-form';
 
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PriceInput } from '@/components/ui/price-input';
 import { QuantityInput } from '@/components/ui/quantity-input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -41,19 +27,11 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { type SaleValues } from '@/schemas/sales/sale-schema';
+import type { BudgetValues } from '@/schemas/budgets/budget-schema';
 
-type SaleItemValues = SaleValues['items'][number];
-
-const PAYMENT_OPTIONS = [
-  { value: 'cash', label: 'Efectivo', icon: Banknote },
-  { value: 'transfer', label: 'Transferencia', icon: ArrowRightLeft },
-  { value: 'check', label: 'Cheque', icon: FileText },
-  { value: 'credit', label: 'A crédito', icon: CreditCard },
-] as const;
+type BudgetItemValues = BudgetValues['items'][number];
 
 function formatTotal(value: number): string {
   return value.toLocaleString('es-AR', {
@@ -67,14 +45,13 @@ function formatItemName(variant: SaleVariantOption | undefined): string {
   return [variant.brandName, variant.productName, variant.presentationLabel].filter(Boolean).join(' · ');
 }
 
-function useFirstItemsErrorMessage(errors: FieldErrors<SaleValues>['items']): string | undefined {
+function useFirstItemsErrorMessage(errors: FieldErrors<BudgetValues>['items']): string | undefined {
   return useMemo(() => {
     if (!errors) return undefined;
     if (errors.root?.message) return errors.root.message;
     if (Array.isArray(errors)) {
       for (const row of errors) {
-        const message =
-          row?.variantId?.message ?? row?.quantity?.message ?? row?.unitPrice?.message ?? row?.stockSource?.message;
+        const message = row?.variantId?.message ?? row?.quantity?.message ?? row?.unitPrice?.message;
         if (message) return message;
       }
     }
@@ -103,7 +80,16 @@ function EmptyProductsState({ onAdd, disabled }: EmptyProductsStateProps) {
   );
 }
 
-interface StepperInputProps {
+function StepperInput({
+  value,
+  onChange,
+  onBlur,
+  min = 1,
+  max,
+  disabled,
+  className,
+  size = 'default',
+}: {
   value: number;
   onChange: (value: number) => void;
   onBlur?: () => void;
@@ -112,11 +98,8 @@ interface StepperInputProps {
   disabled?: boolean;
   className?: string;
   size?: 'sm' | 'default';
-}
-
-function StepperInput({ value, onChange, onBlur, min, max, disabled, className, size = 'default' }: StepperInputProps) {
-  const minimum = min ?? 1;
-  const canDecrease = !disabled && value > minimum;
+}) {
+  const canDecrease = !disabled && value > min;
   const canIncrease = !disabled && (max === undefined || value < max);
   const buttonSize = size === 'sm' ? 'h-8 w-8' : 'h-10 w-10';
   const inputHeight = size === 'sm' ? 'h-8' : 'h-10';
@@ -126,7 +109,7 @@ function StepperInput({ value, onChange, onBlur, min, max, disabled, className, 
       <Button
         type="button"
         variant="outline"
-        onClick={() => onChange(Math.max(minimum, value - 1))}
+        onClick={() => onChange(Math.max(min, value - 1))}
         disabled={!canDecrease}
         className={cn('rounded-r-none border-r-0', buttonSize)}
       >
@@ -157,32 +140,16 @@ function StepperInput({ value, onChange, onBlur, min, max, disabled, className, 
 interface ProductCardProps {
   index: number;
   variants: SaleVariantOption[];
-  form: UseFormReturn<SaleValues>;
+  form: UseFormReturn<BudgetValues>;
   onRemove: () => void;
-  canUsePersonalStock?: boolean;
 }
 
-function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = true }: ProductCardProps) {
+function ProductCard({ index, variants, form, onRemove }: ProductCardProps) {
   const variantId = form.watch(`items.${index}.variantId`);
   const quantity = form.watch(`items.${index}.quantity`);
   const unitPrice = form.watch(`items.${index}.unitPrice`);
-  const stockSource = form.watch(`items.${index}.stockSource`);
   const selectedVariant = variants.find((v) => v.variantId === variantId);
-  const warehouseStock = selectedVariant?.warehouseStock ?? 0;
-  const personalStock = selectedVariant?.personalStock ?? 0;
-  const availableStock = stockSource === 'personal' ? personalStock : warehouseStock;
   const subtotal = (quantity || 0) * (unitPrice || 0);
-  const sourceLabel = stockSource === 'personal' ? 'Mi inventario' : 'Depósito';
-  const sourceStock = stockSource === 'personal' ? personalStock : warehouseStock;
-
-  const handleStockSourceChange = (value: string) => {
-    const source = value as 'warehouse' | 'personal';
-    const newMax = source === 'personal' ? personalStock : warehouseStock;
-    form.setValue(`items.${index}.stockSource`, source);
-    if (quantity > newMax) {
-      form.setValue(`items.${index}.quantity`, newMax);
-    }
-  };
 
   return (
     <Card className="shrink-0 overflow-hidden">
@@ -190,12 +157,6 @@ function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = tr
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold leading-tight text-foreground">{formatItemName(selectedVariant)}</p>
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Store className="h-3 w-3" />
-              <span>
-                {sourceLabel}: {sourceStock} disponibles
-              </span>
-            </div>
           </div>
           <Button
             type="button"
@@ -220,9 +181,8 @@ function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = tr
                     value={field.value}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    max={availableStock || undefined}
                     min={1}
-                    disabled={!variantId || availableStock === 0}
+                    disabled={!variantId}
                     size="sm"
                     className={cn(fieldState.error && '[&_input]:border-destructive')}
                   />
@@ -254,40 +214,6 @@ function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = tr
           <span className="text-xs text-muted-foreground">Subtotal</span>
           <span className="text-base font-semibold text-primary">$ {formatTotal(subtotal)}</span>
         </div>
-
-        <FormField
-          control={form.control}
-          name={`items.${index}.stockSource`}
-          render={({ field, fieldState }) => (
-            <FormItem className="mt-3 flex flex-col gap-1">
-              <FormLabel className="text-xs">Origen del stock</FormLabel>
-              <FormControl>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={field.value === 'warehouse' ? 'default' : 'outline'}
-                    onClick={() => handleStockSourceChange('warehouse')}
-                    disabled={!variantId || warehouseStock === 0}
-                    className={cn('h-9 justify-start gap-2 text-xs', fieldState.error && 'border-destructive')}
-                  >
-                    <Store className="h-3.5 w-3.5" />
-                    Depósito ({warehouseStock})
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={field.value === 'personal' ? 'default' : 'outline'}
-                    onClick={() => handleStockSourceChange('personal')}
-                    disabled={!canUsePersonalStock || !variantId || personalStock === 0}
-                    className={cn('h-9 justify-start gap-2 text-xs', fieldState.error && 'border-destructive')}
-                  >
-                    <User className="h-3.5 w-3.5" />
-                    Mi inventario ({personalStock})
-                  </Button>
-                </div>
-              </FormControl>
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );
@@ -297,36 +223,24 @@ interface AddProductSheetProps {
   open: boolean;
   onClose: () => void;
   variants: SaleVariantOption[];
-  onAdd: (item: SaleItemValues) => void;
+  onAdd: (item: BudgetItemValues) => void;
 }
 
 function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProps) {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [stockSource, setStockSource] = useState<'warehouse' | 'personal'>('warehouse');
   const [unitPrice, setUnitPrice] = useState(0);
 
   const selectedVariant = variants.find((v) => String(v.variantId) === selectedVariantId);
-  const warehouseStock = selectedVariant?.warehouseStock ?? 0;
-  const personalStock = selectedVariant?.personalStock ?? 0;
-  const availableStock = stockSource === 'personal' ? personalStock : warehouseStock;
-  const isWarehouseEnabled = warehouseStock > 0;
-  const isPersonalEnabled = personalStock > 0;
-  const canAdd = selectedVariant && quantity > 0 && quantity <= availableStock;
+  const canAdd = selectedVariant && quantity > 0 && unitPrice >= 0;
   const subtotal = quantity * unitPrice;
 
   const productOptions = useMemo(
     () =>
-      variants.map((v) => {
-        const totalStock = v.warehouseStock + v.personalStock;
-        return {
-          value: String(v.variantId),
-          label: [v.brandName, v.productName, v.presentationLabel, totalStock === 0 ? '(sin stock)' : null]
-            .filter(Boolean)
-            .join(' · '),
-          disabled: totalStock === 0,
-        };
-      }),
+      variants.map((v) => ({
+        value: String(v.variantId),
+        label: [v.brandName, v.productName, v.presentationLabel].filter(Boolean).join(' · '),
+      })),
     [variants],
   );
 
@@ -336,19 +250,6 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
     if (variant) {
       setUnitPrice(variant.price);
       setQuantity(1);
-      if (variant.warehouseStock > 0) {
-        setStockSource('warehouse');
-      } else if (variant.personalStock > 0) {
-        setStockSource('personal');
-      }
-    }
-  };
-
-  const handleStockSourceChange = (source: 'warehouse' | 'personal') => {
-    const newAvailable = source === 'personal' ? personalStock : warehouseStock;
-    setStockSource(source);
-    if (quantity > newAvailable) {
-      setQuantity(Math.max(1, newAvailable));
     }
   };
 
@@ -358,7 +259,6 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
       variantId: selectedVariant.variantId,
       quantity,
       unitPrice,
-      stockSource,
     });
     onClose();
   };
@@ -382,64 +282,18 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
         {selectedVariant && (
           <div className="rounded-xl bg-muted/30 p-3 text-sm">
             <p className="font-semibold text-foreground">{formatItemName(selectedVariant)}</p>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Store className="h-3.5 w-3.5" />
-                Depósito: {warehouseStock}
-              </div>
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <User className="h-3.5 w-3.5" />
-                Mi inventario: {personalStock}
-              </div>
-            </div>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Cantidad</Label>
-            <StepperInput
-              value={quantity}
-              onChange={setQuantity}
-              max={availableStock || undefined}
-              min={1}
-              disabled={!selectedVariant || availableStock === 0}
-              size="sm"
-            />
-            {selectedVariant && availableStock > 0 && (
-              <p className="text-[11px] text-muted-foreground">Máximo {availableStock} unidades</p>
-            )}
+            <StepperInput value={quantity} onChange={setQuantity} min={1} disabled={!selectedVariant} size="sm" />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">Precio unitario</Label>
             <PriceInput value={unitPrice} onChange={setUnitPrice} className="h-8" />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label className="text-xs">Origen del stock</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={stockSource === 'warehouse' ? 'default' : 'outline'}
-              onClick={() => handleStockSourceChange('warehouse')}
-              disabled={!isWarehouseEnabled}
-              className="h-9 justify-start gap-2 text-xs"
-            >
-              <Store className="h-3.5 w-3.5" />
-              Depósito ({warehouseStock})
-            </Button>
-            <Button
-              type="button"
-              variant={stockSource === 'personal' ? 'default' : 'outline'}
-              onClick={() => handleStockSourceChange('personal')}
-              disabled={!isPersonalEnabled}
-              className="h-9 justify-start gap-2 text-xs"
-            >
-              <User className="h-3.5 w-3.5" />
-              Mi inventario ({personalStock})
-            </Button>
           </div>
         </div>
 
@@ -463,49 +317,14 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
   );
 }
 
-interface PaymentMethodSelectorProps {
-  value?: string;
-  onChange: (value: string) => void;
-  error?: boolean;
-  canUseCredit?: boolean;
-}
-
-function PaymentMethodSelector({ value, onChange, error, canUseCredit = true }: PaymentMethodSelectorProps) {
-  const availableOptions = canUseCredit ? PAYMENT_OPTIONS : PAYMENT_OPTIONS.filter((o) => o.value !== 'credit');
-  return (
-    <RadioGroup value={value} onValueChange={onChange} className="grid grid-cols-2 gap-2">
-      {availableOptions.map((option) => {
-        const Icon = option.icon;
-        const isSelected = value === option.value;
-        return (
-          <label
-            key={option.value}
-            className={cn(
-              'relative flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium shadow-sm transition-all duration-200',
-              isSelected
-                ? 'bg-primary text-primary-foreground hover:shadow-md active:shadow-sm'
-                : 'bg-white text-foreground hover:bg-accent hover:shadow-md active:shadow-sm',
-              error && !isSelected && 'ring-1 ring-destructive',
-            )}
-          >
-            <RadioGroupItem value={option.value} className="sr-only" />
-            <Icon className="h-4 w-4" />
-            <span>{option.label}</span>
-            {isSelected && <CheckIcon className="absolute right-2 h-3.5 w-3.5" />}
-          </label>
-        );
-      })}
-    </RadioGroup>
-  );
-}
-
 interface ClientFieldProps {
-  form: UseFormReturn<SaleValues>;
+  form: UseFormReturn<BudgetValues>;
   clients: SaleClientOption[];
   onNewClient: () => void;
+  onClientChange?: (value: string) => void;
 }
 
-function ClientField({ form, clients, onNewClient }: ClientFieldProps) {
+function ClientField({ form, clients, onNewClient, onClientChange }: ClientFieldProps) {
   return (
     <FormField
       control={form.control}
@@ -526,7 +345,7 @@ function ClientField({ form, clients, onNewClient }: ClientFieldProps) {
                 label: c.name,
               }))}
               value={field.value ? String(field.value) : ''}
-              onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+              onValueChange={onClientChange ?? ((v) => field.onChange(v ? Number(v) : undefined))}
               placeholder=""
               searchPlaceholder=""
               emptyMessage=""
@@ -541,12 +360,12 @@ function ClientField({ form, clients, onNewClient }: ClientFieldProps) {
   );
 }
 
-interface CheckDateFieldProps {
+interface ValidUntilFieldProps {
   value?: string;
   onChange: (value: string) => void;
 }
 
-function CheckDateField({ value, onChange }: CheckDateFieldProps) {
+function ValidUntilField({ value, onChange }: ValidUntilFieldProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -562,7 +381,7 @@ function CheckDateField({ value, onChange }: CheckDateFieldProps) {
             ? format(new Date(`${value}T12:00:00`), "d 'de' MMMM 'de' yyyy", {
                 locale: es,
               })
-            : 'Seleccioná una fecha'}
+            : 'Sin vencimiento'}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -592,70 +411,75 @@ function CheckDateField({ value, onChange }: CheckDateFieldProps) {
 }
 
 interface DetailsTabProps {
-  form: UseFormReturn<SaleValues>;
+  form: UseFormReturn<BudgetValues>;
   clients: SaleClientOption[];
   onNewClient: () => void;
-  canUseCredit?: boolean;
+  onClientChange?: (value: string) => void;
+  canUseRecipientPhone?: boolean;
+  selectedClientPhone?: string;
 }
 
-function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProps) {
-  const paymentMethod = form.watch('paymentMethod');
+function DetailsTab({
+  form,
+  clients,
+  onNewClient,
+  onClientChange,
+  canUseRecipientPhone = false,
+  selectedClientPhone,
+}: DetailsTabProps) {
+  const watchedClientPhone = form.watch('clientPhone');
+  const phoneWasEdited =
+    watchedClientPhone !== undefined && watchedClientPhone !== '' && watchedClientPhone !== selectedClientPhone;
 
   return (
     <div className="flex flex-col gap-4 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:px-2">
-      <ClientField form={form} clients={clients} onNewClient={onNewClient} />
+      <ClientField form={form} clients={clients} onNewClient={onNewClient} onClientChange={onClientChange} />
 
-      <FormField
-        control={form.control}
-        name="paymentMethod"
-        render={({ field, fieldState }) => (
-          <FormItem>
-            <FormLabel>
-              Método de pago <span className="text-sky">*</span>
-            </FormLabel>
-            <FormControl>
-              <PaymentMethodSelector
-                value={field.value}
-                onChange={(v) => {
-                  field.onChange(v);
-                  if (v !== 'check') form.setValue('checkDueDate', undefined);
-                }}
-                error={!!fieldState.error}
-                canUseCredit={canUseCredit}
-              />
-            </FormControl>
-            <div className="min-h-5">
-              <FormMessage />
-            </div>
-          </FormItem>
-        )}
-      />
+      {canUseRecipientPhone && (
+        <>
+          <FormField
+            control={form.control}
+            name="clientPhone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Teléfono del cliente</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? ''} type="tel" />
+                </FormControl>
+                <div className="min-h-5">
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
 
-      {paymentMethod === 'check' && (
-        <FormField
-          control={form.control}
-          name="checkDueDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Fecha de cobro del cheque</FormLabel>
-              <CheckDateField value={field.value} onChange={field.onChange} />
-              <div className="min-h-5">
-                <FormMessage />
-              </div>
-            </FormItem>
+          {phoneWasEdited && (
+            <FormField
+              control={form.control}
+              name="saveClientPhone"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="font-normal cursor-pointer">Guardar teléfono en el cliente</FormLabel>
+                </FormItem>
+              )}
+            />
           )}
-        />
+        </>
       )}
 
       <FormField
         control={form.control}
-        name="immediateDelivery"
+        name="validUntil"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-xl bg-white p-3 shadow-sm transition-all duration-200">
-            <FormLabel className="cursor-pointer font-normal">Entrega inmediata</FormLabel>
-            <FormControl>
-              <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
-            </FormControl>
+          <FormItem>
+            <FormLabel>Válido hasta</FormLabel>
+            <ValidUntilField value={field.value} onChange={field.onChange} />
+            <div className="min-h-5">
+              <FormMessage />
+            </div>
           </FormItem>
         )}
       />
@@ -681,24 +505,15 @@ function DetailsTab({ form, clients, onNewClient, canUseCredit }: DetailsTabProp
 }
 
 interface ProductsTabProps {
-  form: UseFormReturn<SaleValues>;
+  form: UseFormReturn<BudgetValues>;
   fields: { id: string }[];
   remove: (index: number) => void;
   variants: SaleVariantOption[];
   onAddProduct: () => void;
   itemError?: string;
-  canUsePersonalStock?: boolean;
 }
 
-function ProductsTab({
-  form,
-  fields,
-  remove,
-  variants,
-  onAddProduct,
-  itemError,
-  canUsePersonalStock,
-}: ProductsTabProps) {
+function ProductsTab({ form, fields, remove, variants, onAddProduct, itemError }: ProductsTabProps) {
   const items = form.watch('items');
   const itemCount = items?.length ?? 0;
 
@@ -726,39 +541,44 @@ function ProductsTab({
       ) : (
         <div className="flex flex-col gap-3 sm:flex-1 sm:min-h-0 sm:overflow-y-auto sm:p-2">
           {fields.map((field, index) => (
-            <ProductCard
-              key={field.id}
-              index={index}
-              variants={variants}
-              form={form}
-              onRemove={() => remove(index)}
-              canUsePersonalStock={canUsePersonalStock}
-            />
+            <ProductCard key={field.id} index={index} variants={variants} form={form} onRemove={() => remove(index)} />
           ))}
         </div>
       )}
 
-      {itemError && (
-        <div className="flex shrink-0 items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2">
-          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-          <p className="text-sm text-destructive">{itemError}</p>
-        </div>
-      )}
+      {itemError && <p className="text-sm text-destructive">{itemError}</p>}
     </div>
   );
 }
 
-interface SaleFooterProps {
+interface BudgetFooterProps {
   total: number;
   isSubmitting: boolean;
   onCancel: () => void;
   submitLabel: string;
   loadingLabel?: string;
+  isEditing?: boolean;
 }
 
-function SaleFooter({ total, isSubmitting, onCancel, submitLabel, loadingLabel = 'Registrando' }: SaleFooterProps) {
+function BudgetFooter({
+  total,
+  isSubmitting,
+  onCancel,
+  submitLabel,
+  loadingLabel = 'Guardando',
+  isEditing = false,
+}: BudgetFooterProps) {
+  const buttonText = isSubmitting ? (
+    <span className="flex items-center gap-2">
+      {isEditing ? loadingLabel : 'Creando'}
+      <Spinner />
+    </span>
+  ) : (
+    submitLabel
+  );
+
   return (
-    <ResponsiveModalFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 border-t p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-col">
         <span className="text-xs text-muted-foreground">Total</span>
         <span className="text-xl font-bold text-primary">$ {formatTotal(total)}</span>
@@ -768,27 +588,20 @@ function SaleFooter({ total, isSubmitting, onCancel, submitLabel, loadingLabel =
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <span className="flex items-center gap-2">
-              {loadingLabel}
-              <Spinner />
-            </span>
-          ) : (
-            submitLabel
-          )}
+          {buttonText}
         </Button>
       </div>
-    </ResponsiveModalFooter>
+    </div>
   );
 }
 
-interface SaleFormSkeletonProps {
+interface BudgetFormSkeletonProps {
   isMobile: boolean;
 }
 
-function SaleFormSkeleton({ isMobile }: SaleFormSkeletonProps) {
+function BudgetFormSkeleton({ isMobile }: BudgetFormSkeletonProps) {
   return (
-    <ResponsiveModalBody className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 px-6 py-4">
       {isMobile && <Skeleton className="h-9 w-full rounded-lg" />}
       <div className="flex items-center justify-between">
         <Skeleton className="h-4 w-32" />
@@ -802,22 +615,19 @@ function SaleFormSkeleton({ isMobile }: SaleFormSkeletonProps) {
       <div className="mt-auto">
         <Skeleton className="h-16 w-full rounded-xl" />
       </div>
-    </ResponsiveModalBody>
+    </div>
   );
 }
 
 export {
   AddProductSheet,
+  BudgetFooter,
+  BudgetFormSkeleton,
   DetailsTab,
   EmptyProductsState,
   formatTotal,
-  PaymentMethodSelector,
   ProductCard,
   ProductsTab,
-  SaleFooter,
-  SaleFormSkeleton,
-  StepperInput,
   useFirstItemsErrorMessage,
 };
-
-export type { SaleItemValues };
+export type { BudgetItemValues };

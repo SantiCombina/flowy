@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 import {
@@ -125,8 +125,6 @@ export function ClientModal({
     mode: 'onBlur',
     reValidateMode: 'onChange',
   });
-
-  const provinciaValue = useWatch({ control: form.control, name: 'provincia' });
 
   const loadLocalities = useCallback(async (provinceName: string) => {
     if (localitiesCache.current[provinceName]) {
@@ -357,9 +355,9 @@ export function ClientModal({
                               }))}
                               value={field.value ?? ''}
                               onValueChange={(v) => handleProvinciaChange(v, field.onChange)}
-                              placeholder="Seleccionar..."
-                              searchPlaceholder="Buscar provincia..."
-                              emptyMessage="No se encontró la provincia."
+                              placeholder=""
+                              searchPlaceholder=""
+                              emptyMessage=""
                             />
                           </FormControl>
                           <div className="min-h-5">
@@ -386,9 +384,9 @@ export function ClientModal({
                                 }))}
                                 value={field.value ?? ''}
                                 onValueChange={field.onChange}
-                                placeholder={provinciaValue ? 'Seleccionar...' : 'Elegí una provincia'}
-                                searchPlaceholder="Buscar localidad..."
-                                emptyMessage="No se encontró la localidad."
+                                placeholder=""
+                                searchPlaceholder=""
+                                emptyMessage=""
                                 disabled={localities.length === 0}
                               />
                             </FormControl>
@@ -428,7 +426,6 @@ export function ClientModal({
                         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
                           <div className="relative">
                             <Input
-                              placeholder="Nombre de la zona"
                               value={newZoneName}
                               onChange={(e) => setNewZoneName(e.target.value)}
                               onKeyDown={(e) => {
@@ -484,7 +481,7 @@ export function ClientModal({
                             value={field.value ? String(field.value) : ''}
                           >
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Seleccionar..." />
+                              <SelectValue placeholder="" />
                             </SelectTrigger>
                             <SelectContent>
                               {field.value && (
@@ -537,8 +534,8 @@ export function ClientModal({
               <Button type="submit" disabled={isExecuting}>
                 {isExecuting
                   ? isEditMode
-                    ? 'Guardando…'
-                    : 'Creando…'
+                    ? 'Guardando'
+                    : 'Creando'
                   : isEditMode
                     ? 'Guardar cambios'
                     : 'Crear cliente'}
@@ -563,7 +560,7 @@ export function ClientModal({
                 disabled={isDeletingZone}
                 variant="destructive"
               >
-                {isDeletingZone ? 'Eliminando…' : 'Eliminar'}
+                {isDeletingZone ? 'Eliminando' : 'Eliminar'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

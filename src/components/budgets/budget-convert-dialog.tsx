@@ -429,7 +429,7 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
                   </Button>
                   <Button type="submit" disabled={isConverting}>
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    {isConverting ? 'Creando venta…' : 'Confirmar venta'}
+                    {isConverting ? 'Creando venta' : 'Confirmar venta'}
                   </Button>
                 </div>
               </ResponsiveModalFooter>

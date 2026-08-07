@@ -149,7 +149,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
             </Label>
             <Select value={type} onValueChange={(value) => setType(value as typeof type)}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecciona el tipo de movimiento" />
+                <SelectValue placeholder="" />
               </SelectTrigger>
               <SelectContent>
                 {movementTypes.map((mt) => (
@@ -168,14 +168,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
             <Label>
               {type === 'adjustment' ? 'Nuevo stock' : 'Cantidad'} <span className="text-destructive">*</span>
             </Label>
-            <Input
-              type="number"
-              min="0"
-              step="1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder={type === 'adjustment' ? 'Ej: 50' : 'Ej: 10'}
-            />
+            <Input type="number" min="0" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
 
           {newStock !== null && (
@@ -189,13 +182,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
 
           <div className="space-y-2">
             <Label>Observaciones</Label>
-            <Textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Ej: Compra a proveedor X, Producto vencido, Inventario físico..."
-              maxLength={500}
-              rows={3}
-            />
+            <Textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} rows={3} />
           </div>
         </ResponsiveModalBody>
 

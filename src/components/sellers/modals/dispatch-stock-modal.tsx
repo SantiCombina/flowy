@@ -146,7 +146,6 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
                       min="0"
                       max={variant.stock}
                       step="1"
-                      placeholder="0"
                       value={quantities[variant.id] ?? ''}
                       onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
                       className="text-center"
@@ -163,7 +162,7 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
             Cancelar
           </Button>
           <Button type="submit" disabled={isExecuting || variantsWithStock.length === 0}>
-            {isExecuting ? 'Despachando...' : 'Confirmar despacho'}
+            {isExecuting ? 'Despachando' : 'Confirmar despacho'}
           </Button>
         </ResponsiveModalFooter>
       </form>

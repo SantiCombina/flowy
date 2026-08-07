@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -37,14 +38,10 @@ export function ProductModal({
   const [presentations, setPresentations] = useState(initialPresentations);
 
   const {
+    form,
     isEditing,
     isSubmitting,
     isLoading,
-    register,
-    control,
-    handleSubmit,
-    errors,
-    setValue,
     fields,
     handleAddVariant,
     handleRemoveVariant,
@@ -52,6 +49,7 @@ export function ProductModal({
     pendingImageFile,
     currentImageUrl,
     handleFileSelect,
+    onSubmit,
   } = useProductForm({
     productId,
     isOpen,
@@ -72,7 +70,7 @@ export function ProductModal({
     setCategories,
     setQualities,
     setPresentations,
-    setValue,
+    setValue: form.setValue,
     onRefreshEntities,
   });
 
@@ -84,7 +82,9 @@ export function ProductModal({
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>{isEditing ? 'Editar producto' : 'Nuevo producto'}</ResponsiveModalTitle>
           <ResponsiveModalDescription>
-            {isEditing ? 'Modifica los datos del producto.' : 'Completa los datos del producto y sus presentaciones.'}
+            {isEditing
+              ? 'Modificá los datos del producto y sus presentaciones.'
+              : 'Completá los datos del producto y al menos una presentación con su precio.'}
           </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
@@ -93,49 +93,44 @@ export function ProductModal({
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
           </ResponsiveModalBody>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-            <ResponsiveModalBody className="space-y-5">
-              <ProductInfoSection
-                register={register}
-                control={control}
-                errors={errors}
-                pendingImageFile={pendingImageFile}
-                currentImageUrl={currentImageUrl}
-                onFileSelect={handleFileSelect}
-              />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+              <ResponsiveModalBody className="space-y-5">
+                <ProductInfoSection
+                  pendingImageFile={pendingImageFile}
+                  currentImageUrl={currentImageUrl}
+                  onFileSelect={handleFileSelect}
+                />
 
-              <ProductAttributesSection
-                control={control}
-                brands={brands}
-                categories={categories}
-                qualities={qualities}
-                onCreateEntity={handleCreateEntity}
-                onDeleteEntity={openDeleteEntity}
-              />
+                <ProductAttributesSection
+                  brands={brands}
+                  categories={categories}
+                  qualities={qualities}
+                  onCreateEntity={handleCreateEntity}
+                  onDeleteEntity={openDeleteEntity}
+                />
 
-              <ProductVariantsSection
-                fields={fields}
-                errors={errors}
-                control={control}
-                setValue={setValue}
-                onAddVariant={handleAddVariant}
-                onRemoveVariant={handleRemoveVariant}
-                presentations={presentations}
-                onCreatePresentation={(name) => handleCreateEntity('presentation', name)}
-                onDeletePresentation={(id, label) => openDeleteEntity('presentation', id, label)}
-                hasEmptyPresentation={hasEmptyPresentation}
-              />
-            </ResponsiveModalBody>
+                <ProductVariantsSection
+                  fields={fields}
+                  onAddVariant={handleAddVariant}
+                  onRemoveVariant={handleRemoveVariant}
+                  presentations={presentations}
+                  onCreatePresentation={(name) => handleCreateEntity('presentation', name)}
+                  onDeletePresentation={(id, label) => openDeleteEntity('presentation', id, label)}
+                  hasEmptyPresentation={hasEmptyPresentation}
+                />
+              </ResponsiveModalBody>
 
-            <ResponsiveModalFooter>
-              <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear producto'}
-              </Button>
-            </ResponsiveModalFooter>
-          </form>
+              <ResponsiveModalFooter>
+                <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Guardando' : isEditing ? 'Guardar cambios' : 'Crear producto'}
+                </Button>
+              </ResponsiveModalFooter>
+            </form>
+          </Form>
         )}
       </ResponsiveModal>
 

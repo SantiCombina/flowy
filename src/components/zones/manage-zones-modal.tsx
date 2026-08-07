@@ -199,7 +199,6 @@ export function ManageZonesModal({ isOpen, onClose, onZonesChanged }: ManageZone
         {isAdding && (
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Nombre de la zona"
               value={newZoneName}
               onChange={(e) => setNewZoneName(e.target.value)}
               onKeyDown={(e) => {

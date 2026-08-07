@@ -54,7 +54,7 @@ interface PriceInputProps {
   className?: string;
 }
 
-export function PriceInput({ value, onChange, onBlur, placeholder = '0,00', className }: PriceInputProps) {
+export function PriceInput({ value, onChange, onBlur, placeholder = '0,00', className, ...props }: PriceInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [localValue, setLocalValue] = useState('');
 
@@ -88,6 +88,7 @@ export function PriceInput({ value, onChange, onBlur, placeholder = '0,00', clas
       onBlur={handleBlur}
       placeholder={placeholder}
       className={cn('tabular-nums', className)}
+      {...props}
     />
   );
 }

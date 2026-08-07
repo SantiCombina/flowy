@@ -67,12 +67,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
             <FormItem>
               <FormLabel>Teléfono</FormLabel>
               <FormControl>
-                <Input
-                  inputMode="tel"
-                  placeholder="+54 9 11 1234-5678"
-                  {...field}
-                  onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
-                />
+                <Input inputMode="tel" {...field} onChange={(e) => field.onChange(formatPhoneInput(e.target.value))} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -86,12 +81,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
             <FormItem>
               <FormLabel>DNI</FormLabel>
               <FormControl>
-                <Input
-                  inputMode="numeric"
-                  placeholder="12345678"
-                  {...field}
-                  onChange={(e) => field.onChange(formatDni(e.target.value))}
-                />
+                <Input inputMode="numeric" {...field} onChange={(e) => field.onChange(formatDni(e.target.value))} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -107,7 +97,6 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
               <FormControl>
                 <Input
                   inputMode="numeric"
-                  placeholder="20-12345678-9"
                   {...field}
                   onChange={(e) => field.onChange(formatCuitCuil(e.target.value))}
                 />
@@ -124,7 +113,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
             <FormItem>
               <FormLabel>CBU/Alias</FormLabel>
               <FormControl>
-                <Input placeholder="alias.banco" {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -132,7 +121,7 @@ export function UpdateProfileForm({ phone, dni, cuitCuil, cbu }: UpdateProfileFo
         />
 
         <Button type="submit" disabled={isExecuting} className="ml-auto block">
-          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+          {isExecuting ? 'Guardando' : 'Guardar cambios'}
         </Button>
       </form>
     </Form>

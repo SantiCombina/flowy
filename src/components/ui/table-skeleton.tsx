@@ -35,7 +35,7 @@ export function TableSkeleton({
 
                 if (isAction) {
                   return (
-                    <TableHead key={i} className="w-[60px]">
+                    <TableHead key={i} className="w-15">
                       <Skeleton className="h-4 w-8 ml-auto" />
                     </TableHead>
                   );
@@ -43,7 +43,7 @@ export function TableSkeleton({
 
                 if (isFirst && hasCheckbox) {
                   return (
-                    <TableHead key={i} className="w-[40px]">
+                    <TableHead key={i} className="w-10">
                       <Skeleton className="h-4 w-4" />
                     </TableHead>
                   );
@@ -51,7 +51,7 @@ export function TableSkeleton({
 
                 if (isFirst && firstColumnVariant === 'status-dot') {
                   return (
-                    <TableHead key={i} className="w-[40px]">
+                    <TableHead key={i} className="w-10">
                       <Skeleton className="h-2 w-2" />
                     </TableHead>
                   );

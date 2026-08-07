@@ -1,90 +1,81 @@
 'use client';
 
-import type { Control, FieldErrors, UseFormRegister } from 'react-hook-form';
-import { Controller } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 
-import { Checkbox } from '@/components/ui/checkbox';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import type { ProductFormData } from '@/schemas/products/product-schema';
 
 import { ImageUpload } from './image-upload';
 
-interface ProductFormData {
-  name: string;
-  description?: string;
-  brandId?: string;
-  categoryId?: string;
-  qualityId?: string;
-  imageId?: number;
-  isActive: boolean;
-  variants: Array<{
-    id?: number;
-    presentationId?: string;
-    code?: string;
-    stock: number;
-    minimumStock: number;
-    costPrice: number;
-    profitMargin: number;
-  }>;
-}
-
 interface ProductInfoSectionProps {
-  register: UseFormRegister<ProductFormData>;
-  control: Control<ProductFormData>;
-  errors: FieldErrors<ProductFormData>;
   pendingImageFile: File | undefined;
   currentImageUrl: string | undefined;
   onFileSelect: (file: File | undefined) => void;
 }
 
-export function ProductInfoSection({
-  register,
-  control,
-  errors,
-  pendingImageFile,
-  currentImageUrl,
-  onFileSelect,
-}: ProductInfoSectionProps) {
+export function ProductInfoSection({ pendingImageFile, currentImageUrl, onFileSelect }: ProductInfoSectionProps) {
+  const { control } = useFormContext<ProductFormData>();
+
   return (
     <div className="space-y-4">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-2 border-b">
         Información general
       </h3>
 
-      <div className="space-y-2">
-        <Label>Imagen del producto</Label>
+      <div className="space-y-1.5">
+        <FormLabel>Imagen del producto</FormLabel>
         <ImageUpload pendingFile={pendingImageFile} previewUrl={currentImageUrl} onFileSelect={onFileSelect} />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="name">Nombre *</Label>
-        <Input id="name" {...register('name')} placeholder="Ej: Alimento Premium Perro" />
-        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-      </div>
+      <FormField
+        control={control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              Nombre <span className="text-sky">*</span>
+            </FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <div className="min-h-5">
+              <FormMessage />
+            </div>
+          </FormItem>
+        )}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea
-          id="description"
-          {...register('description')}
-          placeholder="Descripción del producto..."
-          rows={3}
-          maxLength={500}
-        />
-        <p className="text-xs text-muted-foreground">Máximo 500 caracteres</p>
-      </div>
+      <FormField
+        control={control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Descripción</FormLabel>
+            <FormControl>
+              <Textarea {...field} rows={3} maxLength={500} />
+            </FormControl>
+            <div className="min-h-5">
+              <FormMessage />
+            </div>
+          </FormItem>
+        )}
+      />
 
-      <div className="flex items-center space-x-2">
-        <Controller
-          name="isActive"
-          control={control}
-          render={({ field }) => <Checkbox checked={field.value} onCheckedChange={field.onChange} id="isActive" />}
-        />
-        <Label htmlFor="isActive" className="cursor-pointer">
-          Producto activo
-        </Label>
-      </div>
+      <FormField
+        control={control}
+        name="isActive"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-center justify-between rounded-xl bg-white p-3 shadow-sm transition-all duration-200">
+            <FormLabel className="cursor-pointer font-normal">Producto activo</FormLabel>
+            <FormControl>
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
+            </FormControl>
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

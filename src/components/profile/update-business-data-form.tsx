@@ -71,7 +71,6 @@ export function UpdateBusinessDataForm({
               <FormControl>
                 <Input
                   inputMode="numeric"
-                  placeholder="20-12345678-9"
                   {...field}
                   onChange={(e) => field.onChange(formatBusinessCuit(e.target.value))}
                 />
@@ -88,12 +87,7 @@ export function UpdateBusinessDataForm({
             <FormItem>
               <FormLabel>Teléfono comercial</FormLabel>
               <FormControl>
-                <Input
-                  inputMode="tel"
-                  placeholder="+54 9 11 1234-5678"
-                  {...field}
-                  onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
-                />
+                <Input inputMode="tel" {...field} onChange={(e) => field.onChange(formatPhoneInput(e.target.value))} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -107,7 +101,7 @@ export function UpdateBusinessDataForm({
             <FormItem>
               <FormLabel>Domicilio fiscal</FormLabel>
               <FormControl>
-                <Input placeholder="Av. Corrientes 1234, CABA" {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,7 +117,7 @@ export function UpdateBusinessDataForm({
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccioná una condición" />
+                    <SelectValue placeholder="" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -139,7 +133,7 @@ export function UpdateBusinessDataForm({
         />
 
         <Button type="submit" disabled={isExecuting} className="ml-auto block">
-          {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+          {isExecuting ? 'Guardando' : 'Guardar cambios'}
         </Button>
       </form>
     </Form>

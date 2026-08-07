@@ -138,7 +138,6 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
                     min="0"
                     max={item.quantity}
                     step="1"
-                    placeholder="0"
                     value={quantities[item.variantId] ?? ''}
                     onChange={(e) => handleQuantityChange(item.variantId, e.target.value)}
                     className="text-center"

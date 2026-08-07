@@ -87,7 +87,7 @@ export function TableColumnsConfig({ tableName, initialColumns, onSave }: TableC
       {hasChanges && (
         <div className="flex justify-end pt-2">
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Guardando...' : 'Guardar cambios'}
+            {isSaving ? 'Guardando' : 'Guardar cambios'}
           </Button>
         </div>
       )}

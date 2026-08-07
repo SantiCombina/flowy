@@ -70,7 +70,6 @@ function SelectContent({
         )}
         position={position}
         align={align}
-        onPointerDownOutside={(event) => event.preventDefault()}
         {...props}
       >
         <SelectScrollUpButton />

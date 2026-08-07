@@ -117,7 +117,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>Nombre completo</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Juan Pérez" />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +131,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} type="email" placeholder="vendedor@ejemplo.com" />
+                      <Input {...field} type="email" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,7 +150,6 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                     <FormControl>
                       <Input
                         inputMode="tel"
-                        placeholder="+54 9 11 1234-5678"
                         {...field}
                         onChange={(e) => field.onChange(formatPhoneInput(e.target.value))}
                       />
@@ -167,7 +166,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>DNI</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="12345678" maxLength={8} />
+                      <Input {...field} maxLength={8} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -181,12 +180,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>CUIT/CUIL</FormLabel>
                     <FormControl>
-                      <Input
-                        value={field.value}
-                        onChange={handleCuitCuilChange(field.onChange)}
-                        placeholder="20-12345678-9"
-                        maxLength={13}
-                      />
+                      <Input value={field.value} onChange={handleCuitCuilChange(field.onChange)} maxLength={13} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,7 +194,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
                   <FormItem>
                     <FormLabel>CBU / Alias</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="0000000000000000000000 o alias" maxLength={50} />
+                      <Input {...field} maxLength={50} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -232,7 +226,7 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
               Cancelar
             </Button>
             <Button type="submit" disabled={isExecuting}>
-              {isExecuting ? 'Guardando...' : 'Guardar cambios'}
+              {isExecuting ? 'Guardando' : 'Guardar cambios'}
             </Button>
           </ResponsiveModalFooter>
         </form>

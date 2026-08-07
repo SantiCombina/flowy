@@ -152,7 +152,7 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccioná..." />
+                        <SelectValue placeholder="" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

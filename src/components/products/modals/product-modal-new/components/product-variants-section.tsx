@@ -1,37 +1,16 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import type { Control, FieldErrors, UseFormSetValue } from 'react-hook-form';
-import { useWatch } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import type { Presentation } from '@/payload-types';
+import type { ProductFormData } from '@/schemas/products/product-schema';
 
 import { VariantCard } from './variant-card';
 
-interface ProductFormData {
-  name: string;
-  description?: string;
-  brandId?: string;
-  categoryId?: string;
-  qualityId?: string;
-  isActive: boolean;
-  variants: Array<{
-    id?: number;
-    presentationId?: string;
-    code?: string;
-    stock: number;
-    minimumStock: number;
-    costPrice: number;
-    profitMargin: number;
-  }>;
-}
-
 interface ProductVariantsSectionProps {
   fields: Array<Record<string, unknown> & { id: string }>;
-  errors: FieldErrors<ProductFormData>;
-  control: Control<ProductFormData>;
-  setValue: UseFormSetValue<ProductFormData>;
   onAddVariant: () => void;
   onRemoveVariant: (index: number) => void;
   presentations: Presentation[];
@@ -42,9 +21,6 @@ interface ProductVariantsSectionProps {
 
 export function ProductVariantsSection({
   fields,
-  errors,
-  control,
-  setValue,
   onAddVariant,
   onRemoveVariant,
   presentations,
@@ -52,6 +28,7 @@ export function ProductVariantsSection({
   onDeletePresentation,
   hasEmptyPresentation,
 }: ProductVariantsSectionProps) {
+  const { control, formState } = useFormContext<ProductFormData>();
   const variants = useWatch({ control, name: 'variants' });
   const canAddVariant = !variants?.some((v) => !v?.presentationId);
 
@@ -77,7 +54,12 @@ export function ProductVariantsSection({
         </Button>
       </div>
 
-      {errors.variants && <p className="text-sm text-destructive">{errors.variants.message}</p>}
+      {formState.errors.variants?.message && (
+        <p className="text-sm text-destructive">{formState.errors.variants.message}</p>
+      )}
+      {formState.errors.variants?.root?.message && (
+        <p className="text-sm text-destructive">{formState.errors.variants.root.message}</p>
+      )}
 
       <div className="space-y-3">
         {fields.map((field, index) => (
@@ -91,8 +73,6 @@ export function ProductVariantsSection({
             onDeletePresentation={onDeletePresentation}
             hasEmptyPresentation={hasEmptyPresentation}
             usedPresentationIds={getUsedPresentationIds(index)}
-            control={control}
-            setValue={setValue}
           />
         ))}
       </div>

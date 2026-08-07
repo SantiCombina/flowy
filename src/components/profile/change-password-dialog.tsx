@@ -84,7 +84,7 @@ export function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>Contraseña actual</FormLabel>
                     <FormControl>
-                      <PasswordInput placeholder="••••••••" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -98,7 +98,7 @@ export function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>Nueva contraseña</FormLabel>
                     <FormControl>
-                      <PasswordInput placeholder="••••••••" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,7 +112,7 @@ export function ChangePasswordDialog() {
                   <FormItem>
                     <FormLabel>Confirmar nueva contraseña</FormLabel>
                     <FormControl>
-                      <PasswordInput placeholder="••••••••" {...field} />
+                      <PasswordInput {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -125,7 +125,7 @@ export function ChangePasswordDialog() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isExecuting}>
-                {isExecuting ? 'Guardando…' : 'Guardar'}
+                {isExecuting ? 'Guardando' : 'Guardar'}
               </Button>
             </ResponsiveModalFooter>
           </form>

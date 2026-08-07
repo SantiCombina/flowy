@@ -1,4 +1,7 @@
 import type { Brand, Category, Quality, Presentation } from '@/payload-types';
+import type { ProductFormData } from '@/schemas/products/product-schema';
+
+export type { ProductFormData };
 
 export type EntityType = 'brand' | 'category' | 'quality' | 'presentation';
 
