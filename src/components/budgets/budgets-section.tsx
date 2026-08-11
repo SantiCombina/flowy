@@ -42,7 +42,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
-import { useBudgetsUrlSync } from '@/hooks/use-budgets-url-sync';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
@@ -178,8 +177,6 @@ function BudgetsSectionComponent({
   const { invalidateQueries } = useInvalidateQueries();
 
   const [filters, setFilters] = useState<GetBudgetsListValues>(() => initialFilters);
-
-  useBudgetsUrlSync(filters, setFilters);
 
   const isInitialQuery = useMemo(() => {
     return (

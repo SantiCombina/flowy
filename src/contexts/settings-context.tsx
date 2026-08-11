@@ -3,14 +3,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
-import { getSettingsAction, updateTableColumnsAction, updateItemsPerPageAction } from '@/components/settings/actions';
-import {
-  DEFAULT_ITEMS_PER_PAGE,
-  ITEMS_PER_PAGE_OPTIONS,
-  TABLE_COLUMNS,
-  type TableName,
-  type ItemsPerPageOption,
-} from '@/lib/constants/table-columns';
+import { getSettingsAction, updateTableColumnsAction } from '@/components/settings/actions';
+import { DEFAULT_ITEMS_PER_PAGE, TABLE_COLUMNS, type TableName } from '@/lib/constants/table-columns';
 
 export interface SettingsData {
   id: number;
@@ -41,9 +35,7 @@ interface SettingsState {
 interface SettingsContextType extends SettingsState {
   getVisibleColumns: (tableName: TableName) => string[];
   isColumnVisible: (tableName: TableName, columnKey: string) => boolean;
-  getItemsPerPage: () => ItemsPerPageOption;
   updateTableColumns: (tableName: TableName, columns: string[]) => Promise<void>;
-  updateItemsPerPage: (itemsPerPage: ItemsPerPageOption) => Promise<void>;
   reloadSettings: () => Promise<void>;
 }
 
@@ -116,13 +108,6 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
     [getVisibleColumns],
   );
 
-  const getItemsPerPage = useCallback((): ItemsPerPageOption => {
-    const value = parseInt(state.itemsPerPage, 10);
-    return ITEMS_PER_PAGE_OPTIONS.includes(value as ItemsPerPageOption)
-      ? (value as ItemsPerPageOption)
-      : DEFAULT_ITEMS_PER_PAGE;
-  }, [state.itemsPerPage]);
-
   const updateTableColumns = useCallback(async (tableName: TableName, columns: string[]) => {
     const key = `${tableName}Columns` as keyof SettingsState;
     let previous: string[] = [];
@@ -141,29 +126,6 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
       }
     } catch {
       setState((prev) => ({ ...prev, [key]: previous }));
-    }
-  }, []);
-
-  const updateItemsPerPageCallback = useCallback(async (itemsPerPage: ItemsPerPageOption) => {
-    try {
-      const result = await updateItemsPerPageAction({
-        itemsPerPage: itemsPerPage.toString(),
-      });
-
-      if (result?.serverError) {
-        toast.error(result.serverError);
-        return;
-      }
-
-      if (result?.data?.success) {
-        setState((prev) => ({
-          ...prev,
-          itemsPerPage: itemsPerPage.toString(),
-        }));
-        toast.success('Preferencia actualizada');
-      }
-    } catch {
-      // silently handled by serverError check above
     }
   }, []);
 
@@ -216,9 +178,7 @@ export function SettingsProvider({ children, initialSettings }: SettingsProvider
     ...state,
     getVisibleColumns,
     isColumnVisible,
-    getItemsPerPage,
     updateTableColumns,
-    updateItemsPerPage: updateItemsPerPageCallback,
     reloadSettings,
   };
 

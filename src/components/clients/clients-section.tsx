@@ -9,8 +9,6 @@ import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
-import { usePersistedLimit } from '@/lib/hooks/use-persisted-limit';
 import { queryKeys } from '@/lib/query-keys';
 import type { Serialized } from '@/lib/serialization';
 import type { Client, User } from '@/payload-types';
@@ -49,7 +47,6 @@ export function ClientsSection({ clients, clientDebts, currentUser, capabilities
   const [zoneFilter, setZoneFilter] = useState<string>('');
   const [localidadFilter, setLocalidadFilter] = useState<string>('');
   const [provinciaFilter, setProvinciaFilter] = useState<string>('');
-  const [itemsPerPage, setItemsPerPage] = usePersistedLimit('flowy:clients:limit', DEFAULT_ITEMS_PER_PAGE);
 
   const handleZonesChanged = () => {
     invalidateQueries([queryKeys.zones.list()]);
@@ -117,8 +114,6 @@ export function ClientsSection({ clients, clientDebts, currentUser, capabilities
           showContactColumns={canUseContactFields}
           onEdit={canManageClients ? handleEdit : undefined}
           canDelete={canDeleteClients}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
         />
       </main>
 

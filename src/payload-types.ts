@@ -840,7 +840,7 @@ export interface Setting {
   /**
    * Cantidad de elementos por página en las tablas
    */
-  itemsPerPage?: ('10' | '25' | '50' | '100') | null;
+  itemsPerPage?: ('10' | '25' | '50') | null;
   updatedAt: string;
   createdAt: string;
 }

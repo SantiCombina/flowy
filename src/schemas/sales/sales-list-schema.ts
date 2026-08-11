@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
+
 const SORT_COLUMNS = [
   'date',
   'seller',
@@ -25,10 +27,10 @@ export const getSalesListSchema = z.object({
       invalid_type_error: 'El límite debe ser un número.',
     })
     .int('El límite debe ser un número entero.')
-    .refine((value) => [25, 50, 100].includes(value), {
-      message: 'El límite debe ser 25, 50 o 100.',
+    .refine((value) => (ITEMS_PER_PAGE_OPTIONS as readonly number[]).includes(value), {
+      message: `El límite debe ser uno de: ${ITEMS_PER_PAGE_OPTIONS.join(', ')}.`,
     })
-    .default(25),
+    .default(ITEMS_PER_PAGE_OPTIONS[0]),
   sort: z
     .enum(SORT_COLUMNS, {
       invalid_type_error: 'La columna de ordenamiento no es válida.',

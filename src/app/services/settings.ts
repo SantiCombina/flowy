@@ -1,10 +1,4 @@
-import {
-  DEFAULT_COLUMNS,
-  DEFAULT_ITEMS_PER_PAGE,
-  ITEMS_PER_PAGE_OPTIONS,
-  type ItemsPerPageOption,
-  type TableName,
-} from '@/lib/constants/table-columns';
+import { DEFAULT_COLUMNS, DEFAULT_ITEMS_PER_PAGE, type TableName } from '@/lib/constants/table-columns';
 import { getPayloadClient } from '@/lib/payload';
 import type { Setting } from '@/payload-types';
 
@@ -134,20 +128,6 @@ export function getVisibleColumns(settings: Setting | null, tableName: TableName
 export function isColumnVisible(settings: Setting | null, tableName: TableName, columnKey: string): boolean {
   const visibleColumns = getVisibleColumns(settings, tableName);
   return visibleColumns.includes(columnKey);
-}
-
-/**
- * Obtiene la preferencia de elementos por página
- */
-export function getItemsPerPage(settings: Setting | null): ItemsPerPageOption {
-  if (!settings?.itemsPerPage) {
-    return DEFAULT_ITEMS_PER_PAGE;
-  }
-
-  const value = parseInt(settings.itemsPerPage, 10);
-  return ITEMS_PER_PAGE_OPTIONS.includes(value as ItemsPerPageOption)
-    ? (value as ItemsPerPageOption)
-    : DEFAULT_ITEMS_PER_PAGE;
 }
 
 /**

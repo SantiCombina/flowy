@@ -25,7 +25,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { COLUMN_LABELS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { calculatePrice } from '@/lib/money';
 import { queryKeys } from '@/lib/query-keys';
 import type { Product } from '@/payload-types';
@@ -80,7 +80,7 @@ function ProductsTableComponent({
 }: ProductsTableProps) {
   const router = useRouter();
   const { invalidateQueries } = useInvalidateQueries();
-  const { getItemsPerPage, getVisibleColumns, isLoading: isSettingsLoading, updateItemsPerPage } = useSettings();
+  const { getVisibleColumns, isLoading: isSettingsLoading } = useSettings();
 
   const visibleColumns = useMemo(
     () => (isSettingsLoading ? [] : getVisibleColumns('products')),
@@ -315,12 +315,6 @@ function ProductsTableComponent({
   );
 
   const keyExtractor = useCallback((v: PopulatedProductVariant) => `${v.id}-${v.product.id}`, []);
-  const handleItemsPerPageChange = useCallback(
-    (n: ItemsPerPageOption) => {
-      void updateItemsPerPage(n);
-    },
-    [updateItemsPerPage],
-  );
 
   return (
     <>
@@ -330,8 +324,6 @@ function ProductsTableComponent({
         keyExtractor={keyExtractor}
         isLoading={isLoading || isSettingsLoading}
         emptyMessage="No hay productos"
-        defaultItemsPerPage={getItemsPerPage()}
-        onItemsPerPageChange={handleItemsPerPageChange}
         selectable={selectable}
         selectedKeys={selectedKeys}
         onSelectionChange={onSelectionChange}

@@ -45,7 +45,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { useSalesUrlSync } from '@/hooks/use-sales-url-sync';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
@@ -181,8 +180,6 @@ function SalesSectionComponent({
     }
     return initialFilters;
   });
-
-  useSalesUrlSync(filters, setFilters);
 
   const isInitialQuery = useMemo(() => {
     return (

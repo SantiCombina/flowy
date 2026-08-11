@@ -257,26 +257,22 @@ function DataTableComponent<T>({
 
       <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          {onItemsPerPageChange && (
-            <>
-              <span className="hidden sm:inline">Filas por página</span>
-              <Select
-                value={String(itemsPerPage)}
-                onValueChange={(v) => handleItemsPerPageChange(Number(v) as ItemsPerPageOption)}
-              >
-                <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ITEMS_PER_PAGE_OPTIONS.map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
+          <span className="hidden sm:inline">Filas por página</span>
+          <Select
+            value={String(itemsPerPage)}
+            onValueChange={(v) => handleItemsPerPageChange(Number(v) as ItemsPerPageOption)}
+          >
+            <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ITEMS_PER_PAGE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">

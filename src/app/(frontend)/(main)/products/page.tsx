@@ -11,6 +11,7 @@ import { RealtimeRefresher } from '@/components/notifications/realtime-refresher
 import { ProductsSection } from '@/components/products/products-section';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { hasModuleAccess, MODULE_ACCESS, resolveProductsTenantId } from '@/lib/entitlements/module-access';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
@@ -43,7 +44,10 @@ async function ProductsContent({
     ]);
   }
 
-  const initialVariants = await loadVariantsWithProducts({}, { limit: 50, page: 1, sort: 'product' });
+  const initialVariants = await loadVariantsWithProducts(
+    {},
+    { limit: DEFAULT_ITEMS_PER_PAGE, page: 1, sort: 'product' },
+  );
 
   return (
     <ProductsSection

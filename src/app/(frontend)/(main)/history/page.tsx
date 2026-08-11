@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 
 const moduleAccess = MODULE_ACCESS['/history'];
@@ -26,7 +27,7 @@ async function HistoryDataFetcher() {
 
   const initialData = await getHistoryMovements(user.id, {
     page: 1,
-    limit: 25,
+    limit: DEFAULT_ITEMS_PER_PAGE,
   });
 
   return (

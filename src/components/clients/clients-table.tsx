@@ -18,7 +18,7 @@ import {
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { COLUMN_LABELS, DEFAULT_ITEMS_PER_PAGE, type ItemsPerPageOption } from '@/lib/constants/table-columns';
+import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
 import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
@@ -43,8 +43,6 @@ interface ClientsTableProps {
   showContactColumns?: boolean;
   onEdit?: (client: Client) => void;
   canDelete: boolean;
-  itemsPerPage?: ItemsPerPageOption;
-  onItemsPerPageChange?: (n: ItemsPerPageOption) => void;
 }
 
 export function ClientsTable({
@@ -64,8 +62,6 @@ export function ClientsTable({
   showContactColumns = true,
   onEdit,
   canDelete,
-  itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
-  onItemsPerPageChange,
 }: ClientsTableProps) {
   const actionVisibility = resolveClientActionVisibility(onEdit !== undefined, canDelete);
   const { getVisibleColumns } = useSettings();
@@ -278,8 +274,6 @@ export function ClientsTable({
         columns={columns}
         keyExtractor={(c) => c.id}
         emptyMessage={searchQuery ? 'No se encontraron clientes' : 'No hay clientes registrados aún'}
-        defaultItemsPerPage={itemsPerPage}
-        onItemsPerPageChange={onItemsPerPageChange}
       />
 
       <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>

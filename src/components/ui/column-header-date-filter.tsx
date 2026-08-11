@@ -3,8 +3,8 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { TableHead } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -90,22 +90,19 @@ export function ColumnHeaderDateFilter({
         {isMobile ? (
           <>
             {triggerButton(() => setOpen(true))}
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetContent
-                side="bottom"
-                className="rounded-t-xl p-0 gap-0 max-h-[90svh] overflow-y-auto"
-                showCloseButton={false}
-              >
-                <SheetTitle className="sr-only">Filtrar por fecha</SheetTitle>
-                <div className="mx-auto mt-2 mb-1 h-1 w-10 rounded-full bg-muted shrink-0" />
-                <div className="px-4 pt-1 pb-2 shrink-0">
-                  <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    Filtrar por fecha
-                  </p>
+            <Drawer open={open} onOpenChange={setOpen}>
+              <DrawerContent className="p-0 gap-0 max-h-[90svh]">
+                <DrawerTitle className="sr-only">Filtrar por fecha</DrawerTitle>
+                <div className="overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+                  <div className="px-4 pt-1 pb-2">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                      Filtrar por fecha
+                    </p>
+                  </div>
+                  {content}
                 </div>
-                <div className="shrink-0">{content}</div>
-              </SheetContent>
-            </Sheet>
+              </DrawerContent>
+            </Drawer>
           </>
         ) : (
           <Popover open={open} onOpenChange={setOpen}>

@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { budgetsUrlConstants, parseEnum, parseLimit, parseOptionalDate, parsePage } from '@/lib/budgets-url-utils';
+import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 import type { GetBudgetsListValues } from '@/schemas/budgets/budget-list-schema';
 
@@ -20,46 +20,21 @@ export const metadata: Metadata = {
 
 const moduleAccess = MODULE_ACCESS['/budgets'];
 
-function getFirstParam(value: string | string[] | undefined): string | null {
-  if (Array.isArray(value)) return value[0] ?? null;
-  return value ?? null;
-}
-
-async function BudgetsDataFetcher({
-  searchParams: paramsPromise,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+async function BudgetsDataFetcher() {
   const guardedUser = await loadActiveGuardedUser();
   const user = guardedUser.user;
 
   const isSeller = user.role === 'seller';
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
-  const params = await paramsPromise;
-
-  const dateFrom = parseOptionalDate(getFirstParam(params.dateFrom));
-  const dateTo = parseOptionalDate(getFirstParam(params.dateTo));
-
   const initialFilters: GetBudgetsListValues = {
-    page: parsePage(getFirstParam(params.page)),
-    limit: parseLimit(getFirstParam(params.limit)),
-    sort:
-      parseEnum<NonNullable<GetBudgetsListValues['sort']>>(
-        getFirstParam(params.sort),
-        budgetsUrlConstants.SORT_VALUES,
-      ) || 'date',
-    sortDir:
-      parseEnum<NonNullable<GetBudgetsListValues['sortDir']>>(
-        getFirstParam(params.sortDir),
-        budgetsUrlConstants.SORT_DIR_VALUES,
-      ) || 'desc',
-    dateFrom: dateFrom ?? undefined,
-    dateTo: dateTo ?? undefined,
-    status: parseEnum<NonNullable<GetBudgetsListValues['status']>>(
-      getFirstParam(params.status),
-      budgetsUrlConstants.STATUS_VALUES,
-    ),
+    page: 1,
+    limit: DEFAULT_ITEMS_PER_PAGE,
+    sort: 'date',
+    sortDir: 'desc',
+    dateFrom: undefined,
+    dateTo: undefined,
+    status: undefined,
   };
 
   const initialResult = await loadBudgets(
@@ -90,11 +65,7 @@ async function BudgetsDataFetcher({
   );
 }
 
-export default async function BudgetsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function BudgetsPage() {
   const guardedUser = await loadActiveGuardedUser();
 
   if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
@@ -119,7 +90,7 @@ export default async function BudgetsPage({
           </main>
         }
       >
-        <BudgetsDataFetcher searchParams={searchParams} />
+        <BudgetsDataFetcher />
       </Suspense>
     </>
   );
