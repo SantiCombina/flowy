@@ -50,7 +50,7 @@ export const Users: CollectionConfig = {
     beforeLogin: [enforceSellerLoginEntitlement],
     beforeChange: [
       async ({ data, context, operation, originalDoc, req }) => {
-        if (data && ('activeEntitlementSnapshot' in data || 'entitlementState' in data)) {
+        if (hasEntitlementMutation(data, operation, originalDoc)) {
           assertTrustedWrite(context, 'User entitlement mutation');
         }
 
@@ -274,4 +274,37 @@ export const Users: CollectionConfig = {
 function recordId(value: unknown): number | undefined {
   if (typeof value === 'object' && value !== null && 'id' in value && typeof value.id === 'number') return value.id;
   return undefined;
+}
+
+function hasEntitlementMutation(
+  data: Record<string, unknown> | undefined,
+  operation: 'create' | 'update',
+  originalDoc: Record<string, unknown> | undefined,
+): boolean {
+  if (!data) return false;
+
+  const entitlementStateChanged =
+    'entitlementState' in data &&
+    data.entitlementState !== undefined &&
+    (operation === 'create'
+      ? data.entitlementState !== null
+      : optionalValue(data.entitlementState) !== optionalValue(originalDoc?.entitlementState));
+  const activeSnapshotChanged =
+    'activeEntitlementSnapshot' in data &&
+    data.activeEntitlementSnapshot !== undefined &&
+    (operation === 'create'
+      ? data.activeEntitlementSnapshot !== null
+      : relationshipId(data.activeEntitlementSnapshot) !== relationshipId(originalDoc?.activeEntitlementSnapshot));
+
+  return entitlementStateChanged || activeSnapshotChanged;
+}
+
+function relationshipId(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'object' && 'id' in value && value.id !== undefined && value.id !== null) return value.id;
+  return value;
+}
+
+function optionalValue(value: unknown): unknown {
+  return value ?? null;
 }
