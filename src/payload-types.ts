@@ -733,9 +733,6 @@ export interface Sale {
   paymentStatus: 'pending' | 'partially_collected' | 'collected';
   collectedAt?: string | null;
   checkDueDate?: string | null;
-  ownerPaymentStatus: 'pending' | 'partially_collected' | 'collected';
-  ownerAmountPaid: number;
-  ownerCollectedAt?: string | null;
   deliveryStatus: 'pending' | 'delivered';
   deliveredAt?: string | null;
   updatedAt: string;
@@ -1490,9 +1487,6 @@ export interface SalesSelect<T extends boolean = true> {
   paymentStatus?: T;
   collectedAt?: T;
   checkDueDate?: T;
-  ownerPaymentStatus?: T;
-  ownerAmountPaid?: T;
-  ownerCollectedAt?: T;
   deliveryStatus?: T;
   deliveredAt?: T;
   updatedAt?: T;

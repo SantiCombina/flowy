@@ -327,9 +327,6 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         total,
         amountPaid: isImmediate ? total : 0,
         paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
-        ...(isImmediate && sellerId === ownerId
-          ? { ownerAmountPaid: total, ownerPaymentStatus: 'collected' as const, ownerCollectedAt: now }
-          : {}),
         deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
         ...(data.immediateDelivery ? { deliveredAt: now } : {}),
         ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
@@ -416,7 +413,7 @@ function buildSortField(sort: string | undefined, sortDirValue: 'asc' | 'desc' |
     case 'paymentMethod':
       return `${direction}paymentMethod`;
     case 'paymentStatus':
-      return `${direction}ownerPaymentStatus`;
+      return `${direction}paymentStatus`;
     case 'deliveryStatus':
       return `${direction}deliveryStatus`;
     case 'seller':
@@ -454,9 +451,9 @@ async function _getPaginatedSales(
 
   if (filters.paymentStatus) {
     if (filters.paymentStatus === 'pending') {
-      conditions.push({ ownerPaymentStatus: { in: ['pending', 'partially_collected'] } });
+      conditions.push({ paymentStatus: { in: ['pending', 'partially_collected'] } });
     } else {
-      conditions.push({ ownerPaymentStatus: { equals: 'collected' } });
+      conditions.push({ paymentStatus: { equals: 'collected' } });
     }
   }
 
@@ -501,9 +498,6 @@ async function _getPaginatedSales(
       paymentStatus: true,
       amountPaid: true,
       collectedAt: true,
-      ownerAmountPaid: true,
-      ownerPaymentStatus: true,
-      ownerCollectedAt: true,
       checkDueDate: true,
       deliveryStatus: true,
       deliveredAt: true,
@@ -550,9 +544,9 @@ async function _getPaginatedSales(
       itemCount: sale.items.length,
       total: sale.total,
       paymentMethod: sale.paymentMethod ?? null,
-      paymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
-      amountPaid: sale.ownerAmountPaid ?? 0,
-      collectedAt: sale.ownerCollectedAt ?? undefined,
+      paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      amountPaid: sale.amountPaid ?? 0,
+      collectedAt: sale.collectedAt ?? undefined,
       checkDueDate: sale.checkDueDate ?? undefined,
       deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
       deliveredAt: sale.deliveredAt ?? undefined,
@@ -641,9 +635,9 @@ export async function getSales(filters: {
       itemCount: sale.items.length,
       total: sale.total,
       paymentMethod: sale.paymentMethod ?? null,
-      paymentStatus: (sale.ownerPaymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
-      amountPaid: sale.ownerAmountPaid ?? 0,
-      collectedAt: sale.ownerCollectedAt ?? undefined,
+      paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      amountPaid: sale.amountPaid ?? 0,
+      collectedAt: sale.collectedAt ?? undefined,
       checkDueDate: sale.checkDueDate ?? undefined,
       deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
       deliveredAt: sale.deliveredAt ?? undefined,
@@ -674,59 +668,31 @@ export async function registerPayment(
 
   const now = new Date().toISOString();
 
-  if (callerRole === 'owner') {
-    const currentOwnerPaymentStatus = sale.ownerPaymentStatus ?? 'pending';
-    if (currentOwnerPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+  const currentPaymentStatus = sale.paymentStatus ?? 'pending';
+  if (currentPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
 
-    const currentOwnerAmountPaid = sale.ownerAmountPaid ?? 0;
-    const remaining = sale.total - currentOwnerAmountPaid;
+  const currentAmountPaid = sale.amountPaid ?? 0;
+  const remaining = sale.total - currentAmountPaid;
 
-    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-    if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
+  if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+  if (amount > remaining) throw new Error(`El monto no puede superar el restante (${formatCurrency(remaining)})`);
 
-    const newOwnerAmountPaid = currentOwnerAmountPaid + amount;
-    const isCollected = moneyEquals(newOwnerAmountPaid, sale.total) || newOwnerAmountPaid > sale.total;
-    const newOwnerStatus = isCollected ? 'collected' : 'partially_collected';
+  const newAmountPaid = currentAmountPaid + amount;
+  const isCollected = moneyEquals(newAmountPaid, sale.total) || newAmountPaid > sale.total;
+  const newStatus = isCollected ? 'collected' : 'partially_collected';
 
-    await payload.update({
-      collection: 'sales',
-      id: saleId,
-      data: {
-        ownerAmountPaid: newOwnerAmountPaid,
-        ownerPaymentStatus: newOwnerStatus,
-        ...(newOwnerStatus === 'collected' ? { ownerCollectedAt: now } : {}),
-        paymentMethod,
-        ...(checkDueDate ? { checkDueDate } : {}),
-      } as Partial<Sale>,
-      overrideAccess: true,
-    });
-  } else {
-    const currentPaymentStatus = sale.paymentStatus ?? 'pending';
-    if (currentPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
-
-    const currentAmountPaid = sale.amountPaid ?? 0;
-    const remaining = sale.total - currentAmountPaid;
-
-    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-    if (amount > remaining) throw new Error(`El monto no puede superar el restante ($${remaining})`);
-
-    const newAmountPaid = currentAmountPaid + amount;
-    const isCollected = moneyEquals(newAmountPaid, sale.total) || newAmountPaid > sale.total;
-    const newStatus = isCollected ? 'collected' : 'partially_collected';
-
-    await payload.update({
-      collection: 'sales',
-      id: saleId,
-      data: {
-        amountPaid: newAmountPaid,
-        paymentStatus: newStatus,
-        ...(newStatus === 'collected' ? { collectedAt: now } : {}),
-        paymentMethod,
-        ...(checkDueDate ? { checkDueDate } : {}),
-      } as Partial<Sale>,
-      overrideAccess: true,
-    });
-  }
+  await payload.update({
+    collection: 'sales',
+    id: saleId,
+    data: {
+      amountPaid: newAmountPaid,
+      paymentStatus: newStatus,
+      ...(newStatus === 'collected' ? { collectedAt: now } : {}),
+      paymentMethod,
+      ...(checkDueDate ? { checkDueDate } : {}),
+    } as Partial<Sale>,
+    overrideAccess: true,
+  });
 
   const saleOwnerId = resolveId(sale.owner);
   const saleSellerId = resolveId(sale.seller);
@@ -1081,17 +1047,6 @@ export async function editSaleFull(
       ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : { checkDueDate: null }),
       paymentStatus: newPaymentStatus,
     };
-
-    if (callerRole === 'owner') {
-      const ownerAmountPaid = sale.ownerAmountPaid ?? 0;
-      const isOwnerCollected = moneyEquals(ownerAmountPaid, newTotal) || ownerAmountPaid > newTotal;
-      const newOwnerPaymentStatus = isOwnerCollected
-        ? 'collected'
-        : ownerAmountPaid > 0
-          ? 'partially_collected'
-          : 'pending';
-      updateData.ownerPaymentStatus = newOwnerPaymentStatus;
-    }
 
     await payload.update({
       collection: 'sales',

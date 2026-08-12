@@ -142,7 +142,7 @@ async function _getClientDebts({
 }): Promise<Record<number, number>> {
   const payload = await getPayloadClient();
 
-  const conditions: Where[] = [{ owner: { equals: ownerId } }, { ownerPaymentStatus: { not_equals: 'collected' } }];
+  const conditions: Where[] = [{ owner: { equals: ownerId } }, { paymentStatus: { not_equals: 'collected' } }];
 
   if (sellerId) {
     conditions.push({ seller: { equals: sellerId } });
@@ -162,7 +162,7 @@ async function _getClientDebts({
     if (!sale.client) continue;
 
     const clientId = typeof sale.client === 'number' ? sale.client : sale.client.id;
-    const paid = sale.ownerAmountPaid ?? 0;
+    const paid = sale.amountPaid ?? 0;
     const remaining = subtractMoney(sale.total, paid);
 
     if (remaining > 0) {

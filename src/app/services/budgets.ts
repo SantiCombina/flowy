@@ -684,8 +684,6 @@ async function runConvertBudgetToSale(
       total,
       amountPaid: 0,
       paymentStatus: 'pending',
-      ownerAmountPaid: 0,
-      ownerPaymentStatus: 'pending',
       deliveryStatus: options.immediateDelivery ? 'delivered' : 'pending',
       ...(options.immediateDelivery ? { deliveredAt: now } : {}),
       ...(options.clientId ? { client: options.clientId } : {}),

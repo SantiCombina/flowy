@@ -210,39 +210,6 @@ export const Sales: CollectionConfig = {
       },
     },
     {
-      name: 'ownerPaymentStatus',
-      type: 'select',
-      required: true,
-      index: true,
-      label: 'Estado de cobro (owner)',
-      defaultValue: 'pending',
-      options: [
-        { label: 'Pendiente', value: 'pending' },
-        { label: 'Parcialmente cobrado', value: 'partially_collected' },
-        { label: 'Cobrado', value: 'collected' },
-      ],
-    },
-    {
-      name: 'ownerAmountPaid',
-      type: 'number',
-      required: true,
-      defaultValue: 0,
-      min: 0,
-      label: 'Monto cobrado (owner)',
-      admin: {
-        readOnly: true,
-      },
-    },
-    {
-      name: 'ownerCollectedAt',
-      type: 'date',
-      label: 'Cobrado el (owner)',
-      admin: {
-        condition: (data) =>
-          data?.ownerPaymentStatus === 'collected' || data?.ownerPaymentStatus === 'partially_collected',
-      },
-    },
-    {
       name: 'deliveryStatus',
       type: 'select',
       required: true,
