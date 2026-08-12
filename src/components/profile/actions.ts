@@ -1,6 +1,12 @@
 'use server';
 
-import { changePassword, getOwnerById, loginUser as loginUserService, updateSeller } from '@/app/services/users';
+import {
+  changePassword,
+  getOwnerById,
+  loginUser as loginUserService,
+  updateOwner,
+  updateSeller,
+} from '@/app/services/users';
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
@@ -50,7 +56,7 @@ export const updateBusinessDataAction = actionClient
 
     if (user.role !== 'owner') throw new Error('Solo los dueños pueden actualizar los datos de empresa');
 
-    await updateSeller(user.id, parsedInput, user.id);
+    await updateOwner(user.id, parsedInput);
 
     return { success: true };
   });
@@ -64,7 +70,7 @@ export const updateBusinessNameAction = actionClient
 
     if (user.role !== 'owner') throw new Error('Solo los dueños pueden actualizar el nombre del negocio');
 
-    await updateSeller(user.id, { businessName: parsedInput.businessName }, user.id);
+    await updateOwner(user.id, { businessName: parsedInput.businessName });
 
     return { success: true };
   });

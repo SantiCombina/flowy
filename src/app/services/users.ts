@@ -182,6 +182,29 @@ export async function updateSeller(sellerId: number, data: UpdateSellerData, own
   return user as User;
 }
 
+export async function updateOwner(ownerId: number, data: UpdateSellerData): Promise<User> {
+  const payload = await getPayloadClient();
+
+  const existing = await payload.findByID({
+    collection: 'users',
+    id: ownerId,
+    depth: 0,
+    overrideAccess: true,
+  });
+  if (!existing || existing.role !== 'owner') {
+    throw new Error('Dueño no encontrado');
+  }
+
+  const user = await payload.update({
+    collection: 'users',
+    id: ownerId,
+    data,
+    overrideAccess: true,
+  });
+
+  return user as User;
+}
+
 export async function deleteSeller(sellerId: number, ownerId: number): Promise<void> {
   const payload = await getPayloadClient();
 
