@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PriceInput } from '@/components/ui/price-input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { calculatePrice, roundMoney } from '@/lib/money';
 
@@ -123,13 +124,10 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
                     <td className="px-4 py-3 font-medium">{v.product.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{v.presentation?.label ?? '-'}</td>
                     <td className="px-4 py-3">
-                      <Input
-                        type="number"
+                      <PriceInput
                         value={costPrice}
-                        onChange={(e) => updateCostPrice(v.id, Math.max(0.01, parseFloat(e.target.value) || 0))}
+                        onChange={(value) => updateCostPrice(v.id, value)}
                         className="h-8 w-28"
-                        step="0.01"
-                        min="0"
                         disabled={isExecuting}
                       />
                     </td>

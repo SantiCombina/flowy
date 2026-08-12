@@ -52,6 +52,7 @@ interface PriceInputProps {
   onBlur?: () => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function PriceInput({ value, onChange, onBlur, placeholder = '0,00', className, ...props }: PriceInputProps) {
