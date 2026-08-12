@@ -84,14 +84,16 @@ export const Invitations: CollectionConfig = {
           });
         }
 
-        if (operation === 'update' && data?.role !== undefined) {
+        if (operation === 'update' && data?.role !== undefined && data.role !== originalDoc?.role) {
           throw new Error('Invitation role is immutable');
         }
 
         if (
           operation === 'update' &&
           data &&
-          (data.token !== undefined || data.email !== undefined || data.createdBy !== undefined)
+          ((data.token !== undefined && data.token !== originalDoc?.token) ||
+            (data.email !== undefined && data.email !== originalDoc?.email) ||
+            (data.createdBy !== undefined && relationshipId(data.createdBy) !== relationshipId(originalDoc?.createdBy)))
         ) {
           throw new Error('Invitation token, creator, and email are immutable');
         }
@@ -237,3 +239,9 @@ export const Invitations: CollectionConfig = {
     },
   ],
 };
+
+function relationshipId(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object' && value !== null && 'id' in value && typeof value.id === 'number') return value.id;
+  return undefined;
+}

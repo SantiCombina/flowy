@@ -29,7 +29,7 @@ export interface PopulatedProductVariant extends Omit<ProductVariant, 'product' 
     category?: Category;
     quality?: Quality;
   };
-  presentation: Presentation;
+  presentation: Presentation | null;
 }
 
 export interface CreateProductData {

@@ -254,7 +254,6 @@ export const Users: CollectionConfig = {
     {
       name: 'entitlementState',
       type: 'select',
-      defaultValue: 'provisioning',
       options: [
         { label: 'Provisioning', value: 'provisioning' },
         { label: 'Active', value: 'active' },

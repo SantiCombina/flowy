@@ -330,6 +330,7 @@ async function runAcceptInvitation(
         ...(invitation.role === 'seller' && ownerId ? { owner: ownerId } : {}),
       },
       overrideAccess: true,
+      context: { entitlementMutation: true },
       req: { transactionID: dependencies.transactionID },
     })
     .catch((error: Error) => {
