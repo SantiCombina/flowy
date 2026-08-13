@@ -5,7 +5,6 @@ import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import type { SaleClientOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -27,6 +26,7 @@ import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 import { getClientsForSaleAction } from '../clients/actions';
 
 import { createSaleAction, getSaleOptionsAction, getSaleOptionsAsOwnerAction } from './actions';
+import { SaleCreationFlow } from './sale-creation-flow';
 import {
   AddProductSheet,
   DetailsTab,
@@ -69,7 +69,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const optionsResult = isOwner ? ownerOptions : sellerOptions;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
 
-  const [serverError, setServerError] = useState<string | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -107,7 +106,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
 
   const handleClose = () => {
     setClientsOverride(null);
-    setServerError(null);
     setActiveTab('products');
     onClose();
   };
@@ -172,35 +170,6 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     }
   }, [form]);
 
-  const onSubmit = useCallback(
-    async (data: SaleValues) => {
-      setServerError(null);
-      const result = await submitSale(data);
-
-      if (result?.serverError) {
-        setServerError(result.serverError);
-        return;
-      }
-
-      if (result?.data?.success) {
-        toast.success('Venta registrada');
-        onSuccess();
-        onClose();
-      }
-    },
-    [submitSale, onSuccess, onClose],
-  );
-
-  const handleFormSubmit = form.handleSubmit(onSubmit, (errors) => {
-    if (errors.items) {
-      setActiveTab('products');
-      focusFirstError();
-    } else {
-      setActiveTab('details');
-      focusFirstError();
-    }
-  });
-
   return (
     <>
       <ResponsiveModal
@@ -212,102 +181,119 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           <ResponsiveModalTitle>Registrar venta</ResponsiveModalTitle>
         </ResponsiveModalHeader>
 
-        {isLoadingOptions ? (
-          <SaleFormSkeleton isMobile={isMobile} />
-        ) : (
-          <Form {...form}>
-            <form
-              onSubmit={handleFormSubmit}
-              onKeyDown={(e) => {
-                if (
-                  e.key === 'Enter' &&
-                  !(e.target instanceof HTMLButtonElement) &&
-                  !(e.target instanceof HTMLTextAreaElement)
-                ) {
-                  e.preventDefault();
-                }
-              }}
-              className="flex flex-1 flex-col min-h-0"
-            >
-              <ResponsiveModalBody className="flex-1 overflow-y-auto p-0 sm:block sm:overflow-hidden sm:px-4 sm:py-4">
-                {isMobile ? (
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-                    <div className="sticky top-0 z-10 bg-background px-6 pt-4 pb-0">
-                      <TabsList className="w-full">
-                        <TabsTrigger value="products" className="flex-1 gap-1.5">
-                          Productos
-                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-foreground">
-                            {itemCount}
-                          </span>
-                        </TabsTrigger>
-                        <TabsTrigger value="details" className="flex-1">
-                          Detalles
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-                    <TabsContent value="products" className="mt-0 px-6 py-4">
-                      <ProductsTab
-                        form={form}
-                        fields={fields}
-                        remove={remove}
-                        variants={variants}
-                        onAddProduct={handleOpenAddProduct}
-                        itemError={itemsError}
-                        canUsePersonalStock={canUsePersonalStock}
-                      />
-                    </TabsContent>
-                    <TabsContent value="details" className="mt-0 px-6 py-4">
-                      <DetailsTab
-                        form={form}
-                        clients={localClients}
-                        onNewClient={() => setIsClientModalOpen(true)}
-                        canUseCredit={canUseCredit}
-                      />
-                    </TabsContent>
-                  </Tabs>
-                ) : (
-                  <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-2">
-                    <div className="flex min-h-0 min-w-0 flex-col">
-                      <ProductsTab
-                        form={form}
-                        fields={fields}
-                        remove={remove}
-                        variants={variants}
-                        onAddProduct={handleOpenAddProduct}
-                        itemError={itemsError}
-                        canUsePersonalStock={canUsePersonalStock}
-                      />
-                    </div>
-                    <div className="flex min-h-0 min-w-0 flex-col">
-                      <DetailsTab
-                        form={form}
-                        clients={localClients}
-                        onNewClient={() => setIsClientModalOpen(true)}
-                        canUseCredit={canUseCredit}
-                      />
-                    </div>
-                  </div>
-                )}
+        <SaleCreationFlow
+          isOpen={isOpen}
+          businessName={user.businessName ?? null}
+          submitSale={submitSale}
+          onSuccess={onSuccess}
+          onClose={handleClose}
+          renderForm={({ submit, serverError, close }) =>
+            isLoadingOptions ? (
+              <SaleFormSkeleton isMobile={isMobile} />
+            ) : (
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(submit, (errors) => {
+                    if (errors.items) {
+                      setActiveTab('products');
+                      focusFirstError();
+                    } else {
+                      setActiveTab('details');
+                      focusFirstError();
+                    }
+                  })}
+                  onKeyDown={(e) => {
+                    if (
+                      e.key === 'Enter' &&
+                      !(e.target instanceof HTMLButtonElement) &&
+                      !(e.target instanceof HTMLTextAreaElement)
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="flex flex-1 flex-col min-h-0"
+                >
+                  <ResponsiveModalBody className="flex-1 overflow-y-auto p-0 sm:block sm:overflow-hidden sm:px-4 sm:py-4">
+                    {isMobile ? (
+                      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
+                        <div className="sticky top-0 z-10 bg-background px-6 pt-4 pb-0">
+                          <TabsList className="w-full">
+                            <TabsTrigger value="products" className="flex-1 gap-1.5">
+                              Productos
+                              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-foreground">
+                                {itemCount}
+                              </span>
+                            </TabsTrigger>
+                            <TabsTrigger value="details" className="flex-1">
+                              Detalles
+                            </TabsTrigger>
+                          </TabsList>
+                        </div>
+                        <TabsContent value="products" className="mt-0 px-6 py-4">
+                          <ProductsTab
+                            form={form}
+                            fields={fields}
+                            remove={remove}
+                            variants={variants}
+                            onAddProduct={handleOpenAddProduct}
+                            itemError={itemsError}
+                            canUsePersonalStock={canUsePersonalStock}
+                          />
+                        </TabsContent>
+                        <TabsContent value="details" className="mt-0 px-6 py-4">
+                          <DetailsTab
+                            form={form}
+                            clients={localClients}
+                            onNewClient={() => setIsClientModalOpen(true)}
+                            canUseCredit={canUseCredit}
+                          />
+                        </TabsContent>
+                      </Tabs>
+                    ) : (
+                      <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="flex min-h-0 min-w-0 flex-col">
+                          <ProductsTab
+                            form={form}
+                            fields={fields}
+                            remove={remove}
+                            variants={variants}
+                            onAddProduct={handleOpenAddProduct}
+                            itemError={itemsError}
+                            canUsePersonalStock={canUsePersonalStock}
+                          />
+                        </div>
+                        <div className="flex min-h-0 min-w-0 flex-col">
+                          <DetailsTab
+                            form={form}
+                            clients={localClients}
+                            onNewClient={() => setIsClientModalOpen(true)}
+                            canUseCredit={canUseCredit}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                {serverError && (
-                  <div className="flex items-start gap-2 px-6 pb-4">
-                    <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 w-full">
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                      <p className="text-sm text-destructive">{serverError}</p>
-                    </div>
-                  </div>
-                )}
-              </ResponsiveModalBody>
+                    {serverError && (
+                      <div className="flex items-start gap-2 px-6 pb-4">
+                        <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 w-full">
+                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                          <p className="text-sm text-destructive">{serverError}</p>
+                        </div>
+                      </div>
+                    )}
+                  </ResponsiveModalBody>
 
-              <SaleFooter
-                total={total}
-                isSubmitting={isSubmitting}
-                onCancel={handleClose}
-                submitLabel="Registrar venta"
-              />
-            </form>
-          </Form>
-        )}
+                  <SaleFooter
+                    total={total}
+                    isSubmitting={isSubmitting}
+                    onCancel={close}
+                    submitLabel="Registrar venta"
+                  />
+                </form>
+              </Form>
+            )
+          }
+        />
       </ResponsiveModal>
 
       <AddProductSheet

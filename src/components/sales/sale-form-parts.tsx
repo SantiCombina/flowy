@@ -44,6 +44,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { formatSaleVariantDisplayName } from '@/lib/variant-display-name';
 import { type SaleValues } from '@/schemas/sales/sale-schema';
 
 type SaleItemValues = SaleValues['items'][number];
@@ -60,11 +61,6 @@ function formatTotal(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-}
-
-function formatItemName(variant: SaleVariantOption | undefined): string {
-  if (!variant) return 'Producto no seleccionado';
-  return [variant.brandName, variant.productName, variant.presentationLabel].filter(Boolean).join(' · ');
 }
 
 function useFirstItemsErrorMessage(errors: FieldErrors<SaleValues>['items']): string | undefined {
@@ -189,7 +185,9 @@ function ProductCard({ index, variants, form, onRemove, canUsePersonalStock = tr
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-tight text-foreground">{formatItemName(selectedVariant)}</p>
+            <p className="text-sm font-semibold leading-tight text-foreground">
+              {formatSaleVariantDisplayName(selectedVariant)}
+            </p>
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Store className="h-3 w-3" />
               <span>
@@ -321,9 +319,7 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
         const totalStock = v.warehouseStock + v.personalStock;
         return {
           value: String(v.variantId),
-          label: [v.brandName, v.productName, v.presentationLabel, totalStock === 0 ? '(sin stock)' : null]
-            .filter(Boolean)
-            .join(' · '),
+          label: `${formatSaleVariantDisplayName(v)}${totalStock === 0 ? ' · (sin stock)' : ''}`,
           disabled: totalStock === 0,
         };
       }),
@@ -381,7 +377,7 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
 
         {selectedVariant && (
           <div className="rounded-xl bg-muted/30 p-3 text-sm">
-            <p className="font-semibold text-foreground">{formatItemName(selectedVariant)}</p>
+            <p className="font-semibold text-foreground">{formatSaleVariantDisplayName(selectedVariant)}</p>
             <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Store className="h-3.5 w-3.5" />

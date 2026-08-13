@@ -1,5 +1,15 @@
-import type { SaleRow } from '@/app/services/sales';
 import { formatShortDate } from '@/lib/utils';
+
+export interface SaleWhatsAppDetails {
+  date: string;
+  notes?: string | null;
+  total: number;
+  items: Array<{
+    variantName: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+}
 
 function formatPrice(value: number): string {
   return value.toLocaleString('es-AR', {
@@ -8,7 +18,7 @@ function formatPrice(value: number): string {
   });
 }
 
-export function getSaleWhatsAppLink(sale: SaleRow, businessName: string | null): string {
+export function getSaleWhatsAppLink(sale: SaleWhatsAppDetails, businessName: string | null): string {
   const name = businessName?.trim() || 'Flowy';
   const intro = `Hola! desde ${name} le informamos el detalle de su compra realizada el ${formatShortDate(sale.date)} con un total de $ ${formatPrice(sale.total)}`;
   const lines: string[] = [intro, ''];

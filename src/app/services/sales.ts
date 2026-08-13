@@ -4,10 +4,12 @@ import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import type { CreatedSaleRecord } from '@/lib/created-sale-share';
 import { calculatePrice, moneyEquals, multiplyMoney, roundMoney } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
 import { resolveId } from '@/lib/payload-utils';
 import { formatCurrency } from '@/lib/utils';
+import { formatSaleVariantDisplayName } from '@/lib/variant-display-name';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
 
@@ -165,7 +167,7 @@ export async function getSaleOptions(sellerId: number, ownerId: number): Promise
   })();
 }
 
-export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<Sale> {
+export async function createSale(sellerId: number, ownerId: number, data: SaleValues): Promise<CreatedSaleRecord> {
   const payload = await getPayloadClient();
 
   const transactionID = await payload.db.beginTransaction();
@@ -184,18 +186,36 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
 
   let sale: Sale | undefined;
   let total = 0;
+  let variantDisplayNames: Record<number, string> = {};
 
   try {
     const variantIds = data.items.map((item) => item.variantId);
     const variantsResult = await payload.find({
       collection: 'product-variants',
       where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
-      depth: 1,
+      depth: 2,
       limit: variantIds.length,
       overrideAccess: true,
       req: { transactionID },
     });
     const variantMap = new Map(variantsResult.docs.map((v) => [v.id, { ...v }]));
+    variantDisplayNames = Object.fromEntries(
+      variantsResult.docs.map((variant) => {
+        const product = typeof variant.product === 'object' ? variant.product : null;
+        const brand = product?.brand && typeof product.brand === 'object' ? product.brand : null;
+        const presentation =
+          variant.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+        return [
+          variant.id,
+          formatSaleVariantDisplayName({
+            brandName: brand?.name ?? undefined,
+            productName: product?.name ?? 'Producto desconocido',
+            presentationLabel: presentation?.label ?? undefined,
+          }),
+        ];
+      }),
+    );
 
     const personalItems = data.items.filter((item) => item.stockSource === 'personal');
     const inventoryMap = new Map<number, { id: number; quantity: number }>();
@@ -377,7 +397,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     revalidateTag(cacheTags.saleOptions(ownerId));
   } catch {}
 
-  return sale as Sale;
+  return { sale: sale as Sale, variantDisplayNames };
 }
 
 export interface SalesListFilters {
@@ -518,8 +538,10 @@ async function _getPaginatedSales(
       const presentation =
         variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
 
-      const productName = product?.name ?? 'Producto desconocido';
-      const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
+      const variantName = formatSaleVariantDisplayName({
+        productName: product?.name ?? 'Producto desconocido',
+        presentationLabel: presentation?.label ?? undefined,
+      });
 
       return {
         variantId,
@@ -609,8 +631,10 @@ export async function getSales(filters: {
       const presentation =
         variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
 
-      const productName = product?.name ?? 'Producto desconocido';
-      const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
+      const variantName = formatSaleVariantDisplayName({
+        productName: product?.name ?? 'Producto desconocido',
+        presentationLabel: presentation?.label ?? undefined,
+      });
 
       return {
         variantId,

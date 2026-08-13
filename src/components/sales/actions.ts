@@ -13,6 +13,7 @@ import {
   markAsDelivered,
   registerPayment,
 } from '@/app/services/sales';
+import { createSaleAndMap } from '@/lib/created-sale-share';
 import {
   assertAnyUserCapability,
   assertUserCapability,
@@ -105,19 +106,16 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
     throw new Error('No autorizado');
   }
 
-  if (user.role === 'owner') {
-    await createSale(user.id, user.id, parsedInput);
-  } else {
-    const ownerId = typeof user.owner === 'number' ? user.owner : user.owner?.id;
+  let ownerId = user.id;
+  if (user.role === 'seller') {
+    ownerId = typeof user.owner === 'number' ? user.owner : (user.owner?.id ?? 0);
 
     if (!ownerId) {
       throw new Error('El vendedor no tiene un dueño asignado');
     }
-
-    await createSale(user.id, ownerId, parsedInput);
   }
 
-  return { success: true };
+  return { success: true, sale: await createSaleAndMap(createSale, user.id, ownerId, parsedInput) };
 });
 
 export const registerSalePaymentAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {
