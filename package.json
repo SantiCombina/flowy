@@ -19,9 +19,9 @@
     "migrate": "node scripts/migrate-check.mjs && cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "migrate:force": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "seed:plans": "tsx scripts/seed-plan-versions.ts",
-    "test:entitlements": "tsx --test test/entitlements/schema.test.ts test/entitlements/primitives.test.ts test/entitlements/invariants.test.ts test/entitlements/migration.test.ts test/entitlements/services.test.ts test/entitlements/unit2.test.ts test/entitlements/unit3-boundaries.test.ts test/entitlements/unit4-rollout.test.ts test/entitlements/unit4-postgres.test.ts test/entitlements/admin-plan-management.test.ts test/entitlements/plan-presets.test.ts test/entitlements/seller-login.test.ts"
+    "seed:plans": "tsx scripts/seed-plan-versions.ts"
   },
+
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@payloadcms/db-postgres": "3.75.0",

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, ChevronLeft, ChevronRight, ImageOff, PackagePlus, Pencil, Trash2 } from 'lucide-react';
+import { BarChart2, ImageOff, PackagePlus, Pencil, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
@@ -53,30 +52,22 @@ const statusDotColumn: Column<PopulatedProductVariant> = {
 
 interface ProductsTableProps {
   variants: PopulatedProductVariant[];
-  totalDocs: number;
-  totalPages: number;
-  currentPage: number;
-  onPageChange: (page: number) => void;
+  searchQuery?: string;
   onEdit?: (productId: number) => void;
   showActions?: boolean;
   selectable?: boolean;
   selectedKeys?: Set<string | number>;
   onSelectionChange?: (keys: Set<string | number>) => void;
-  isLoading?: boolean;
 }
 
 function ProductsTableComponent({
   variants,
-  totalDocs,
-  totalPages,
-  currentPage,
-  onPageChange,
+  searchQuery = '',
   onEdit,
   showActions = true,
   selectable = false,
   selectedKeys,
   onSelectionChange,
-  isLoading = false,
 }: ProductsTableProps) {
   const router = useRouter();
   const { invalidateQueries } = useInvalidateQueries();
@@ -97,6 +88,21 @@ function ProductsTableComponent({
   });
 
   const demandMap = demandData?.success ? demandData.demand : undefined;
+
+  const filteredVariants = useMemo(() => {
+    if (!searchQuery.trim()) return variants;
+    const q = searchQuery.toLowerCase();
+    return variants.filter((v) => {
+      const product = v.product;
+      return (
+        product.name.toLowerCase().includes(q) ||
+        (v.code ?? '').toLowerCase().includes(q) ||
+        (typeof product.brand === 'object' ? (product.brand?.name ?? '') : '').toLowerCase().includes(q) ||
+        (typeof product.category === 'object' ? (product.category?.name ?? '') : '').toLowerCase().includes(q) ||
+        (typeof product.quality === 'object' ? (product.quality?.name ?? '') : '').toLowerCase().includes(q)
+      );
+    });
+  }, [variants, searchQuery]);
 
   const handleDelete = async () => {
     if (!productToDelete) return;
@@ -320,43 +326,15 @@ function ProductsTableComponent({
     <>
       <DataTable
         columns={columns}
-        data={variants}
+        data={filteredVariants}
         keyExtractor={keyExtractor}
-        isLoading={isLoading || isSettingsLoading}
-        emptyMessage="No hay productos"
+        isLoading={isSettingsLoading}
+        emptyMessage={searchQuery ? 'No se encontraron productos' : 'No hay productos'}
         selectable={selectable}
         selectedKeys={selectedKeys}
         onSelectionChange={onSelectionChange}
         hasSelection={selectedKeys ? selectedKeys.size > 0 : false}
       />
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
-          <span>
-            Página {currentPage} de {totalPages} ({totalDocs} total)
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1 || isLoading}
-              aria-label="Página anterior"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages || isLoading}
-              aria-label="Página siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       <AlertDialog open={productToDelete !== null} onOpenChange={() => setProductToDelete(null)}>
         <AlertDialogContent>

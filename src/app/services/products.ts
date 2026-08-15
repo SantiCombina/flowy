@@ -81,11 +81,7 @@ export async function getProducts(
   };
 
   if (filters?.search) {
-    where.or = [
-      { name: { contains: filters.search } },
-      { code: { contains: filters.search } },
-      { description: { contains: filters.search } },
-    ];
+    where.or = [{ name: { contains: filters.search } }, { description: { contains: filters.search } }];
   }
 
   if (filters?.brand !== undefined) {
@@ -465,11 +461,7 @@ async function _getVariantsWithProducts(
       productWhere.isActive = { equals: filters.isActive };
     }
     if (filters.search) {
-      productWhere.or = [
-        { name: { contains: filters.search } },
-        { code: { contains: filters.search } },
-        { description: { contains: filters.search } },
-      ];
+      productWhere.or = [{ name: { contains: filters.search } }, { description: { contains: filters.search } }];
     }
 
     const productsResult = await payload.find({

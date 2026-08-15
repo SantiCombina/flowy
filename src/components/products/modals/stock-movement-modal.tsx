@@ -24,6 +24,7 @@ import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 
 import { registerStockMovementAction } from '../stock-actions';
+
 import { formatStockMovementVariantTitle } from './stock-movement-title';
 
 interface StockMovementModalProps {
@@ -138,9 +139,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <ResponsiveModalBody className="space-y-4">
           <div className="rounded-lg bg-muted/50 p-3 space-y-1 shadow-sm">
-            <p className="text-sm font-medium">
-              {formatStockMovementVariantTitle(variant)}
-            </p>
+            <p className="text-sm font-medium">{formatStockMovementVariantTitle(variant)}</p>
             <p className="text-sm text-muted-foreground">Stock actual: {variant.stock} unidades</p>
           </div>
 

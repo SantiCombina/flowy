@@ -1,9 +1,8 @@
 'use client';
 
-import { keepPreviousData, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, EyeOff, Eye, Plus, RotateCcw, Search, Warehouse, X } from 'lucide-react';
+import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
@@ -21,11 +20,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
-import { getVariantsAction, getReferenceDataAction, bulkToggleProductsAction } from './actions';
+import { getReferenceDataAction, bulkToggleProductsAction } from './actions';
 import { BulkPriceSheet } from './modals/bulk-price-sheet';
 import { ProductModal } from './modals/product-modal-new/index';
 import { ProductsTable } from './products-table';
@@ -55,7 +53,6 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
   const { invalidateQueries } = useInvalidateQueries();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | undefined>();
   const [referenceData, setReferenceData] = useState<RefData>(initialRefData);
@@ -64,62 +61,17 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
   const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const isFirstPageNoSearch = page === 1 && !searchQuery;
-  const queryClient = useQueryClient();
-
-  const {
-    data: queryData,
-    isPending,
-    isError,
-  } = useServerActionQuery({
-    queryKey: queryKeys.products.list(searchQuery, page),
-    queryFn: () =>
-      getVariantsAction({
-        filters: searchQuery ? { search: searchQuery } : undefined,
-        options: { limit: 50, page, sort: 'product' },
-      }),
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
-  });
-
-  const queryError = isError ? 'Error al cargar productos' : null;
-
-  const displayData = useMemo(() => {
-    if (queryData?.docs && queryData.docs.length > 0) return queryData;
-    if (isFirstPageNoSearch) return { success: true as const, ...initialVariants };
-    return queryData ?? { success: true as const, docs: [], totalDocs: 0, totalPages: 1, page: 1 };
-  }, [queryData, isFirstPageNoSearch, initialVariants]);
-
-  const variants = displayData.docs;
-  const totalDocs = displayData.totalDocs;
-  const totalPages = displayData.totalPages;
-  const inventoryValue = variants.reduce((sum, v) => sum + v.stock * v.costPrice, 0);
-
-  const handleRefetch = useCallback(async () => {
-    try {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.products.list(searchQuery, page) });
-    } catch {
-      toast.error('Error al actualizar productos');
-    }
-  }, [queryClient, searchQuery, page]);
+  const inventoryValue = useMemo(
+    () => initialVariants.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0),
+    [initialVariants],
+  );
 
   const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
 
-  const handleSearchChange = useCallback((value: string) => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      setSearchQuery(value);
-      setPage(1);
-    }, 350);
-  }, []);
-
   const selectedVariants = useMemo(
-    () => variants.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
-    [variants, selectedKeys],
+    () => initialVariants.docs.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
+    [initialVariants, selectedKeys],
   );
 
   const uniqueProductIds = useMemo(() => [...new Set(selectedVariants.map((v) => v.product.id))], [selectedVariants]);
@@ -200,13 +152,13 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
               placeholder="Buscar por nombre, código, marca..."
               className="pl-8"
               value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          {canCreateProduct && !isPending && totalDocs > 0 && (
+          {canCreateProduct && initialVariants.docs.length > 0 && (
             <div
               className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
-              title="Valor del inventario (página actual)"
+              title="Valor del inventario"
             >
               <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
               <span className="text-sm font-semibold text-foreground">$ {inventoryValue.toLocaleString('es-AR')}</span>
@@ -220,28 +172,14 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
           )}
         </div>
 
-        {queryError && (
-          <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            <span className="flex-1">{queryError}</span>
-            <Button variant="ghost" size="sm" className="h-8 gap-1 text-destructive" onClick={handleRefetch}>
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reintentar
-            </Button>
-          </div>
-        )}
-
         <ProductsTable
-          variants={variants}
-          totalDocs={totalDocs}
-          totalPages={totalPages}
-          currentPage={page}
-          onPageChange={setPage}
+          variants={initialVariants.docs}
+          searchQuery={searchQuery}
           onEdit={canCreateProduct ? handleOpenEditModal : undefined}
           showActions={canCreateProduct}
           selectable={canCreateProduct}
           selectedKeys={selectedKeys}
           onSelectionChange={setSelectedKeys}
-          isLoading={isPending && variants.length === 0}
         />
       </main>
 
