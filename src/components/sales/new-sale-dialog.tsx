@@ -84,7 +84,7 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     reValidateMode: 'onChange',
     defaultValues: {
       items: [],
-      immediateDelivery: false,
+      immediateDelivery: true,
     },
   });
 
