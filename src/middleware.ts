@@ -11,6 +11,20 @@ const routeToFeature: Record<string, string> = {
   '/settings': 'FEATURE_SETTINGS',
 };
 
+const ownerSellerRoutes = [
+  '/dashboard',
+  '/products',
+  '/sellers',
+  '/assignments',
+  '/history',
+  '/sales',
+  '/statistics',
+  '/settings',
+  '/profile',
+  '/clients',
+  '/mobile-inventory',
+];
+
 const publicRoutes = ['/login', '/register', '/'];
 
 function getTokenRole(token: string): string | null {
@@ -27,6 +41,21 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get('payload-token');
   const isAuthenticated = !!token?.value;
+
+  if (pathname.startsWith('/backoffice')) {
+    if (!isAuthenticated) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', '/backoffice/dashboard');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const role = getTokenRole(token!.value);
+    if (role !== 'admin') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    return NextResponse.next();
+  }
 
   if (pathname.startsWith('/admin')) {
     if (pathname.startsWith('/admin/login')) {
@@ -57,6 +86,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  const role = getTokenRole(token!.value);
+
+  if (role === 'admin' && ownerSellerRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL('/backoffice/dashboard', request.url));
+  }
+
   const featureEnvKey = routeToFeature[pathname];
 
   if (featureEnvKey) {
@@ -74,6 +109,7 @@ export const config = {
   matcher: [
     '/',
     '/admin/:path*',
+    '/backoffice/:path*',
     '/products',
     '/sellers',
     '/assignments',

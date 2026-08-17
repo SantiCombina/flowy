@@ -22,6 +22,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const { user, capabilities } = guardedUser;
 
+  if (user.role === 'admin') {
+    redirect('/backoffice/dashboard');
+  }
+
   const features = getFeatureFlags();
   const cookieStore = await cookies();
   const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false';

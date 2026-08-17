@@ -32,7 +32,7 @@ export const loginUser = actionClient.schema(loginSchema).action(async ({ parsed
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  return { success: true };
+  return { success: true, role: result.role };
 });
 
 export const registerUser = actionClient.schema(registerSchema).action(async ({ parsedInput }) => {

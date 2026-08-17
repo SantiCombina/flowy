@@ -96,6 +96,7 @@ interface LoginUserData {
 interface LoginUserResult {
   success: boolean;
   token?: string;
+  role?: User['role'];
   error?: string;
 }
 
@@ -118,11 +119,11 @@ export async function loginUser(data: LoginUserData): Promise<LoginUserResult> {
       data: { email: data.email, password: data.password },
     });
 
-    if (!result.token) {
+    if (!result.token || !result.user) {
       return { success: false, error: 'Credenciales inválidas' };
     }
 
-    return { success: true, token: result.token };
+    return { success: true, token: result.token, role: (result.user as User).role };
   } catch {
     return { success: false, error: 'Credenciales inválidas' };
   }

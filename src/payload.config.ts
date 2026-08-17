@@ -43,9 +43,9 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      afterDashboard: ['@/components/admin/plan-management'],
+      afterDashboard: ['@/components/payload-admin/plan-management'],
       graphics: {
-        Logo: '@/components/admin/logo',
+        Logo: '@/components/payload-admin/logo',
       },
     },
   },

@@ -1,9 +1,8 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -52,10 +51,14 @@ export function UserDropdown({ user }: UserDropdownProps) {
     .toUpperCase()
     .slice(0, 2);
 
-  function handleLogout() {
+  function handleLogout(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+
+    if (isPending) return;
+
     startTransition(async () => {
       await logout();
-      toast.info('Sesión cerrada');
+      setLogoutOpen(false);
       router.push('/login');
       router.refresh();
     });
@@ -110,8 +113,9 @@ export function UserDropdown({ user }: UserDropdownProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} disabled={isPending} variant="destructive">
+            <AlertDialogAction onClick={handleLogout} disabled={isPending} variant="destructive" className="gap-2">
               {isPending ? 'Cerrando' : 'Cerrar sesión'}
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

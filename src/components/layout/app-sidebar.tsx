@@ -198,6 +198,10 @@ export function AppSidebar({ features, capabilities = [] }: AppSidebarProps) {
     [features, user, capabilities],
   );
 
+  if (user?.role === 'admin') {
+    return null;
+  }
+
   const getIsActive = (item: NavItem): boolean => {
     const path = item.href;
     return path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/');

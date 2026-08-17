@@ -58,7 +58,8 @@ export function LoginForm() {
 
     if (result?.data?.success) {
       setRedirecting(true);
-      await Promise.all([router.push('/dashboard'), router.refresh()]);
+      const target = result.data.role === 'admin' ? '/backoffice/dashboard' : '/dashboard';
+      await Promise.all([router.push(target), router.refresh()]);
     }
   }
 
