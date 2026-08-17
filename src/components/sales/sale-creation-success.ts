@@ -49,6 +49,7 @@ export function handleSaleCreationResult(
         variantName: item.variantName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
       })),
     },
     businessName: input.businessName,

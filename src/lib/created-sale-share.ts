@@ -1,3 +1,4 @@
+import { multiplyMoney } from '@/lib/money';
 import type { Sale } from '@/payload-types';
 import type { SaleValues } from '@/schemas/sales/sale-schema';
 
@@ -10,6 +11,7 @@ export interface CreatedSaleShare {
     variantName: string;
     quantity: number;
     unitPrice: number;
+    subtotal: number;
   }>;
 }
 
@@ -31,6 +33,7 @@ export function toCreatedSaleShare(sale: Sale, variantDisplayNames: Record<numbe
         variantName: variantDisplayNames[variantId] ?? 'Producto desconocido',
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
       };
     }),
   };
