@@ -94,7 +94,7 @@ export function UserDropdown({ user }: UserDropdownProps) {
             className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
             onClick={() => setLogoutOpen(true)}
           >
-            <LogOut className="mr-2 h-4 w-4 text-destructive" />
+            <LogOut className="h-4 w-4 text-destructive" />
             Cerrar sesión
           </DropdownMenuItem>
         </DropdownMenuContent>

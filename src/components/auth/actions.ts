@@ -52,8 +52,13 @@ export const registerUser = actionClient.schema(registerSchema).action(async ({ 
 });
 
 export const forgotPasswordAction = actionClient.schema(forgotPasswordSchema).action(async ({ parsedInput }) => {
-  await forgotPasswordService(parsedInput.email);
-  return { success: true };
+  try {
+    await forgotPasswordService(parsedInput.email);
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error al enviar el enlace de recuperación';
+    return { error: message };
+  }
 });
 
 export const resetPasswordAction = actionClient.schema(resetPasswordSchema).action(async ({ parsedInput }) => {

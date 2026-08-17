@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { PasswordInput } from '@/components/ui/password-input';
+import { Spinner } from '@/components/ui/spinner';
 import { registerSchema, type RegisterValues } from '@/schemas/auth/register-schema';
 
 import { registerUser } from './actions';
@@ -41,20 +42,26 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
     if (!token || !email) return;
 
     setError(null);
-    const result = await executeAsync(data);
+    try {
+      const result = await executeAsync(data);
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      setError(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        setError(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      toast.success('Cuenta creada');
-      router.push('/login?registered=true');
-    } else if (result?.data?.error) {
-      toast.error(result.data.error);
-      setError(result.data.error);
+      if (result?.data?.success) {
+        toast.success('Cuenta creada');
+        router.push('/login?registered=true');
+      } else if (result?.data?.error) {
+        toast.error(result.data.error);
+        setError(result.data.error);
+      }
+    } catch {
+      const fallback = 'Ocurrió un error inesperado. Intentá de nuevo más tarde.';
+      toast.error(fallback);
+      setError(fallback);
     }
   }
 
@@ -113,7 +120,14 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={status === 'executing'}>
-              {status === 'executing' ? 'Creando cuenta' : 'Crear cuenta'}
+              {status === 'executing' ? (
+                <span className="flex items-center gap-2">
+                  Creando
+                  <Spinner />
+                </span>
+              ) : (
+                'Crear cuenta'
+              )}
             </Button>
           </form>
         </Form>

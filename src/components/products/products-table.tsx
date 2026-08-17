@@ -311,9 +311,8 @@ function ProductsTableComponent({
   const columns = useMemo<Column<PopulatedProductVariant>[]>(
     () => [
       statusDotColumn,
-      allColumns.image,
       ...Object.entries(allColumns)
-        .filter(([key]) => key !== 'image' && shouldShowColumn(key))
+        .filter(([key]) => shouldShowColumn(key))
         .map(([, column]) => column),
       ...(showActions ? [actionsColumn] : []),
     ],

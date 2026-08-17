@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -92,15 +92,20 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
     name: 'variants',
   });
 
-  const resetImageState = () => {
-    setCurrentImageId(undefined);
-    setCurrentImageUrl(undefined);
-    setPreviousImageId(undefined);
-    setPendingImageFile(undefined);
-  };
+  const loadImageFromProduct = useCallback((product: { image?: unknown; id?: number }) => {
+    if (typeof product.image === 'object' && product.image) {
+      const img = product.image as { id: number; url?: string | null };
+      setCurrentImageId(img.id);
+      setCurrentImageUrl(img.url ?? undefined);
+      setPreviousImageId(img.id);
+    } else if (typeof product.image === 'number') {
+      setCurrentImageId(product.image);
+      setPreviousImageId(product.image);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!isEditing || !productId || !isOpen || !data?.success) return;
+    if (!isEditing || !productId || !data?.success) return;
 
     queueMicrotask(() => {
       const product = data.product;
@@ -124,23 +129,11 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
         })),
       });
 
-      if (typeof product.image === 'object' && product.image) {
-        setCurrentImageId(product.image.id);
-        setCurrentImageUrl(product.image.url ?? undefined);
-        setPreviousImageId(product.image.id);
-      } else if (typeof product.image === 'number') {
-        setCurrentImageId(product.image);
-        setPreviousImageId(product.image);
-      } else {
-        resetImageState();
-      }
+      loadImageFromProduct(product);
     });
-  }, [isEditing, productId, isOpen, data, form.reset]);
+  }, [isEditing, productId, data, form.reset, loadImageFromProduct]);
 
   const handleClose = () => {
-    form.reset();
-    setVariantsToDelete([]);
-    resetImageState();
     onClose();
   };
 

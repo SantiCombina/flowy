@@ -3,16 +3,15 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
-import { loadSales } from '@/app/loaders/sales';
+import { getAllSales } from '@/app/services/sales';
+import { getZones } from '@/app/services/zones';
 import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { SalesSection } from '@/components/sales/sales-section';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
-import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
 export const metadata: Metadata = {
   title: 'Ventas',
@@ -27,42 +26,14 @@ async function SalesDataFetcher() {
   const isSeller = user.role === 'seller';
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
-  const initialFilters: GetSalesListValues = {
-    page: 1,
-    limit: DEFAULT_ITEMS_PER_PAGE,
-    sort: 'date',
-    sortDir: 'desc',
-    dateFrom: '',
-    dateTo: '',
-    paymentStatus: undefined,
-    zone: undefined,
-    paymentMethod: undefined,
-    deliveryStatus: undefined,
-  };
-
-  const { zones, result: initialResult } = await loadSales(
-    {
-      dateFrom: initialFilters.dateFrom,
-      dateTo: initialFilters.dateTo,
-      paymentStatus: initialFilters.paymentStatus,
-      zone: initialFilters.zone,
-      paymentMethod: initialFilters.paymentMethod,
-      deliveryStatus: initialFilters.deliveryStatus,
-    },
-    {
-      page: initialFilters.page,
-      limit: initialFilters.limit,
-      sort: initialFilters.sort,
-      sortDir: initialFilters.sortDir,
-    },
-  );
+  const scope = isSeller ? { sellerId: user.id } : { ownerId: user.id };
+  const [zones, sales] = await Promise.all([getZones(user.id), getAllSales(scope)]);
 
   return (
     <>
       <RealtimeRefresher channel={channel} events={['sale_created', 'payment_registered']} />
       <SalesSection
-        initialFilters={initialFilters}
-        initialResult={initialResult}
+        sales={sales}
         zones={zones}
         showSellerColumn={!isSeller}
         canCollect={guardedUser.capabilities.has('sale.collect')}

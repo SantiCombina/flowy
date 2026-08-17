@@ -1,11 +1,11 @@
 'use client';
 
-import { Package, Search } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useState } from 'react';
 
 import type { SellerInventorySummary } from '@/app/services/mobile-seller';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 
 import { SellerInventoryCard } from './seller-inventory-card';
 
@@ -45,16 +45,12 @@ export function AssignmentsSection({ sellers }: AssignmentsSectionProps) {
               <Badge variant="outline">{totalUnits} unidades en circulación</Badge>
             </div>
 
-            <div className="relative max-w-sm">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Buscar por vendedor o producto..."
-                className="pl-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            <SearchInput
+              className="max-w-sm"
+              placeholder="Buscar por vendedor o producto..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+            />
 
             {filteredSellers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">

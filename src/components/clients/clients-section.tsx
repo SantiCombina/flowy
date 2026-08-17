@@ -1,10 +1,10 @@
 'use client';
 
-import { Plus, Search, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { getZonesAction } from '@/components/zones/actions';
 import { ManageZonesModal } from '@/components/zones/manage-zones-modal';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
@@ -70,16 +70,12 @@ export function ClientsSection({ clients, clientDebts, currentUser, capabilities
     <div className="flex flex-1 flex-col">
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <div className="relative flex-1 sm:max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder={canUseContactFields ? 'Buscar por nombre, localidad, CUIT...' : 'Buscar por nombre'}
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            className="flex-1 sm:max-w-sm"
+            placeholder={canUseContactFields ? 'Buscar por nombre, localidad, CUIT...' : 'Buscar por nombre'}
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
 
           <div
             className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"

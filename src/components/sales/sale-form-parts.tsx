@@ -6,7 +6,6 @@ import {
   ArrowRightLeft,
   Banknote,
   CalendarIcon,
-  CheckIcon,
   CreditCard,
   FileText,
   Minus,
@@ -91,7 +90,7 @@ function EmptyProductsState({ onAdd, disabled }: EmptyProductsStateProps) {
       </div>
       <p className="text-sm font-medium text-foreground">Agregá al menos un producto</p>
       <p className="mt-1 text-xs text-muted-foreground">Buscá entre los productos disponibles y cargá la cantidad.</p>
-      <Button type="button" onClick={onAdd} disabled={disabled} className="mt-4 gap-1.5">
+      <Button type="button" size="sm" onClick={onAdd} disabled={disabled} className="mt-4">
         <Plus className="h-4 w-4" />
         Agregar producto
       </Button>
@@ -118,7 +117,12 @@ function StepperInput({ value, onChange, onBlur, min, max, disabled, className, 
   const inputHeight = size === 'sm' ? 'h-8' : 'h-10';
 
   return (
-    <div className={cn('flex items-stretch', className)}>
+    <div
+      className={cn(
+        'flex items-stretch rounded-xl has-[input:focus-visible]:ring-ring/50 has-[input:focus-visible]:ring-[3px]',
+        className,
+      )}
+    >
       <Button
         type="button"
         variant="outline"
@@ -135,7 +139,11 @@ function StepperInput({ value, onChange, onBlur, min, max, disabled, className, 
         max={max}
         min={min}
         disabled={disabled}
-        className={cn('rounded-none border-x-0 text-center', inputHeight)}
+        placeholder=""
+        className={cn(
+          'rounded-none border-x-0 text-center focus-visible:border-input focus-visible:ring-0',
+          inputHeight,
+        )}
       />
       <Button
         type="button"
@@ -311,7 +319,7 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
   const isWarehouseEnabled = warehouseStock > 0;
   const isPersonalEnabled = personalStock > 0;
   const canAdd = selectedVariant && quantity > 0 && quantity <= availableStock;
-  const subtotal = quantity * unitPrice;
+  const subtotal = (Number.isFinite(quantity) ? quantity : 0) * unitPrice;
 
   const productOptions = useMemo(
     () =>
@@ -487,7 +495,6 @@ function PaymentMethodSelector({ value, onChange, error, canUseCredit = true }: 
             <RadioGroupItem value={option.value} className="sr-only" />
             <Icon className="h-4 w-4" />
             <span>{option.label}</span>
-            {isSelected && <CheckIcon className="absolute right-2 h-3.5 w-3.5" />}
           </label>
         );
       })}
@@ -553,7 +560,7 @@ function CheckDateField({ value, onChange }: CheckDateFieldProps) {
           variant="outline"
           className={cn('w-full justify-start text-left font-normal', !value && 'text-muted-foreground')}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <CalendarIcon className="h-4 w-4" />
           {value
             ? format(new Date(`${value}T12:00:00`), "d 'de' MMMM 'de' yyyy", {
                 locale: es,

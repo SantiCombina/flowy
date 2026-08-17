@@ -65,6 +65,13 @@ export const Users: CollectionConfig = {
         }
 
         if (data?.activeEntitlementSnapshot !== undefined) {
+          if (
+            operation === 'update' &&
+            relationshipId(data.activeEntitlementSnapshot) === relationshipId(originalDoc?.activeEntitlementSnapshot)
+          ) {
+            return data;
+          }
+
           const userId = operation === 'create' ? recordId(data) : originalDoc?.id;
           const originalIsOwner = operation === 'create' || originalDoc?.role === 'owner';
           const finalRole = data.role ?? originalDoc?.role;

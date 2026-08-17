@@ -57,23 +57,33 @@ export function LoginForm() {
     }
 
     if (result?.data?.success) {
-      toast.success('Ingreso exitoso');
       setRedirecting(true);
       await Promise.all([router.push('/dashboard'), router.refresh()]);
     }
   }
 
   async function onForgotSubmit(data: ForgotPasswordValues) {
-    const result = await executeForgot(data);
+    try {
+      const result = await executeForgot(data);
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      toast.success('Enlace enviado');
-      setView('forgot-sent');
+      if (result?.data?.error) {
+        toast.error(result.data.error);
+        return;
+      }
+
+      if (result?.data?.success) {
+        setView('forgot-sent');
+        return;
+      }
+
+      toast.error('Ocurrió un error inesperado. Intentá de nuevo más tarde.');
+    } catch {
+      toast.error('Ocurrió un error inesperado. Intentá de nuevo más tarde.');
     }
   }
 
@@ -120,6 +130,7 @@ export function LoginForm() {
                   if (firstError) forgotForm.setFocus(firstError);
                 })}
                 className="space-y-2"
+                autoComplete="off"
               >
                 <FormField
                   control={forgotForm.control}
@@ -128,9 +139,9 @@ export function LoginForm() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="" autoComplete="off" {...field} />
+                        <Input type="email" placeholder="" autoComplete="one-time-code" {...field} />
                       </FormControl>
-                      <div className="min-h-[20px]">
+                      <div className="min-h-5">
                         <FormMessage />
                       </div>
                     </FormItem>
@@ -204,7 +215,7 @@ export function LoginForm() {
                   <FormControl>
                     <Input type="email" placeholder="" {...field} />
                   </FormControl>
-                  <div className="min-h-[20px]">
+                  <div className="min-h-5">
                     <FormMessage />
                   </div>
                 </FormItem>
@@ -220,7 +231,7 @@ export function LoginForm() {
                   <FormControl>
                     <PasswordInput placeholder="" {...field} />
                   </FormControl>
-                  <div className="min-h-[20px]">
+                  <div className="min-h-5">
                     <FormMessage />
                   </div>
                 </FormItem>

@@ -229,11 +229,18 @@ export async function deleteSeller(sellerId: number, ownerId: number): Promise<v
 export async function forgotPassword(email: string): Promise<void> {
   const payload = await getPayloadClient();
 
-  await payload.forgotPassword({
-    collection: 'users',
-    data: { email },
-    disableEmail: false,
-  });
+  try {
+    await payload.forgotPassword({
+      collection: 'users',
+      data: { email },
+      disableEmail: false,
+    });
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('forgotPassword service error:', error);
+    }
+    throw error;
+  }
 }
 
 export async function resetPassword(token: string, password: string): Promise<void> {

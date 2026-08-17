@@ -146,7 +146,7 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleManage} className="text-primary">
-          <Settings2 className="mr-2 h-4 w-4" />
+          <Settings2 className="h-4 w-4" />
           Gestionar zonas
         </DropdownMenuItem>
       </DropdownMenuContent>

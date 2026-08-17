@@ -1,13 +1,13 @@
 'use client';
 
-import { Plus, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import type { CommissionSummary } from '@/app/services/commissions';
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { useUserOptional } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -76,16 +76,12 @@ export function SellersSection({ initialSellers, variants, commissionBalances, c
     <div className="flex flex-1 flex-col">
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <div className="relative flex-1 sm:max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar por nombre, email..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            className="flex-1 sm:max-w-sm"
+            placeholder="Buscar por nombre, email..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
           {canInviteSeller && (
             <Button onClick={() => setIsInviteModalOpen(true)}>
               <Plus className="h-4 w-4" />

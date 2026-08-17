@@ -7,14 +7,13 @@ export const metadata: Metadata = {
 };
 
 import { loadActiveGuardedUser } from '@/app/loaders/entitlements';
-import { getHistoryMovements } from '@/app/services/stock-movements';
+import { getAllHistoryMovements } from '@/app/services/stock-movements';
 import { PlanCapabilityDenied } from '@/components/entitlements/plan-capability-denied';
 import { HistorySection } from '@/components/history/history-section';
 import { PageHeader } from '@/components/layout/page-header';
 import { RealtimeRefresher } from '@/components/notifications/realtime-refresher';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { DEFAULT_ITEMS_PER_PAGE } from '@/lib/constants/table-columns';
 import { hasModuleAccess, MODULE_ACCESS } from '@/lib/entitlements/module-access';
 
 const moduleAccess = MODULE_ACCESS['/history'];
@@ -25,10 +24,7 @@ async function HistoryDataFetcher() {
 
   if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
-  const initialData = await getHistoryMovements(user.id, {
-    page: 1,
-    limit: DEFAULT_ITEMS_PER_PAGE,
-  });
+  const movements = await getAllHistoryMovements(user.id);
 
   return (
     <>
@@ -36,7 +32,7 @@ async function HistoryDataFetcher() {
         channel={`private-owner-${user.id}`}
         events={['stock_adjusted', 'stock_dispatched', 'stock_returned', 'sale_created']}
       />
-      <HistorySection initialData={{ success: true, ...initialData }} />
+      <HistorySection movements={movements} />
     </>
   );
 }

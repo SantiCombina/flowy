@@ -55,7 +55,7 @@ interface PriceInputProps {
   disabled?: boolean;
 }
 
-export function PriceInput({ value, onChange, onBlur, placeholder = '0,00', className, ...props }: PriceInputProps) {
+export function PriceInput({ value, onChange, onBlur, placeholder, className, ...props }: PriceInputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [localValue, setLocalValue] = useState('');
 

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { PasswordInput } from '@/components/ui/password-input';
+import { Spinner } from '@/components/ui/spinner';
 import { resetPasswordSchema, type ResetPasswordValues } from '@/schemas/auth/reset-password-schema';
 
 import { resetPasswordAction } from './actions';
@@ -31,20 +32,26 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   async function onSubmit(data: ResetPasswordValues) {
     setError(null);
-    const result = await executeAsync(data);
+    try {
+      const result = await executeAsync(data);
 
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      setError(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        setError(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      toast.success('Contraseña actualizada');
-      router.push('/login?password-reset=true');
-    } else if (result?.data?.error) {
-      toast.error(result.data.error);
-      setError(result.data.error);
+      if (result?.data?.success) {
+        toast.success('Contraseña actualizada');
+        router.push('/login?password-reset=true');
+      } else if (result?.data?.error) {
+        toast.error(result.data.error);
+        setError(result.data.error);
+      }
+    } catch {
+      const fallback = 'Ocurrió un error inesperado. Intentá de nuevo más tarde.';
+      toast.error(fallback);
+      setError(fallback);
     }
   }
 
@@ -90,7 +97,14 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={isExecuting}>
-              {isExecuting ? 'Guardando' : 'Guardar contraseña'}
+              {isExecuting ? (
+                <span className="flex items-center gap-2">
+                  Guardando
+                  <Spinner />
+                </span>
+              ) : (
+                'Guardar contraseña'
+              )}
             </Button>
           </form>
         </Form>

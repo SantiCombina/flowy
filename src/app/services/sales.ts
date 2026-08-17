@@ -596,6 +596,87 @@ export async function getPaginatedSales(
   )();
 }
 
+export async function getAllSales(scope: { sellerId: number } | { ownerId: number }): Promise<SaleRow[]> {
+  const payload = await getPayloadClient();
+  const isSeller = 'sellerId' in scope;
+
+  const result = await payload.find({
+    collection: 'sales',
+    where: isSeller ? { seller: { equals: scope.sellerId } } : { owner: { equals: scope.ownerId } },
+    sort: '-date',
+    limit: 1000,
+    depth: 2,
+    overrideAccess: true,
+    select: {
+      id: true,
+      date: true,
+      seller: { select: { name: true } } as unknown as true,
+      client: { select: { id: true, name: true, zone: { select: { id: true, name: true } } } } as unknown as true,
+      items: true,
+      total: true,
+      paymentMethod: true,
+      paymentStatus: true,
+      amountPaid: true,
+      collectedAt: true,
+      checkDueDate: true,
+      deliveryStatus: true,
+      deliveredAt: true,
+      notes: true,
+    },
+  });
+
+  return (result.docs as Sale[]).map((sale: Sale) => {
+    const seller = typeof sale.seller === 'object' ? sale.seller : null;
+    const sellerId = resolveId(sale.seller) ?? 0;
+    const client = sale.client && typeof sale.client === 'object' ? sale.client : null;
+    const clientZone = client?.zone && typeof client.zone === 'object' ? client.zone : null;
+
+    const items: SaleItemDetail[] = sale.items.map((item) => {
+      const variant = typeof item.variant === 'object' ? item.variant : null;
+      const variantId = resolveId(item.variant) ?? 0;
+      const product = variant && typeof variant.product === 'object' ? variant.product : null;
+      const presentation =
+        variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+      const variantName = formatSaleVariantDisplayName({
+        productName: product?.name ?? 'Producto desconocido',
+        presentationLabel: presentation?.label ?? undefined,
+      });
+
+      return {
+        variantId,
+        variantName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
+        stockSource: (item.stockSource ?? 'warehouse') as 'warehouse' | 'personal',
+      };
+    });
+
+    return {
+      id: sale.id,
+      date: sale.date,
+      sellerId,
+      sellerName: seller?.name ?? 'Vendedor desconocido',
+      clientId: client?.id ?? undefined,
+      clientName: client?.name ?? undefined,
+      clientZoneId: clientZone?.id ?? undefined,
+      clientZoneName: clientZone?.name ?? undefined,
+      notes: sale.notes ?? undefined,
+      itemCount: sale.items.length,
+      total: sale.total,
+      paymentMethod: sale.paymentMethod ?? null,
+      paymentStatus: (sale.paymentStatus ?? 'pending') as 'pending' | 'partially_collected' | 'collected',
+      amountPaid: sale.amountPaid ?? 0,
+      collectedAt: sale.collectedAt ?? undefined,
+      checkDueDate: sale.checkDueDate ?? undefined,
+      deliveryStatus: (sale.deliveryStatus ?? 'pending') as 'pending' | 'delivered',
+      deliveredAt: sale.deliveredAt ?? undefined,
+      items,
+    };
+  });
+}
+
 export async function getSales(filters: {
   sellerId?: number;
   ownerId?: number;

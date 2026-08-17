@@ -175,18 +175,6 @@ async function _getHistoryMovements(ownerId: number, filters: HistoryFilters = {
     limit,
     depth: 2,
     overrideAccess: true,
-    select: {
-      id: true,
-      createdAt: true,
-      type: true,
-      quantity: true,
-      previousStock: true,
-      newStock: true,
-      reason: true,
-      variant: { select: { code: true, product: { select: { name: true } } } } as unknown as true,
-      mobileSeller: { select: { name: true } } as unknown as true,
-      createdBy: { select: { name: true } } as unknown as true,
-    },
   });
 
   const docs: HistoryMovement[] = result.docs.map((m) => {
@@ -212,18 +200,61 @@ async function _getHistoryMovements(ownerId: number, filters: HistoryFilters = {
 
   return {
     docs,
-    totalDocs: result.totalDocs,
-    totalPages: result.totalPages,
+    totalDocs: result.totalDocs ?? 0,
+    totalPages: Math.max(1, result.totalPages ?? 1),
     page: result.page ?? page,
   };
 }
 
 export async function getHistoryMovements(ownerId: number, filters: HistoryFilters = {}): Promise<HistoryResult> {
-  return unstable_cache(
-    async () => _getHistoryMovements(ownerId, filters),
-    ['history-movements', String(ownerId), JSON.stringify(filters)],
-    { revalidate: 60 * 2, tags: [cacheTags.history(ownerId)] },
-  )();
+  const cacheKey = [
+    'history-movements',
+    String(ownerId),
+    filters.from?.toISOString() ?? '',
+    filters.to?.toISOString() ?? '',
+    filters.types?.sort().join(',') ?? '',
+    String(filters.page ?? 1),
+    String(filters.limit ?? 25),
+  ].join('|');
+
+  return unstable_cache(async () => _getHistoryMovements(ownerId, filters), [cacheKey], {
+    revalidate: 60 * 2,
+    tags: [cacheTags.history(ownerId)],
+  })();
+}
+
+export async function getAllHistoryMovements(ownerId: number): Promise<HistoryMovement[]> {
+  const payload = await getPayloadClient();
+
+  const result = await payload.find({
+    collection: 'stock-movements',
+    where: { owner: { equals: ownerId } },
+    sort: '-createdAt',
+    limit: 1000,
+    depth: 2,
+    overrideAccess: true,
+  });
+
+  return result.docs.map((m) => {
+    const variant = typeof m.variant === 'object' ? (m.variant as ProductVariant) : null;
+    const product = variant && typeof variant.product === 'object' ? (variant.product as Product) : null;
+    const mobileSeller = m.mobileSeller && typeof m.mobileSeller === 'object' ? (m.mobileSeller as User) : null;
+    const createdBy = typeof m.createdBy === 'object' ? (m.createdBy as User) : null;
+
+    return {
+      id: m.id,
+      createdAt: m.createdAt,
+      type: m.type as MovementType,
+      quantity: m.quantity,
+      previousStock: m.previousStock,
+      newStock: m.newStock,
+      reason: m.reason ?? null,
+      variantCode: variant?.code ?? null,
+      productName: product?.name ?? '—',
+      sellerName: mobileSeller?.name ?? null,
+      createdByName: createdBy?.name ?? '—',
+    };
+  });
 }
 
 export async function getStockMovements(ownerId: number, variantId?: number): Promise<StockMovement[]> {

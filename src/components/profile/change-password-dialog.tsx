@@ -17,6 +17,7 @@ import {
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
+import { Spinner } from '@/components/ui/spinner';
 import { changePasswordSchema, type ChangePasswordValues } from '@/schemas/profile/change-password-schema';
 
 import { changePasswordAction } from './actions';
@@ -34,19 +35,23 @@ export function ChangePasswordDialog() {
 
   async function onSubmit(data: ChangePasswordValues) {
     setError(null);
-    const result = await executeAsync(data);
+    try {
+      const result = await executeAsync(data);
 
-    if (result?.serverError) {
-      setError(result.serverError);
-      return;
-    }
+      if (result?.serverError) {
+        setError(result.serverError);
+        return;
+      }
 
-    if (result?.data?.success) {
-      toast.success('Contraseña actualizada');
-      form.reset();
-      setOpen(false);
-    } else if (result?.data?.error) {
-      setError(result.data.error);
+      if (result?.data?.success) {
+        toast.success('Contraseña actualizada');
+        form.reset();
+        setOpen(false);
+      } else if (result?.data?.error) {
+        setError(result.data.error);
+      }
+    } catch {
+      setError('Ocurrió un error inesperado. Intentá de nuevo más tarde.');
     }
   }
 
@@ -125,7 +130,14 @@ export function ChangePasswordDialog() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={isExecuting}>
-                {isExecuting ? 'Guardando' : 'Guardar'}
+                {isExecuting ? (
+                  <span className="flex items-center gap-2">
+                    Guardando
+                    <Spinner />
+                  </span>
+                ) : (
+                  'Guardar'
+                )}
               </Button>
             </ResponsiveModalFooter>
           </form>

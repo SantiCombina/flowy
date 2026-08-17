@@ -210,7 +210,7 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
                   {commissionSummary.pendingBalance > 0 && (
                     <Button className="w-full" onClick={() => setIsPaymentModalOpen(true)}>
-                      <DollarSign className="h-4 w-4 mr-1" />
+                      <DollarSign className="h-4 w-4" />
                       Registrar pago de comisión
                     </Button>
                   )}

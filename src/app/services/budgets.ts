@@ -309,6 +309,71 @@ export async function getPaginatedBudgets(
   )();
 }
 
+export async function getAllBudgets(ownerId: number): Promise<BudgetRow[]> {
+  const payload = await getPayloadClient();
+
+  const result = await payload.find({
+    collection: 'budgets',
+    where: { owner: { equals: ownerId } },
+    sort: '-date',
+    limit: 1000,
+    depth: 2,
+    overrideAccess: true,
+    select: {
+      id: true,
+      date: true,
+      seller: { select: { name: true } } as unknown as true,
+      client: { select: { id: true, name: true } } as unknown as true,
+      clientPhone: true,
+      items: true,
+      total: true,
+      status: true,
+      validUntil: true,
+      notes: true,
+    },
+  });
+
+  return (result.docs as Budget[]).map((budget) => {
+    const seller = typeof budget.seller === 'object' ? budget.seller : null;
+    const client = budget.client && typeof budget.client === 'object' ? budget.client : null;
+
+    const items: BudgetItemDetail[] = budget.items.map((item) => {
+      const variant = typeof item.variant === 'object' ? item.variant : null;
+      const variantId = resolveId(item.variant) ?? 0;
+      const product = variant && typeof variant.product === 'object' ? variant.product : null;
+      const presentation =
+        variant?.presentation && typeof variant.presentation === 'object' ? variant.presentation : null;
+
+      const productName = product?.name ?? 'Producto desconocido';
+      const variantName = presentation?.label ? `${productName} · ${presentation.label}` : productName;
+
+      return {
+        variantId,
+        variantName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: multiplyMoney(item.quantity, item.unitPrice),
+      };
+    });
+
+    return {
+      id: budget.id,
+      date: budget.date,
+      sellerId: resolveId(budget.seller) ?? 0,
+      sellerName: seller?.name ?? 'Vendedor desconocido',
+      clientId: client?.id ?? undefined,
+      clientName: client?.name ?? undefined,
+      clientPhone: budget.clientPhone ?? undefined,
+      itemCount: budget.items.length,
+      total: budget.total,
+      status: budget.status,
+      validUntil: budget.validUntil ?? undefined,
+      notes: budget.notes ?? undefined,
+      items,
+    };
+  });
+}
+
 export async function getBudgetById(budgetId: number, ownerId: number): Promise<Budget | null> {
   const payload = await getPayloadClient();
 

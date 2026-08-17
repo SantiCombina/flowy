@@ -32,8 +32,8 @@ export const getHistoryAction = actionClient.schema(historyFiltersSchema).action
     ...(parsedInput.from ? { from: new Date(parsedInput.from) } : {}),
     ...(parsedInput.to ? { to: new Date(parsedInput.to) } : {}),
     ...(parsedInput.types ? { types: parsedInput.types as MovementType[] } : {}),
-    ...(parsedInput.page ? { page: parsedInput.page } : {}),
-    ...(parsedInput.limit ? { limit: parsedInput.limit } : {}),
+    page: parsedInput.page ?? 1,
+    limit: parsedInput.limit ?? 25,
   });
 
   return {

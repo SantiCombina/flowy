@@ -12,18 +12,16 @@ import {
   FileText,
   Inbox,
   Pencil,
-  RefreshCw,
   Trash2,
   Truck,
 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { Fragment, memo, useCallback, useMemo, useState } from 'react';
+import { Fragment, memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { SaleRow } from '@/app/services/sales';
 import { useUser } from '@/components/providers/user-provider';
 import { ActionMenu } from '@/components/ui/action-menu';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,16 +42,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { useServerActionQuery } from '@/hooks/use-server-action-query';
-import { ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
-import { queryKeys } from '@/lib/query-keys';
+import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { getSaleWhatsAppLink } from '@/lib/sale-whatsapp';
 import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
-import type { GetSalesListValues } from '@/schemas/sales/sales-list-schema';
 
-import { deleteSaleAction, getSalesAction, markAsDeliveredAction } from './actions';
+import { deleteSaleAction, markAsDeliveredAction } from './actions';
 import { CollectSaleModal } from './collect-sale-modal';
 import { EditSaleModal } from './edit-sale-modal';
 
@@ -141,13 +135,7 @@ const SortableHead = memo(function SortableHead({
 });
 
 interface SalesSectionProps {
-  initialFilters: GetSalesListValues;
-  initialResult: {
-    sales: SaleRow[];
-    totalCount: number;
-    totalPages: number;
-    page: number;
-  };
+  sales: SaleRow[];
   zones: Zone[];
   showSellerColumn: boolean;
   canCollect: boolean;
@@ -157,8 +145,7 @@ interface SalesSectionProps {
 }
 
 function SalesSectionComponent({
-  initialFilters,
-  initialResult,
+  sales: initialSales,
   zones,
   showSellerColumn,
   canCollect,
@@ -169,45 +156,117 @@ function SalesSectionComponent({
   const user = useUser();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
-  const { invalidateQueries } = useInvalidateQueries();
 
-  const getStatus = (sale: SaleRow) => sale.paymentStatus;
-  const getAmountPaid = (sale: SaleRow) => sale.amountPaid;
+  const [sales, setSales] = useState<SaleRow[]>(initialSales);
+  type Filters = {
+    page: number;
+    limit: number;
+    sort: SortKey;
+    sortDir: 'asc' | 'desc';
+    dateFrom: string;
+    dateTo: string;
+    paymentStatus: StatusFilter | undefined;
+    zone: number | undefined;
+    paymentMethod: string | undefined;
+    deliveryStatus: string | undefined;
+  };
 
-  const [filters, setFilters] = useState<GetSalesListValues>(() => {
-    if (initialStatusFilter && initialStatusFilter !== 'all' && !initialFilters.paymentStatus) {
-      return { ...initialFilters, paymentStatus: initialStatusFilter, page: 1 };
+  const [filters, setFilters] = useState<Filters>(() => {
+    const baseFilters: Filters = {
+      page: 1,
+      limit: DEFAULT_ITEMS_PER_PAGE,
+      sort: 'date',
+      sortDir: 'desc',
+      dateFrom: '',
+      dateTo: '',
+      paymentStatus: undefined,
+      zone: undefined,
+      paymentMethod: undefined,
+      deliveryStatus: undefined,
+    };
+    if (initialStatusFilter && initialStatusFilter !== 'all') {
+      baseFilters.paymentStatus = initialStatusFilter;
     }
-    return initialFilters;
+    return baseFilters;
   });
 
-  const isInitialQuery = useMemo(() => {
-    return (
-      filters.page === initialFilters.page &&
-      filters.limit === initialFilters.limit &&
-      filters.sort === initialFilters.sort &&
-      filters.sortDir === initialFilters.sortDir &&
-      filters.dateFrom === initialFilters.dateFrom &&
-      filters.dateTo === initialFilters.dateTo &&
-      filters.paymentStatus === initialFilters.paymentStatus &&
-      filters.zone === initialFilters.zone &&
-      filters.paymentMethod === initialFilters.paymentMethod &&
-      filters.deliveryStatus === initialFilters.deliveryStatus
-    );
-  }, [filters, initialFilters]);
+  const filteredSales = useMemo(() => {
+    let result = sales;
 
-  const { data, isPending, isError, error, refetch } = useServerActionQuery({
-    queryKey: queryKeys.sales.list(filters),
-    queryFn: () => getSalesAction(filters),
-    initialData: isInitialQuery ? { success: true, ...initialResult } : undefined,
-    placeholderData: (previousData) => previousData,
-    staleTime: 10_000,
-  });
+    if (filters.dateFrom) {
+      const from = parseISO(filters.dateFrom).getTime();
+      result = result.filter((s) => new Date(s.date).getTime() >= from);
+    }
+    if (filters.dateTo) {
+      const to = parseISO(filters.dateTo).getTime();
+      result = result.filter((s) => new Date(s.date).getTime() <= to);
+    }
+    if (filters.paymentStatus) {
+      if (filters.paymentStatus === 'pending') {
+        result = result.filter((s) => s.paymentStatus === 'pending' || s.paymentStatus === 'partially_collected');
+      } else {
+        result = result.filter((s) => s.paymentStatus === 'collected');
+      }
+    }
+    if (filters.zone !== undefined) {
+      result = result.filter((s) => s.clientZoneId === filters.zone);
+    }
+    if (filters.paymentMethod) {
+      if (filters.paymentMethod === '__credit__') {
+        result = result.filter((s) => s.paymentMethod === null);
+      } else {
+        result = result.filter((s) => s.paymentMethod === filters.paymentMethod);
+      }
+    }
+    if (filters.deliveryStatus) {
+      result = result.filter((s) => s.deliveryStatus === filters.deliveryStatus);
+    }
 
-  const salesData = data?.sales ?? initialResult.sales;
-  const totalCount = data?.totalCount ?? initialResult.totalCount;
-  const totalPages = data?.totalPages ?? initialResult.totalPages;
-  const currentPage = data?.page ?? initialResult.page;
+    return result;
+  }, [
+    sales,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.paymentStatus,
+    filters.zone,
+    filters.paymentMethod,
+    filters.deliveryStatus,
+  ]);
+
+  const sortedSales = useMemo(() => {
+    if (!filters.sort) return filteredSales;
+
+    return [...filteredSales].sort((a, b) => {
+      const dir = filters.sortDir === 'asc' ? 1 : -1;
+      switch (filters.sort) {
+        case 'date':
+          return (new Date(a.date).getTime() - new Date(b.date).getTime()) * dir;
+        case 'seller':
+          return a.sellerName.localeCompare(b.sellerName) * dir;
+        case 'client':
+          return (a.clientName ?? '').localeCompare(b.clientName ?? '') * dir;
+        case 'items':
+          return (a.itemCount - b.itemCount) * dir;
+        case 'total':
+          return (a.total - b.total) * dir;
+        case 'paymentMethod':
+          return (a.paymentMethod ?? '').localeCompare(b.paymentMethod ?? '') * dir;
+        case 'paymentStatus':
+          return a.paymentStatus.localeCompare(b.paymentStatus) * dir;
+        case 'deliveryStatus':
+          return a.deliveryStatus.localeCompare(b.deliveryStatus) * dir;
+        case 'zone':
+          return (a.clientZoneName ?? '').localeCompare(b.clientZoneName ?? '') * dir;
+        default:
+          return 0;
+      }
+    });
+  }, [filteredSales, filters.sort, filters.sortDir]);
+
+  const totalCount = sortedSales.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / filters.limit));
+  const safePage = Math.min(filters.page, totalPages);
+  const pageData = sortedSales.slice((safePage - 1) * filters.limit, safePage * filters.limit);
 
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [collectingModal, setCollectingModal] = useState<{
@@ -222,10 +281,9 @@ function SalesSectionComponent({
   const { executeAsync: executeDelete, isExecuting: isDeleting } = useAction(deleteSaleAction);
   const { executeAsync: executeMarkDelivered, isExecuting: isMarkingDelivered } = useAction(markAsDeliveredAction);
 
-  const handleCollectSuccess = useCallback(() => {
-    invalidateQueries([queryKeys.sales.list(filters)]);
+  const handleCollectSuccess = () => {
     setCollectingModal(null);
-  }, [invalidateQueries, filters, setCollectingModal]);
+  };
 
   const handleWhatsApp = (sale: SaleRow) => {
     window.open(getSaleWhatsAppLink(sale, user?.businessName ?? null), '_blank');
@@ -241,14 +299,17 @@ function SalesSectionComponent({
 
     if (result?.data?.success) {
       toast.success('Venta marcada como entregada.');
-      invalidateQueries([queryKeys.sales.list(filters)]);
+      setSales((prev) =>
+        prev.map((s) =>
+          s.id === saleId ? { ...s, deliveryStatus: 'delivered' as const, deliveredAt: new Date().toISOString() } : s,
+        ),
+      );
     }
   };
 
   const handleEditSuccess = () => {
     toast.success('Venta editada');
     setEditingSale(null);
-    invalidateQueries([queryKeys.sales.list(filters)]);
   };
 
   const handleDelete = async (saleId: number) => {
@@ -262,7 +323,7 @@ function SalesSectionComponent({
 
     if (result?.data?.success) {
       toast.warning('Venta eliminada');
-      invalidateQueries([queryKeys.sales.list(filters)]);
+      setSales((prev) => prev.filter((s) => s.id !== saleId));
     }
   };
 
@@ -276,15 +337,18 @@ function SalesSectionComponent({
       if (prev.sort === nextSort) {
         return {
           ...prev,
-          sortDir: prev.sortDir === 'asc' ? 'desc' : 'asc',
+          sortDir: (prev.sortDir === 'asc' ? 'desc' : 'asc') as 'asc' | 'desc',
           page: 1,
         };
       }
-      return { ...prev, sort: nextSort, sortDir: 'asc', page: 1 };
+      return { ...prev, sort: nextSort, sortDir: 'desc' as const, page: 1 };
     });
   };
 
-  const handleFilterChange = (key: keyof GetSalesListValues, value: string | number | undefined) => {
+  const handleFilterChange = (
+    key: 'zone' | 'paymentMethod' | 'paymentStatus' | 'deliveryStatus',
+    value: string | number | undefined,
+  ) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -304,7 +368,7 @@ function SalesSectionComponent({
   const handleLimitChange = (limit: number) => {
     setFilters((prev) => ({
       ...prev,
-      limit: limit as GetSalesListValues['limit'],
+      limit,
       page: 1,
     }));
   };
@@ -331,19 +395,6 @@ function SalesSectionComponent({
     <div className="flex flex-1 flex-col">
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
-          {isError && salesData.length === 0 && (
-            <Alert variant="destructive">
-              <AlertTitle>Error al cargar ventas</AlertTitle>
-              <AlertDescription className="flex items-center gap-2">
-                {error?.message ?? 'Ocurrió un error inesperado.'}
-                <Button variant="outline" size="sm" onClick={() => refetch()}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Reintentar
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
           <div className="rounded-xl bg-card shadow-md overflow-x-auto">
             <Table>
               <TableHeader>
@@ -473,13 +524,7 @@ function SalesSectionComponent({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isPending && salesData.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={totalCols}>
-                      <EmptyState icon={Inbox} title="Cargando ventas" description="" />
-                    </TableCell>
-                  </TableRow>
-                ) : salesData.length === 0 ? (
+                {pageData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={totalCols}>
                       <EmptyState
@@ -490,10 +535,10 @@ function SalesSectionComponent({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  salesData.map((sale) => {
+                  pageData.map((sale) => {
                     const isExpanded = expandedId === sale.id;
-                    const displayStatus = getStatus(sale);
-                    const displayAmountPaid = getAmountPaid(sale);
+                    const displayStatus = sale.paymentStatus;
+                    const displayAmountPaid = sale.amountPaid;
                     const isOverdue =
                       sale.paymentMethod === 'check' &&
                       displayStatus !== 'collected' &&
@@ -502,7 +547,7 @@ function SalesSectionComponent({
                     const isPending = displayStatus === 'pending' || displayStatus === 'partially_collected';
 
                     return (
-                      <Fragment key={sale.id}>
+                      <Fragment key={`${safePage}-${sale.id}`}>
                         <TableRow
                           className={cn(
                             'cursor-pointer hover:bg-muted/50 animate-in fade-in duration-150',
@@ -746,10 +791,10 @@ function SalesSectionComponent({
                 ) : (
                   <>
                     <span className="sm:hidden">
-                      {currentPage}/{totalPages}
+                      {safePage}/{totalPages}
                     </span>
                     <span className="hidden sm:inline">
-                      {(currentPage - 1) * filters.limit + 1}–{Math.min(currentPage * filters.limit, totalCount)} de{' '}
+                      {(safePage - 1) * filters.limit + 1}–{Math.min(safePage * filters.limit, totalCount)} de{' '}
                       {totalCount}
                     </span>
                   </>
@@ -759,8 +804,8 @@ function SalesSectionComponent({
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1 || isPending}
+                  onClick={() => handlePageChange(safePage - 1)}
+                  disabled={safePage <= 1}
                   aria-label="Página anterior"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -768,8 +813,8 @@ function SalesSectionComponent({
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages || isPending}
+                  onClick={() => handlePageChange(safePage + 1)}
+                  disabled={safePage >= totalPages}
                   aria-label="Página siguiente"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -821,7 +866,7 @@ function SalesSectionComponent({
                 </span>
               ) : (
                 <>
-                  <Truck className="mr-2 h-4 w-4" />
+                  <Truck className="h-4 w-4" />
                   Confirmar entrega
                 </>
               )}

@@ -1,6 +1,5 @@
 'use client';
 
-import { keepPreviousData } from '@tanstack/react-query';
 import {
   ArrowDown,
   ArrowRight,
@@ -11,10 +10,9 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { Fragment, memo, useState } from 'react';
+import { Fragment, memo, useMemo, useState } from 'react';
 
-import type { HistoryMovement, HistoryResult, MovementType } from '@/app/services/stock-movements';
-import { getHistoryAction } from '@/components/history/actions';
+import type { HistoryMovement, MovementType } from '@/app/services/stock-movements';
 import { MovementTypeBadge } from '@/components/history/movement-type-badge';
 import { Button } from '@/components/ui/button';
 import { ColumnHeaderDateFilter } from '@/components/ui/column-header-date-filter';
@@ -24,9 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/settings-context';
-import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
-import { queryKeys } from '@/lib/query-keys';
 import { cn, formatDate, formatDateParts } from '@/lib/utils';
 
 const ALL_TYPES: MovementType[] = [
@@ -116,10 +112,10 @@ const SortableHead = memo(function SortableHead({
 });
 
 interface HistorySectionProps {
-  initialData: { success: true } & HistoryResult;
+  movements: HistoryMovement[];
 }
 
-function HistorySectionComponent({ initialData }: HistorySectionProps) {
+function HistorySectionComponent({ movements }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('history');
 
@@ -132,29 +128,71 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const noFiltersActive = dateRange === undefined && selectedTypes.length === 0;
+  const filteredData = useMemo(() => {
+    let result = movements;
 
-  const { data, isPending } = useServerActionQuery({
-    queryKey: queryKeys.history.filtered(dateRange, selectedTypes, page, itemsPerPage),
-    queryFn: () =>
-      getHistoryAction({
-        ...(dateRange
-          ? {
-              from: dateRange.from.toISOString(),
-              to: dateRange.to.toISOString(),
-            }
-          : {}),
-        ...(selectedTypes.length > 0 ? { types: selectedTypes } : {}),
-        page,
-        limit: itemsPerPage,
-      }),
-    initialData: noFiltersActive ? initialData : undefined,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
-  });
+    if (dateRange) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(dateRange.to);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((m) => {
+        const d = new Date(m.createdAt);
+        return d >= from && d <= to;
+      });
+    }
 
-  const docs = data?.docs ?? [];
-  const totalDocs = data?.totalDocs ?? 0;
+    if (selectedTypes.length > 0) {
+      result = result.filter((m) => selectedTypes.includes(m.type));
+    }
+
+    return result;
+  }, [movements, dateRange, selectedTypes]);
+
+  const sortedData = useMemo(() => {
+    if (!sortKey) return filteredData;
+
+    return [...filteredData].sort((a, b) => {
+      let va: string | number;
+      let vb: string | number;
+
+      switch (sortKey) {
+        case 'createdAt':
+          va = new Date(a.createdAt).getTime();
+          vb = new Date(b.createdAt).getTime();
+          break;
+        case 'type':
+          va = TYPE_LABELS[a.type];
+          vb = TYPE_LABELS[b.type];
+          break;
+        case 'productName':
+          va = a.productName.toLowerCase();
+          vb = b.productName.toLowerCase();
+          break;
+        case 'quantity':
+          va = a.quantity;
+          vb = b.quantity;
+          break;
+        default:
+          return 0;
+      }
+
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return sortDir === 'asc' ? va - vb : vb - va;
+      }
+
+      const sa = String(va).toLowerCase();
+      const sb = String(vb).toLowerCase();
+      if (sa < sb) return sortDir === 'asc' ? -1 : 1;
+      if (sa > sb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortKey, sortDir]);
+
+  const totalDocs = sortedData.length;
+  const totalPages = Math.max(1, Math.ceil(totalDocs / itemsPerPage));
+  const safePage = Math.min(page, totalPages);
+  const pageData = sortedData.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
   function handleDateRangeChange(range: { from: Date; to: Date } | undefined) {
     setDateRange(range);
@@ -168,10 +206,8 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
       setSortKey(key);
       setSortDir('asc');
     }
+    setPage(1);
   }
-
-  const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalDocs / itemsPerPage));
-  const safePage = Math.min(page, totalPages);
 
   const showReference = visibleColumns.includes('reference');
   const showReason = visibleColumns.includes('reason');
@@ -180,12 +216,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
     <div className="flex flex-1 flex-col">
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="space-y-3">
-          <div
-            className={cn(
-              'rounded-xl bg-card shadow-md overflow-x-auto transition-opacity duration-150',
-              isPending && 'opacity-50 pointer-events-none',
-            )}
-          >
+          <div className="rounded-xl bg-card shadow-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -247,7 +278,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {docs.length === 0 ? (
+                {pageData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10}>
                       <EmptyState
@@ -258,11 +289,11 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  docs.map((movement: HistoryMovement) => {
+                  pageData.map((movement: HistoryMovement) => {
                     const isExpanded = expandedId === movement.id;
                     const impact = getStockImpact(movement);
                     return (
-                      <Fragment key={movement.id}>
+                      <Fragment key={`${safePage}-${movement.id}`}>
                         <TableRow
                           className={cn(
                             'cursor-pointer hover:bg-muted/50 animate-in fade-in duration-150',
@@ -443,8 +474,8 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                 <Button
                   variant="outline"
                   className="h-9 w-9 p-0"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={safePage <= 1 || isPending}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
                 >
                   ‹
                 </Button>
@@ -452,7 +483,7 @@ function HistorySectionComponent({ initialData }: HistorySectionProps) {
                   variant="outline"
                   className="h-9 w-9 p-0"
                   onClick={() => setPage((p) => p + 1)}
-                  disabled={safePage >= totalPages || isPending}
+                  disabled={safePage >= totalPages}
                 >
                   ›
                 </Button>

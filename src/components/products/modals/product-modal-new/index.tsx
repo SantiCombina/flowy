@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 
 import { DeleteConfirmationDialog } from './components/delete-confirmation-dialog';
 import { ProductAttributesSection } from './components/product-attributes-section';
+import { ProductFormSkeleton } from './components/product-form-skeleton';
 import { ProductInfoSection } from './components/product-info-section';
 import { ProductVariantsSection } from './components/product-variants-section';
 import { useEntityDialog } from './hooks/useEntityDialog';
@@ -89,9 +91,7 @@ export function ProductModal({
         </ResponsiveModalHeader>
 
         {isLoading ? (
-          <ResponsiveModalBody className="flex justify-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-          </ResponsiveModalBody>
+          <ProductFormSkeleton />
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
@@ -126,7 +126,16 @@ export function ProductModal({
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Guardando' : isEditing ? 'Guardar cambios' : 'Crear producto'}
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      Guardando
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </span>
+                  ) : isEditing ? (
+                    'Guardar cambios'
+                  ) : (
+                    'Crear producto'
+                  )}
                 </Button>
               </ResponsiveModalFooter>
             </form>

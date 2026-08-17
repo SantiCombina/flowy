@@ -219,7 +219,7 @@ export function AppSidebar({ features, capabilities = [] }: AppSidebarProps) {
               className="w-8 h-8 min-w-8 shrink-0"
               priority
             />
-            <div className="flex min-w-0 flex-col overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
+            <div className="-ml-1.5 flex min-w-0 flex-col overflow-hidden transition-all duration-300 ease-in-out group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0">
               <span
                 className="text-sm font-bold tracking-tight text-sidebar-foreground whitespace-nowrap"
                 style={{ fontFamily: 'var(--font-display)' }}

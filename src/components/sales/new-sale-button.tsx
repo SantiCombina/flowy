@@ -26,8 +26,8 @@ export function NewSaleButton() {
 
   return (
     <>
-      <Button size="sm" onClick={handleOpen}>
-        <ShoppingCart className="h-4 w-4 mr-2" />
+      <Button onClick={handleOpen} className="h-9 py-1.5">
+        <ShoppingCart className="h-4 w-4" />
         Nueva venta
       </Button>
 

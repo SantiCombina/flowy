@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, EyeOff, Eye, Plus, Search, Warehouse, X } from 'lucide-react';
+import { DollarSign, EyeOff, Eye, Plus, Warehouse, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
@@ -145,16 +145,12 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
     <div className="flex flex-1 flex-col">
       <main className="flex-1 space-y-4 px-4 pb-6 sm:px-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <div className="relative flex-1 sm:max-w-sm">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar por nombre, código, marca..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          <SearchInput
+            className="flex-1 sm:max-w-sm"
+            placeholder="Buscar por nombre, código, marca..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
           {canCreateProduct && initialVariants.docs.length > 0 && (
             <div
               className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
@@ -231,17 +227,20 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
         </div>
       )}
 
-      <ProductModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSuccess={handleSuccess}
-        productId={editingProductId}
-        brands={referenceData.brands}
-        categories={referenceData.categories}
-        qualities={referenceData.qualities}
-        presentations={referenceData.presentations}
-        onRefreshEntities={handleRefreshEntities}
-      />
+      {isModalOpen && (
+        <ProductModal
+          key={editingProductId ?? 'new'}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSuccess={handleSuccess}
+          productId={editingProductId}
+          brands={referenceData.brands}
+          categories={referenceData.categories}
+          qualities={referenceData.qualities}
+          presentations={referenceData.presentations}
+          onRefreshEntities={handleRefreshEntities}
+        />
+      )}
 
       <BulkPriceSheet
         key={bulkPriceKey}

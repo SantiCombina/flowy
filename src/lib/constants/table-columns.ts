@@ -1,5 +1,5 @@
 export const TABLE_COLUMNS = {
-  products: ['name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price', 'lastSold'],
+  products: ['image', 'name', 'code', 'brand', 'category', 'quality', 'presentation', 'stock', 'price', 'lastSold'],
   clients: ['name', 'cuit', 'phone', 'email', 'address', 'localidad', 'provincia', 'zone', 'debt'],
   sales: ['date', 'seller', 'client', 'zone', 'items', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status', 'items', 'notes'],
@@ -13,7 +13,7 @@ export type TableName = keyof typeof TABLE_COLUMNS;
 export type TableColumns = typeof TABLE_COLUMNS;
 
 export const DEFAULT_COLUMNS: Record<TableName, string[]> = {
-  products: ['name', 'brand', 'presentation', 'stock', 'price', 'lastSold'],
+  products: ['image', 'name', 'brand', 'presentation', 'stock', 'price', 'lastSold'],
   clients: ['name', 'phone', 'email', 'localidad', 'zone', 'debt'],
   sales: ['date', 'seller', 'client', 'total', 'paymentMethod', 'paymentStatus'],
   assignments: ['date', 'seller', 'status'],
@@ -37,6 +37,7 @@ export type ItemsPerPageOption = (typeof ITEMS_PER_PAGE_OPTIONS)[number];
 export const DEFAULT_ITEMS_PER_PAGE: ItemsPerPageOption = 10;
 
 export const COLUMN_LABELS: Record<string, string> = {
+  image: 'Imagen',
   name: 'Nombre',
   code: 'Código',
   brand: 'Marca',

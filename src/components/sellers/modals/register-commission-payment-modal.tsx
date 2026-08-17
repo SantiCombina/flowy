@@ -146,7 +146,7 @@ export function RegisterCommissionPaymentModal({
                             !field.value && 'text-muted-foreground',
                           )}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="h-4 w-4" />
                           {field.value
                             ? format(new Date(`${field.value}T12:00:00`), "d 'de' MMMM 'de' yyyy", { locale: es })
                             : 'Seleccioná una fecha'}
