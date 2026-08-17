@@ -22,6 +22,14 @@ async function BudgetsDataFetcher() {
   const guardedUser = await loadActiveGuardedUser();
   const user = guardedUser.user;
 
+  if (user.role !== 'owner' && user.role !== 'seller') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   const isSeller = user.role === 'seller';
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
@@ -40,17 +48,7 @@ async function BudgetsDataFetcher() {
   );
 }
 
-export default async function BudgetsPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function BudgetsPage() {
   return (
     <>
       <PageHeader

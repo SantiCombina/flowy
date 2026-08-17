@@ -24,8 +24,8 @@ async function AssignmentsData() {
     redirect('/dashboard');
   }
 
-  if (!guardedUser.capabilities.has(moduleAccess.capability)) {
-    redirect('/dashboard');
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
   }
 
   const sellers = await getAllSellersInventoryForOwner(user.id);
@@ -38,17 +38,7 @@ async function AssignmentsData() {
   );
 }
 
-export default async function AssignmentsPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function AssignmentsPage() {
   return (
     <>
       <PageHeader title="Asignaciones" description="Stock en poder de tus vendedores" />

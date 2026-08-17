@@ -24,6 +24,10 @@ async function HistoryDataFetcher() {
 
   if (user.role !== 'owner' && user.role !== 'admin') redirect('/dashboard');
 
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   const movements = await getAllHistoryMovements(user.id);
 
   return (
@@ -37,17 +41,7 @@ async function HistoryDataFetcher() {
   );
 }
 
-export default async function HistoryPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'admin') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function HistoryPage() {
   return (
     <>
       <PageHeader

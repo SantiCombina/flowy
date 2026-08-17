@@ -54,8 +54,7 @@ async function ProductsContent({
   );
 }
 
-async function ProductsPageInner() {
-  const guardedUser = await loadActiveGuardedUser();
+async function ProductsPageInner({ guardedUser }: { guardedUser: Awaited<ReturnType<typeof loadActiveGuardedUser>> }) {
   const user = guardedUser.user;
 
   const channel =
@@ -80,7 +79,7 @@ async function ProductsPageInner() {
   );
 }
 
-export default async function ProductsPage() {
+async function ProductsContentWithGuard() {
   const guardedUser = await loadActiveGuardedUser();
 
   if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'admin') {
@@ -91,6 +90,10 @@ export default async function ProductsPage() {
     return <PlanCapabilityDenied access={moduleAccess} />;
   }
 
+  return <ProductsPageInner guardedUser={guardedUser} />;
+}
+
+export default function ProductsPage() {
   return (
     <>
       <PageHeader
@@ -105,7 +108,7 @@ export default async function ProductsPage() {
           </main>
         }
       >
-        <ProductsPageInner />
+        <ProductsContentWithGuard />
       </Suspense>
     </>
   );

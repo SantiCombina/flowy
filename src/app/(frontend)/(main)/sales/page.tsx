@@ -23,6 +23,14 @@ async function SalesDataFetcher() {
   const guardedUser = await loadActiveGuardedUser();
   const user = guardedUser.user;
 
+  if (user.role !== 'owner' && user.role !== 'seller') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   const isSeller = user.role === 'seller';
   const channel = isSeller ? `private-seller-${user.id}` : `private-owner-${user.id}`;
 
@@ -44,17 +52,7 @@ async function SalesDataFetcher() {
   );
 }
 
-export default async function SalesPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function SalesPage() {
   return (
     <>
       <PageHeader

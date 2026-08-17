@@ -24,8 +24,8 @@ async function MobileInventoryData() {
     redirect('/dashboard');
   }
 
-  if (!guardedUser.capabilities.has(moduleAccess.capability)) {
-    redirect('/dashboard');
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
   }
 
   const inventory = await getMobileSellerInventory(user.id);
@@ -38,17 +38,7 @@ async function MobileInventoryData() {
   );
 }
 
-export default async function MobileInventoryPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'seller') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function MobileInventoryPage() {
   return (
     <>
       <PageHeader title="Mi Inventario" description="Stock que llevás en tu vehículo" />

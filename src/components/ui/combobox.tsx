@@ -25,6 +25,7 @@ interface ComboboxProps {
   className?: string;
   id?: string;
   footer?: React.ReactNode;
+  onCloseWithoutMatch?: (search: string) => void;
 }
 
 function normalize(str: string) {
@@ -45,6 +46,7 @@ export function Combobox({
   className,
   id,
   footer,
+  onCloseWithoutMatch,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -80,6 +82,13 @@ export function Combobox({
     setHighlightedIndex(0);
   };
 
+  const reportCloseWithoutMatch = React.useCallback(() => {
+    const trimmed = search.trim();
+    if (!trimmed || !onCloseWithoutMatch) return;
+    const matches = options.some((o) => normalize(o.label) === normalize(trimmed));
+    if (!matches) onCloseWithoutMatch(trimmed);
+  }, [search, options, onCloseWithoutMatch]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!open && (e.key === 'ArrowDown' || e.key === 'Enter' || e.key.length === 1)) {
       e.preventDefault();
@@ -106,10 +115,12 @@ export function Combobox({
         break;
       case 'Escape':
         e.preventDefault();
+        reportCloseWithoutMatch();
         setOpen(false);
         setSearch('');
         break;
       case 'Tab':
+        reportCloseWithoutMatch();
         setOpen(false);
         setSearch('');
         break;
@@ -177,13 +188,14 @@ export function Combobox({
       </PopoverAnchor>
 
       <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-0 max-sm:min-w-[260px]"
+        className="w-(--radix-popover-trigger-width) p-0 max-sm:min-w-65"
         align="start"
         sideOffset={4}
         portalContainer={portalContainer}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (isAnchorTarget(e.target)) e.preventDefault();
+          else reportCloseWithoutMatch();
         }}
         onFocusOutside={(e) => {
           if (isAnchorTarget(e.target)) e.preventDefault();

@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, X } from 'lucide-react';
+import { Check, Info, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -77,6 +77,7 @@ export function ClientModal({
   const [localities, setLocalities] = useState<{ id: string; nombre: string }[]>([]);
   const [loadingLocalities, setLoadingLocalities] = useState(false);
   const localitiesCache = useRef<Record<string, { id: string; nombre: string }[]>>({});
+  const [invalidProvincia, setInvalidProvincia] = useState<string | null>(null);
 
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
@@ -354,14 +355,28 @@ export function ClientModal({
                                 label: p.nombre,
                               }))}
                               value={field.value ?? ''}
-                              onValueChange={(v) => handleProvinciaChange(v, field.onChange)}
+                              onValueChange={(v) => {
+                                handleProvinciaChange(v, field.onChange);
+                                setInvalidProvincia(null);
+                              }}
                               placeholder=""
                               searchPlaceholder=""
-                              emptyMessage=""
+                              emptyMessage="No se encontraron provincias"
+                              onCloseWithoutMatch={(text) => {
+                                field.onChange(text);
+                                setInvalidProvincia(text);
+                              }}
                             />
                           </FormControl>
                           <div className="min-h-5">
-                            <FormMessage />
+                            {invalidProvincia ? (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <Info className="h-3.5 w-3.5 shrink-0" />
+                                <span>Sin coincidencias para &quot;{invalidProvincia}&quot;</span>
+                              </p>
+                            ) : (
+                              <FormMessage />
+                            )}
                           </div>
                         </FormItem>
                       )}
@@ -386,7 +401,9 @@ export function ClientModal({
                                 onValueChange={field.onChange}
                                 placeholder=""
                                 searchPlaceholder=""
-                                emptyMessage=""
+                                emptyMessage={
+                                  localities.length === 0 ? 'Seleccioná una provincia' : 'No se encontraron localidades'
+                                }
                                 disabled={localities.length === 0}
                               />
                             </FormControl>

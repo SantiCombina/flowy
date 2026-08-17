@@ -26,6 +26,10 @@ async function ClientsContent() {
     redirect('/dashboard');
   }
 
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
+
   const { clients, clientDebts } = await loadClients();
 
   return (
@@ -38,17 +42,7 @@ async function ClientsContent() {
   );
 }
 
-export default async function ClientsPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'seller') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function ClientsPage() {
   return (
     <>
       <PageHeader

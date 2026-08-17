@@ -19,6 +19,15 @@ const moduleAccess = MODULE_ACCESS['/sellers'];
 
 async function SellersData() {
   const guardedUser = await loadActiveGuardedUser();
+  const user = guardedUser.user;
+
+  if (user.role !== 'owner') {
+    redirect('/dashboard');
+  }
+
+  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+    return <PlanCapabilityDenied access={moduleAccess} />;
+  }
 
   const { sellers, variants, commissionSummaries } = await loadSellers();
 
@@ -32,17 +41,7 @@ async function SellersData() {
   );
 }
 
-export default async function SellersPage() {
-  const guardedUser = await loadActiveGuardedUser();
-
-  if (guardedUser.user.role !== 'owner') {
-    redirect('/dashboard');
-  }
-
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
-    return <PlanCapabilityDenied access={moduleAccess} />;
-  }
-
+export default function SellersPage() {
   return (
     <>
       <PageHeader
