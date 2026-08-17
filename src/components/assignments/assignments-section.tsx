@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { SellerInventorySummary } from '@/app/services/mobile-seller';
 import { Badge } from '@/components/ui/badge';
 import { SearchInput } from '@/components/ui/search-input';
+import { normalizeText } from '@/lib/text';
 
 import { SellerInventoryCard } from './seller-inventory-card';
 
@@ -18,13 +19,14 @@ export function AssignmentsSection({ sellers }: AssignmentsSectionProps) {
 
   const totalUnits = sellers.reduce((sum, s) => sum + s.totalQuantity, 0);
 
+  const q = normalizeText(searchQuery);
   const filteredSellers =
     searchQuery.trim() === ''
       ? sellers
       : sellers.filter(
           (s) =>
-            s.sellerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.items.some((item) => item.productName.toLowerCase().includes(searchQuery.toLowerCase())),
+            normalizeText(s.sellerName).includes(q) ||
+            s.items.some((item) => normalizeText(item.productName).includes(q)),
         );
 
   return (

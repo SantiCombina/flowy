@@ -20,6 +20,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
+import { normalizeText } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import type { Client, User } from '@/payload-types';
 
@@ -72,17 +73,17 @@ export function ClientsTable({
   const filteredClients = useMemo(() => {
     let result = clients;
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+      const q = normalizeText(searchQuery);
       result = result.filter((c) => {
-        const baseMatch = c.name.toLowerCase().includes(q);
+        const baseMatch = normalizeText(c.name).includes(q);
         if (!showContactColumns) return baseMatch;
         return (
           baseMatch ||
-          (c.localidad ?? '').toLowerCase().includes(q) ||
-          (c.provincia ?? '').toLowerCase().includes(q) ||
-          (c.cuit ?? '').toLowerCase().includes(q) ||
-          (c.phone ?? '').toLowerCase().includes(q) ||
-          (c.email ?? '').toLowerCase().includes(q)
+          normalizeText(c.localidad ?? '').includes(q) ||
+          normalizeText(c.provincia ?? '').includes(q) ||
+          normalizeText(c.cuit ?? '').includes(q) ||
+          normalizeText(c.phone ?? '').includes(q) ||
+          normalizeText(c.email ?? '').includes(q)
         );
       });
     }

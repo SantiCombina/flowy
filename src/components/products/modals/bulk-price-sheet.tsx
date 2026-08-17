@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -44,7 +45,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
     setRows((prev) =>
       prev.map((r) => ({
         ...r,
-        costPrice: Math.max(0.01, roundMoney(r.costPrice * (1 + pct / 100))),
+        costPrice: Math.max(0, roundMoney(r.costPrice * (1 + pct / 100))),
       })),
     );
   };
@@ -91,7 +92,7 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
                 onChange={(e) => setPercentage(e.target.value)}
                 className="w-28 pr-7"
                 min="-99"
-                step="0.1"
+                step="1"
               />
               <span className="absolute right-2.5 top-2 text-sm text-muted-foreground">%</span>
             </div>
@@ -153,7 +154,14 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isExecuting || rows.length === 0}>
-            {isExecuting ? 'Guardando' : `Guardar ${variants.length} variantes`}
+            {isExecuting ? (
+              <span className="flex items-center gap-2">
+                Guardando
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </span>
+            ) : (
+              `Guardar ${variants.length} variantes`
+            )}
           </Button>
         </div>
       </SheetContent>

@@ -21,6 +21,7 @@ import { useSettings } from '@/contexts/settings-context';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
+import { normalizeText } from '@/lib/text';
 import { formatCurrency } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
@@ -66,8 +67,8 @@ function SellersTableComponent({
 
   const filteredSellers = useMemo(() => {
     if (!searchQuery.trim()) return sellers;
-    const q = searchQuery.toLowerCase();
-    return sellers.filter((s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q));
+    const q = normalizeText(searchQuery);
+    return sellers.filter((s) => normalizeText(s.name).includes(q) || normalizeText(s.email).includes(q));
   }, [sellers, searchQuery]);
 
   const handleDelete = async () => {

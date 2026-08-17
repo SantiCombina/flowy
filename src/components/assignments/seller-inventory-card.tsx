@@ -1,6 +1,7 @@
 import type { SellerInventorySummary } from '@/app/services/mobile-seller';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { normalizeText } from '@/lib/text';
 
 const PALETTES = [
   { avatar: 'bg-blue-500/10 text-blue-600', bar: 'from-blue-400 to-indigo-500', ring: 'ring-blue-500/20' },
@@ -28,9 +29,10 @@ export function SellerInventoryCard({ seller, searchQuery }: SellerInventoryCard
   const palette = PALETTES[seller.sellerId % PALETTES.length];
   const initials = getInitials(seller.sellerName);
 
+  const q = normalizeText(searchQuery);
   const filteredItems =
-    searchQuery.trim() !== '' && !seller.sellerName.toLowerCase().includes(searchQuery.toLowerCase())
-      ? seller.items.filter((item) => item.productName.toLowerCase().includes(searchQuery.toLowerCase()))
+    searchQuery.trim() !== '' && !normalizeText(seller.sellerName).includes(q)
+      ? seller.items.filter((item) => normalizeText(item.productName).includes(q))
       : seller.items;
 
   return (

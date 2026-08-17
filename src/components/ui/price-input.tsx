@@ -39,7 +39,7 @@ function parseToNumber(display: string): number {
 }
 
 function numberToDisplay(value: number): string {
-  if (!value) return '';
+  if (!value && value !== 0) return '';
   return value.toLocaleString('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

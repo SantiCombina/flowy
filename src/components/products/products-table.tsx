@@ -27,6 +27,7 @@ import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { calculatePrice } from '@/lib/money';
 import { queryKeys } from '@/lib/query-keys';
+import { normalizeText } from '@/lib/text';
 import type { Product } from '@/payload-types';
 
 import { deleteProductAction, getProductDemandSummaryAction } from './actions';
@@ -91,15 +92,15 @@ function ProductsTableComponent({
 
   const filteredVariants = useMemo(() => {
     if (!searchQuery.trim()) return variants;
-    const q = searchQuery.toLowerCase();
+    const q = normalizeText(searchQuery);
     return variants.filter((v) => {
       const product = v.product;
       return (
-        product.name.toLowerCase().includes(q) ||
-        (v.code ?? '').toLowerCase().includes(q) ||
-        (typeof product.brand === 'object' ? (product.brand?.name ?? '') : '').toLowerCase().includes(q) ||
-        (typeof product.category === 'object' ? (product.category?.name ?? '') : '').toLowerCase().includes(q) ||
-        (typeof product.quality === 'object' ? (product.quality?.name ?? '') : '').toLowerCase().includes(q)
+        normalizeText(product.name).includes(q) ||
+        normalizeText(v.code ?? '').includes(q) ||
+        normalizeText(typeof product.brand === 'object' ? (product.brand?.name ?? '') : '').includes(q) ||
+        normalizeText(typeof product.category === 'object' ? (product.category?.name ?? '') : '').includes(q) ||
+        normalizeText(typeof product.quality === 'object' ? (product.quality?.name ?? '') : '').includes(q)
       );
     });
   }, [variants, searchQuery]);

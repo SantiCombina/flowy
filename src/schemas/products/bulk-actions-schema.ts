@@ -13,7 +13,7 @@ export const bulkUpdatePricesSchema = z.object({
             required_error: 'Precio de costo requerido',
             invalid_type_error: 'El precio debe ser un número',
           })
-          .positive('El precio debe ser mayor a 0')
+          .min(0, 'El precio no puede ser negativo')
           .max(9999999, 'El precio no puede superar $9.999.999'),
       }),
     )
