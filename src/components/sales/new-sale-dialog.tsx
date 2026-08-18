@@ -17,6 +17,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFormDraft } from '@/hooks/use-form-draft';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -41,6 +42,15 @@ interface NewSaleDialogProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+const DEFAULT_SALE_VALUES: SaleValues = {
+  items: [],
+  paymentMethod: 'cash',
+  clientId: undefined,
+  notes: undefined,
+  checkDueDate: undefined,
+  immediateDelivery: true,
+};
 
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
   const user = useUser();
@@ -82,11 +92,22 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     resolver: zodResolver(saleSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
-    defaultValues: {
-      items: [],
-      immediateDelivery: true,
-    },
+    defaultValues: DEFAULT_SALE_VALUES,
   });
+
+  const draft = useFormDraft({
+    form,
+    storageKey: `flowy:draft:new-sale:${user.id}`,
+  });
+
+  const handleFlowSuccess = () => {
+    draft.clearDraft();
+    for (let i = fields.length - 1; i >= 0; i--) {
+      remove(i);
+    }
+    form.reset(DEFAULT_SALE_VALUES);
+    onSuccess();
+  };
 
   const { fields, prepend, remove } = useFieldArray({
     control: form.control,
@@ -185,10 +206,18 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           isOpen={isOpen}
           businessName={user.businessName ?? null}
           submitSale={submitSale}
-          onSuccess={onSuccess}
+          onSuccess={handleFlowSuccess}
           onClose={handleClose}
-          renderForm={({ submit, serverError, close }) =>
-            isLoadingOptions ? (
+          renderForm={({ submit, serverError, close }) => {
+            const handleCancelClick = () => {
+              draft.clearDraft();
+              for (let i = fields.length - 1; i >= 0; i--) {
+                remove(i);
+              }
+              form.reset(DEFAULT_SALE_VALUES);
+              close();
+            };
+            return isLoadingOptions ? (
               <SaleFormSkeleton isMobile={isMobile} />
             ) : (
               <Form {...form}>
@@ -286,13 +315,13 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                   <SaleFooter
                     total={total}
                     isSubmitting={isSubmitting}
-                    onCancel={close}
+                    onCancel={handleCancelClick}
                     submitLabel="Registrar venta"
                   />
                 </form>
               </Form>
-            )
-          }
+            );
+          }}
         />
       </ResponsiveModal>
 

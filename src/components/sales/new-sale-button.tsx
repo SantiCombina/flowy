@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
 
+import { useUser } from '@/components/providers/user-provider';
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -11,11 +12,10 @@ import { NewSaleDialog } from './new-sale-dialog';
 
 export function NewSaleButton() {
   const queryClient = useQueryClient();
+  const user = useUser();
   const [isOpen, setIsOpen] = useState(false);
-  const [dialogKey, setDialogKey] = useState(0);
 
   const handleOpen = () => {
-    setDialogKey((k) => k + 1);
     setIsOpen(true);
   };
 
@@ -31,7 +31,7 @@ export function NewSaleButton() {
         Nueva venta
       </Button>
 
-      <NewSaleDialog key={dialogKey} isOpen={isOpen} onClose={() => setIsOpen(false)} onSuccess={handleSuccess} />
+      <NewSaleDialog key={user.id} isOpen={isOpen} onClose={() => setIsOpen(false)} onSuccess={handleSuccess} />
     </>
   );
 }
