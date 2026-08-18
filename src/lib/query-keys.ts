@@ -66,4 +66,14 @@ export const queryKeys = {
   user: {
     current: () => ['user', 'current'] as const,
   },
+  adminBackoffice: {
+    dashboard: () => ['adminBackoffice', 'dashboard'] as const,
+    tenants: {
+      list: (filters: Record<string, unknown>) => ['adminBackoffice', 'tenants', 'list', filters] as const,
+      detail: (id: number | string) => ['adminBackoffice', 'tenants', 'detail', id] as const,
+    },
+    plans: {
+      list: () => ['adminBackoffice', 'plans', 'list'] as const,
+    },
+  },
 } as const;

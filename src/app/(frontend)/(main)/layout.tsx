@@ -39,11 +39,9 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const fallback = (
     <SettingsProvider initialSettings={null}>
-      <QueryProvider>
-        <AppLayout features={features} capabilities={capabilityList} defaultSidebarOpen={sidebarOpen}>
-          {children}
-        </AppLayout>
-      </QueryProvider>
+      <AppLayout features={features} capabilities={capabilityList} defaultSidebarOpen={sidebarOpen}>
+        {children}
+      </AppLayout>
     </SettingsProvider>
   );
 
@@ -58,17 +56,17 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         capabilities: capabilityList,
       }}
     >
-      <Suspense fallback={fallback}>
-        <SettingsFetcher userId={user.id}>
-          <QueryProvider>
+      <QueryProvider>
+        <Suspense fallback={fallback}>
+          <SettingsFetcher userId={user.id}>
             <AppLayout features={features} capabilities={capabilityList} defaultSidebarOpen={sidebarOpen}>
               {children}
             </AppLayout>
-          </QueryProvider>
-        </SettingsFetcher>
-        <PushRegistration />
-        <Toaster />
-      </Suspense>
+          </SettingsFetcher>
+          <PushRegistration />
+          <Toaster />
+        </Suspense>
+      </QueryProvider>
     </UserProvider>
   );
 }

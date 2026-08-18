@@ -39,6 +39,8 @@ export const publishAdminPlanSchema = z.object({
   }),
 });
 
+export type PublishAdminPlanValues = z.infer<typeof publishAdminPlanSchema>;
+
 export const changeTenantPlanSchema = z.object({
   tenantId: positiveId,
   planVersionId: positiveId,

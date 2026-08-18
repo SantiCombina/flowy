@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard } from 'lucide-react';
+import { Building2, CreditCard, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,6 +28,16 @@ const backofficeNavItems: NavItem[] = [
     title: 'Dashboard',
     href: '/backoffice/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    title: 'Tenants',
+    href: '/backoffice/tenants',
+    icon: Building2,
+  },
+  {
+    title: 'Planes',
+    href: '/backoffice/plans',
+    icon: CreditCard,
   },
 ];
 

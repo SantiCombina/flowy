@@ -1,8 +1,7 @@
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import type { Metadata } from 'next';
 
-import { AdminDashboard } from '@/components/backoffice/admin-dashboard';
+import { getBackofficeDashboardStats } from '@/app/services/backoffice/dashboard';
+import { AdminBackofficeDashboard } from '@/components/backoffice/dashboard/admin-backoffice-dashboard';
 import { getCurrentUserWithCapabilities } from '@/lib/entitlements/guards';
 
 export const metadata: Metadata = {
@@ -16,7 +15,7 @@ export default async function AdminDashboardPage() {
     return null;
   }
 
-  const monthLabel = format(new Date(), 'LLLL', { locale: es });
+  const initialStats = await getBackofficeDashboardStats();
 
-  return <AdminDashboard userName={guardedUser.user.name} monthLabel={monthLabel} />;
+  return <AdminBackofficeDashboard userName={guardedUser.user.name} initialStats={initialStats} />;
 }

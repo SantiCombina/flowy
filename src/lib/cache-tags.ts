@@ -9,4 +9,7 @@ export const cacheTags = {
   dashboardPerOwner: (id: number) => `dashboard-${id}` as const,
   productDemand: (id: number) => `product-demand-${id}` as const,
   saleOptions: (ownerId: number) => `sale-options-${ownerId}` as const,
+  adminBackofficeDashboard: () => 'admin-backoffice-dashboard' as const,
+  adminBackofficeTenants: () => 'admin-backoffice-tenants' as const,
+  adminBackofficePlans: () => 'admin-backoffice-plans' as const,
 } as const;

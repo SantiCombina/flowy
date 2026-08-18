@@ -38,3 +38,14 @@ export function formatCurrency(value: number): string {
     maximumFractionDigits: 2,
   }).format(rounded);
 }
+
+export function formatUsdMonthlyPrice(value: number): string {
+  const formatted = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+  return `${formatted} /mes`;
+}

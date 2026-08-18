@@ -74,13 +74,13 @@ export default async function BackofficeGroupLayout({ children }: { children: Re
             role: user.role,
           }}
         >
-          <Suspense fallback={<BackofficeLayout defaultSidebarOpen={sidebarOpen}>{children}</BackofficeLayout>}>
-            <QueryProvider>
+          <QueryProvider>
+            <Suspense fallback={<BackofficeLayout defaultSidebarOpen={sidebarOpen}>{children}</BackofficeLayout>}>
               <BackofficeLayout defaultSidebarOpen={sidebarOpen}>{children}</BackofficeLayout>
-            </QueryProvider>
-            <PushRegistration />
-            <Toaster />
-          </Suspense>
+              <PushRegistration />
+              <Toaster />
+            </Suspense>
+          </QueryProvider>
         </UserProvider>
       </body>
     </html>
