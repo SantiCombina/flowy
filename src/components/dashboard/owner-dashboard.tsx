@@ -41,17 +41,17 @@ const PERIOD_NEW_CLIENTS_LABEL: Record<Period, string> = {
   year: 'nuevos este año',
 };
 
-const PERIOD_DIFF_LABEL: Record<Period, string> = {
-  day: 'Diferencia de hoy',
-  week: 'Diferencia de la semana',
-  month: 'Diferencia del mes',
-  year: 'Diferencia del año',
-};
-
 const PERIOD_CHART_LABEL: Record<Period, string> = {
   day: 'últimos 7 días',
   week: 'últimos 7 días',
   month: 'últimos 30 días',
+  year: 'este año',
+};
+
+const PERIOD_COLLECTED_LABEL: Record<Period, string> = {
+  day: 'hoy',
+  week: 'esta semana',
+  month: 'este mes',
   year: 'este año',
 };
 
@@ -113,9 +113,9 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
             delay={150}
           />
           <StatCard
-            title={PERIOD_DIFF_LABEL[period]}
-            value={formatCurrency(stats.revenue.current - stats.totalCollected)}
-            subtitle={`${formatCurrency(stats.totalCollected)} cobrado`}
+            title="Dinero ingresado"
+            value={formatCurrency(stats.totalCollected)}
+            subtitle={`Cobros registrados ${PERIOD_COLLECTED_LABEL[period]}`}
             icon={Receipt}
             gradient="from-amber-500 to-orange-600"
             delay={225}

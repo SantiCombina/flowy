@@ -27,7 +27,7 @@ export function getSaleWhatsAppLink(sale: SaleWhatsAppDetails, businessName: str
   for (let i = 0; i < sale.items.length; i++) {
     const item = sale.items[i];
     lines.push(
-      `- ${item.variantName} x${item.quantity} - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
+      `- ${item.variantName} | ${item.quantity} unidades - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
     );
     if (i < sale.items.length - 1) {
       lines.push('');

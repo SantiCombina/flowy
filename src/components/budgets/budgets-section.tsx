@@ -68,7 +68,7 @@ function getWhatsAppLink(budget: BudgetRow, businessName: string | null): string
   for (let i = 0; i < budget.items.length; i++) {
     const item = budget.items[i];
     lines.push(
-      `- ${item.variantName} x${item.quantity} - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
+      `- ${item.variantName} | ${item.quantity} unidades - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
     );
     if (i < budget.items.length - 1) {
       lines.push('');
