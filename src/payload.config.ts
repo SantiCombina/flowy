@@ -26,7 +26,6 @@ import { Products } from './collections/Products';
 import { ProductVariants } from './collections/ProductVariants';
 import { PushSubscriptions } from './collections/PushSubscriptions';
 import { Qualities } from './collections/Qualities';
-import { SalePayments } from './collections/SalePayments';
 import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
 import { StockMovements } from './collections/StockMovements';
@@ -69,7 +68,6 @@ export default buildConfig({
     Zones,
     Budgets,
     Sales,
-    SalePayments,
     CommissionPayments,
     Settings,
     StockMovements,

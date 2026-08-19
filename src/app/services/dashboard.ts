@@ -155,7 +155,7 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
         new Date(currentStart).setMonth(new Date(currentStart).getMonth() - 12),
       ).toISOString();
 
-      const [allSales, clients, sellers, sellersInventory, variantsResult, salePaymentsResult] = await Promise.all([
+      const [allSales, clients, sellers, sellersInventory, variantsResult] = await Promise.all([
         getSales({ ownerId, dateFrom: twelveMonthsAgo }),
         getClients({ ownerId }),
         getSellers(ownerId),
@@ -166,14 +166,6 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
           depth: 2,
           select: { stock: true, costPrice: true, minimumStock: true, product: true, presentation: true, code: true },
           limit: 1000,
-          overrideAccess: true,
-        }),
-        payload.find({
-          collection: 'sale-payments',
-          where: {
-            and: [{ owner: { equals: ownerId } }, { date: { greater_than_equal: currentStart } }],
-          },
-          pagination: false,
           overrideAccess: true,
         }),
       ]);
@@ -234,10 +226,10 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
             entry.count++;
           }
         }
-      }
 
-      for (const payment of salePaymentsResult.docs) {
-        totalCollected += payment.amount;
+        if (sale.collectedAt && sale.collectedAt >= currentStart) {
+          totalCollected += sale.amountPaid ?? 0;
+        }
       }
 
       const newClientsInPeriod = clients.filter((c) => c.createdAt >= currentStart).length;
