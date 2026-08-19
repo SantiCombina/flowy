@@ -8,6 +8,7 @@ import type { CreatedSaleRecord } from '@/lib/created-sale-share';
 import { calculatePrice, moneyEquals, multiplyMoney, roundMoney } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
 import { resolveId } from '@/lib/payload-utils';
+import { assertSaleWithoutPayments, lockSaleForUpdate } from '@/lib/sale-payment-ledger';
 import { formatCurrency } from '@/lib/utils';
 import { formatSaleVariantDisplayName } from '@/lib/variant-display-name';
 import type { Sale } from '@/payload-types';
@@ -357,6 +358,25 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
       overrideAccess: true,
       req: { transactionID },
     })) as unknown as Sale;
+
+    if (isImmediate) {
+      await payload.create({
+        collection: 'sale-payments',
+        data: {
+          sale: sale.id,
+          seller: sellerId,
+          owner: ownerId,
+          amount: total,
+          date: now,
+          paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check',
+          ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
+          registeredBy: sellerId,
+          source: 'live',
+        },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+    }
 
     await payload.db.commitTransaction(transactionID);
   } catch (error) {
@@ -760,44 +780,83 @@ export async function registerPayment(
   callerRole: 'owner' | 'seller',
 ): Promise<void> {
   const payload = await getPayloadClient();
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
+  }
 
-  const sale = await payload.findByID({
-    collection: 'sales',
-    id: saleId,
-    overrideAccess: true,
-  });
+  let sale: Sale | null = null;
+
+  try {
+    await lockSaleForUpdate(payload.db.sessions, transactionID, saleId);
+
+    sale = (await payload.findByID({
+      collection: 'sales',
+      id: saleId,
+      overrideAccess: true,
+      req: { transactionID },
+    })) as unknown as Sale | null;
+
+    if (!sale) throw new Error('Venta no encontrada');
+
+    verifySaleAccess(sale, callerId, callerRole);
+
+    const now = new Date().toISOString();
+    const currentPaymentStatus = sale.paymentStatus ?? 'pending';
+    if (currentPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
+
+    const currentAmountPaid = sale.amountPaid ?? 0;
+    const remaining = sale.total - currentAmountPaid;
+
+    if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
+    if (amount > remaining) throw new Error(`El monto no puede superar el restante (${formatCurrency(remaining)})`);
+
+    const newAmountPaid = currentAmountPaid + amount;
+    const isCollected = moneyEquals(newAmountPaid, sale.total) || newAmountPaid > sale.total;
+    const newStatus = isCollected ? 'collected' : 'partially_collected';
+    const paymentSellerId = resolveId(sale.seller);
+    const paymentOwnerId = resolveId(sale.owner);
+
+    if (!paymentSellerId || !paymentOwnerId) throw new Error('La venta no tiene propietario o vendedor válido');
+
+    await payload.create({
+      collection: 'sale-payments',
+      data: {
+        sale: sale.id,
+        seller: paymentSellerId,
+        owner: paymentOwnerId,
+        amount,
+        date: now,
+        paymentMethod,
+        ...(checkDueDate ? { checkDueDate } : {}),
+        registeredBy: callerId,
+        source: 'live',
+      },
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    await payload.update({
+      collection: 'sales',
+      id: saleId,
+      data: {
+        amountPaid: newAmountPaid,
+        paymentStatus: newStatus,
+        ...(newStatus === 'collected' ? { collectedAt: now } : {}),
+        paymentMethod,
+        ...(checkDueDate ? { checkDueDate } : {}),
+      } as Partial<Sale>,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
 
   if (!sale) throw new Error('Venta no encontrada');
-
-  verifySaleAccess(sale as Sale, callerId, callerRole);
-
-  const now = new Date().toISOString();
-
-  const currentPaymentStatus = sale.paymentStatus ?? 'pending';
-  if (currentPaymentStatus === 'collected') throw new Error('La venta ya fue cobrada');
-
-  const currentAmountPaid = sale.amountPaid ?? 0;
-  const remaining = sale.total - currentAmountPaid;
-
-  if (amount <= 0) throw new Error('El monto debe ser mayor a cero');
-  if (amount > remaining) throw new Error(`El monto no puede superar el restante (${formatCurrency(remaining)})`);
-
-  const newAmountPaid = currentAmountPaid + amount;
-  const isCollected = moneyEquals(newAmountPaid, sale.total) || newAmountPaid > sale.total;
-  const newStatus = isCollected ? 'collected' : 'partially_collected';
-
-  await payload.update({
-    collection: 'sales',
-    id: saleId,
-    data: {
-      amountPaid: newAmountPaid,
-      paymentStatus: newStatus,
-      ...(newStatus === 'collected' ? { collectedAt: now } : {}),
-      paymentMethod,
-      ...(checkDueDate ? { checkDueDate } : {}),
-    } as Partial<Sale>,
-    overrideAccess: true,
-  });
 
   const saleOwnerId = resolveId(sale.owner);
   const saleSellerId = resolveId(sale.seller);
@@ -945,6 +1004,8 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
   }
 
   try {
+    await lockSaleForUpdate(payload.db.sessions, transactionID, saleId);
+
     const sale = await payload.findByID({
       collection: 'sales',
       id: saleId,
@@ -955,6 +1016,8 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
 
     if (!sale) throw new Error('Venta no encontrada');
     verifySaleAccess(sale as Sale, callerId, callerRole);
+
+    assertSaleWithoutPayments(sale.amountPaid, 'delete');
 
     const saleSellerId = resolveId(sale.seller) ?? callerId;
     const saleOwnerId = resolveId(sale.owner) ?? callerId;
@@ -1000,6 +1063,8 @@ export async function editSaleFull(
   }
 
   try {
+    await lockSaleForUpdate(payload.db.sessions, transactionID, saleId);
+
     const sale = await payload.findByID({
       collection: 'sales',
       id: saleId,
@@ -1010,6 +1075,8 @@ export async function editSaleFull(
 
     if (!sale) throw new Error('Venta no encontrada');
     verifySaleAccess(sale as Sale, callerId, callerRole);
+
+    assertSaleWithoutPayments(sale.amountPaid, 'edit');
 
     const saleSellerId = resolveId(sale.seller) ?? callerId;
     const saleOwnerId = resolveId(sale.owner) ?? callerId;
