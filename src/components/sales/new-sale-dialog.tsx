@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch, type DefaultValues } from 'react-hook-form';
 
 import type { SaleClientOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -43,9 +43,9 @@ interface NewSaleDialogProps {
   onSuccess: () => void;
 }
 
-const DEFAULT_SALE_VALUES: SaleValues = {
+const DEFAULT_SALE_VALUES: DefaultValues<SaleValues> = {
   items: [],
-  paymentMethod: 'cash',
+  paymentMethod: undefined,
   clientId: undefined,
   notes: undefined,
   checkDueDate: undefined,
