@@ -10,6 +10,16 @@ import { toast } from 'sonner';
 import type { SaleClientOption, SaleVariantOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
@@ -18,6 +28,7 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFormDraft } from '@/hooks/use-form-draft';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
@@ -41,6 +52,17 @@ interface NewBudgetDialogProps {
   onClose: () => void;
   onSuccess: () => void;
   editBudgetId?: number;
+}
+
+function hasMeaningfulBudgetData(values: BudgetValues) {
+  return (
+    values.items.length > 0 ||
+    values.clientId !== undefined ||
+    Boolean(values.clientPhone?.trim()) ||
+    Boolean(values.validUntil?.trim()) ||
+    Boolean(values.notes?.trim()) ||
+    values.saveClientPhone === true
+  );
 }
 
 function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: NewBudgetDialogProps) {
@@ -72,6 +94,7 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
   const [addProductKey, setAddProductKey] = useState(0);
   const [activeTab, setActiveTab] = useState('products');
 
@@ -86,6 +109,12 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
       items: [],
       saveClientPhone: false,
     },
+  });
+
+  const draft = useFormDraft({
+    form,
+    storageKey: `flowy:draft:new-budget:${currentUser.id}`,
+    enabled: !isEditing,
   });
 
   const previousBudgetId = useRef<number | undefined>(undefined);
@@ -137,7 +166,9 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
     setClientsOverride(null);
     setServerError(null);
     setActiveTab('products');
-    form.reset(getDefaultFormValues());
+    if (isEditing) {
+      form.reset(getDefaultFormValues());
+    }
     onClose();
   };
 
@@ -182,6 +213,21 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
       form.setValue('clientPhone', undefined);
     }
     form.setValue('saveClientPhone', false);
+  };
+
+  const handleCancelClick = () => {
+    if (isEditing || !hasMeaningfulBudgetData(form.getValues())) {
+      handleClose();
+      return;
+    }
+    setIsCancelAlertOpen(true);
+  };
+
+  const handleDiscard = () => {
+    form.reset(getDefaultFormValues());
+    draft.clearDraft();
+    setIsCancelAlertOpen(false);
+    handleClose();
   };
 
   const focusFirstError = useCallback(() => {
@@ -235,6 +281,9 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
       }
 
       if (result?.data?.success) {
+        if (!isEditing) {
+          draft.clearDraft();
+        }
         toast.success(isEditing ? 'Presupuesto actualizado' : 'Presupuesto creado');
         onSuccess();
         onClose();
@@ -356,7 +405,7 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
               <BudgetFooter
                 total={total}
                 isSubmitting={isSubmitting}
-                onCancel={handleClose}
+                onCancel={handleCancelClick}
                 submitLabel={isEditing ? 'Guardar cambios' : 'Crear presupuesto'}
                 isEditing={isEditing}
               />
@@ -364,6 +413,21 @@ function NewBudgetDialogComponent({ isOpen, onClose, onSuccess, editBudgetId }: 
           </Form>
         )}
       </ResponsiveModal>
+
+      <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar este presupuesto?</AlertDialogTitle>
+            <AlertDialogDescription>Se perderán los datos ingresados y no podrás recuperarlos.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Seguir editando</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDiscard} variant="destructive">
+              Descartar presupuesto
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddProductSheet
         key={addProductKey}

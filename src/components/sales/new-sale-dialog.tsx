@@ -3,12 +3,22 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch, type DefaultValues } from 'react-hook-form';
 
 import type { SaleClientOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
 import { useUser } from '@/components/providers/user-provider';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
@@ -52,6 +62,17 @@ const DEFAULT_SALE_VALUES: DefaultValues<SaleValues> = {
   immediateDelivery: true,
 };
 
+function hasMeaningfulSaleData(values: SaleValues) {
+  return (
+    values.items.length > 0 ||
+    values.clientId !== undefined ||
+    values.paymentMethod !== undefined ||
+    Boolean(values.notes?.trim()) ||
+    values.checkDueDate !== undefined ||
+    values.immediateDelivery === false
+  );
+}
+
 export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps) {
   const user = useUser();
   const isOwner = user?.role === 'owner';
@@ -82,7 +103,9 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientsOverride, setClientsOverride] = useState<SaleClientOption[] | null>(null);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isCancelAlertOpen, setIsCancelAlertOpen] = useState(false);
   const [addProductKey, setAddProductKey] = useState(0);
+  const pendingCloseRef = useRef<(() => void) | null>(null);
   const [activeTab, setActiveTab] = useState('products');
 
   const variants = optionsResult?.variants ?? [];
@@ -118,6 +141,17 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
   const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
+
+  const handleConfirmCancel = () => {
+    draft.clearDraft();
+    for (let i = fields.length - 1; i >= 0; i--) {
+      remove(i);
+    }
+    form.reset(DEFAULT_SALE_VALUES);
+    setIsCancelAlertOpen(false);
+    pendingCloseRef.current?.();
+    pendingCloseRef.current = null;
+  };
 
   useEffect(() => {
     if (!canUseCredit && paymentMethod === 'credit') {
@@ -210,12 +244,12 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           onClose={handleClose}
           renderForm={({ submit, serverError, close }) => {
             const handleCancelClick = () => {
-              draft.clearDraft();
-              for (let i = fields.length - 1; i >= 0; i--) {
-                remove(i);
+              pendingCloseRef.current = close;
+              if (hasMeaningfulSaleData(form.getValues())) {
+                setIsCancelAlertOpen(true);
+                return;
               }
-              form.reset(DEFAULT_SALE_VALUES);
-              close();
+              handleConfirmCancel();
             };
             return isLoadingOptions ? (
               <SaleFormSkeleton isMobile={isMobile} />
@@ -324,6 +358,21 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
           }}
         />
       </ResponsiveModal>
+
+      <AlertDialog open={isCancelAlertOpen} onOpenChange={setIsCancelAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar esta venta?</AlertDialogTitle>
+            <AlertDialogDescription>Se perderán los datos ingresados y no podrás recuperarlos.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Seguir editando</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} variant="destructive">
+              Descartar venta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddProductSheet
         key={addProductKey}
