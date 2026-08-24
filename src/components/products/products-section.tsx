@@ -153,7 +153,7 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
           />
           {canCreateProduct && initialVariants.docs.length > 0 && (
             <div
-              className="hidden sm:flex h-9 items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+              className="order-3 flex h-9 w-full items-center justify-center gap-2 rounded-full bg-white px-4 shadow-sm sm:order-none sm:w-auto"
               title="Valor del inventario"
             >
               <Warehouse className="h-3.5 w-3.5 shrink-0 text-violet-500" />
