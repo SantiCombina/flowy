@@ -85,6 +85,7 @@ export interface Config {
     zones: Zone;
     budgets: Budget;
     sales: Sale;
+    'sale-payments': SalePayment;
     'commission-payments': CommissionPayment;
     settings: Setting;
     'stock-movements': StockMovement;
@@ -116,6 +117,7 @@ export interface Config {
     zones: ZonesSelect<false> | ZonesSelect<true>;
     budgets: BudgetsSelect<false> | BudgetsSelect<true>;
     sales: SalesSelect<false> | SalesSelect<true>;
+    'sale-payments': SalePaymentsSelect<false> | SalePaymentsSelect<true>;
     'commission-payments': CommissionPaymentsSelect<false> | CommissionPaymentsSelect<true>;
     settings: SettingsSelect<false> | SettingsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
@@ -739,6 +741,26 @@ export interface Sale {
   createdAt: string;
 }
 /**
+ * Cobros registrados de ventas
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sale-payments".
+ */
+export interface SalePayment {
+  id: number;
+  sale: number | Sale;
+  seller: number | User;
+  owner?: (number | null) | User;
+  amount: number;
+  date: string;
+  paymentMethod: 'transfer' | 'cash' | 'check';
+  checkDueDate?: string | null;
+  registeredBy?: (number | null) | User;
+  source?: ('live' | 'legacy') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Pagos de comisiones a vendedores
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1063,6 +1085,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sales';
         value: number | Sale;
+      } | null)
+    | ({
+        relationTo: 'sale-payments';
+        value: number | SalePayment;
       } | null)
     | ({
         relationTo: 'commission-payments';
@@ -1489,6 +1515,23 @@ export interface SalesSelect<T extends boolean = true> {
   checkDueDate?: T;
   deliveryStatus?: T;
   deliveredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sale-payments_select".
+ */
+export interface SalePaymentsSelect<T extends boolean = true> {
+  sale?: T;
+  seller?: T;
+  owner?: T;
+  amount?: T;
+  date?: T;
+  paymentMethod?: T;
+  checkDueDate?: T;
+  registeredBy?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -9,10 +9,7 @@ export const Sales: CollectionConfig = {
     defaultColumns: ['seller', 'client', 'total', 'paymentMethod', 'date'],
   },
   access: {
-    create: ({ req: { user } }) => {
-      if (!user) return false;
-      return user.role === 'admin' || user.role === 'owner' || user.role === 'seller';
-    },
+    create: ({ req: { user } }) => user?.role === 'admin',
     read: ({ req: { user } }) => {
       if (!user) return false;
       if (user.role === 'admin') return true;
@@ -23,20 +20,8 @@ export const Sales: CollectionConfig = {
       const query: Where = { seller: { equals: user.id } };
       return query;
     },
-    update: ({ req: { user } }) => {
-      if (!user) return false;
-      if (user.role === 'admin') return true;
-      if (user.role === 'owner') return { owner: { equals: user.id } } as Where;
-      if (user.role === 'seller') return { seller: { equals: user.id } } as Where;
-      return false;
-    },
-    delete: ({ req: { user } }) => {
-      if (!user) return false;
-      if (user.role === 'admin') return true;
-      if (user.role === 'owner') return { owner: { equals: user.id } } as Where;
-      if (user.role === 'seller') return { seller: { equals: user.id } } as Where;
-      return false;
-    },
+    update: ({ req: { user } }) => user?.role === 'admin',
+    delete: ({ req: { user } }) => user?.role === 'admin',
   },
   hooks: {
     beforeChange: [
