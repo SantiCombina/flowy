@@ -11,8 +11,8 @@ interface RealtimeRefresherProps {
 }
 
 const EVENT_TO_KEYS: Record<string, string[][]> = {
-  sale_created: [['sales'], ['products', 'demand']],
-  payment_registered: [['sales'], ['products', 'demand']],
+  sale_created: [['sales'], ['products', 'demand'], ['dashboard']],
+  payment_registered: [['sales'], ['products', 'demand'], ['dashboard']],
   stock_dispatched: [['products'], ['sales']],
   stock_returned: [['products']],
   stock_low: [['products']],
