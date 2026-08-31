@@ -5,7 +5,6 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "prebuild": "pnpm migrate",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
