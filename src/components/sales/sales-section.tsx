@@ -15,6 +15,7 @@ import {
   Trash2,
   Truck,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { Fragment, memo, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -154,6 +155,7 @@ function SalesSectionComponent({
   initialStatusFilter,
 }: SalesSectionProps) {
   const user = useUser();
+  const router = useRouter();
   const { getVisibleColumns } = useSettings();
   const visibleColumns = getVisibleColumns('sales');
 
@@ -310,6 +312,7 @@ function SalesSectionComponent({
   const handleEditSuccess = () => {
     toast.success('Venta editada');
     setEditingSale(null);
+    router.refresh();
   };
 
   const handleDelete = async (saleId: number) => {

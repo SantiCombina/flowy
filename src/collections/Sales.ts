@@ -44,20 +44,6 @@ export const Sales: CollectionConfig = {
         return data;
       },
     ],
-    beforeDelete: [
-      async ({ id, req }) => {
-        const sale = await req.payload.findByID({
-          collection: 'sales',
-          id,
-          overrideAccess: true,
-          req,
-        });
-
-        if (sale.sourceBudget) {
-          throw new Error('A budget-derived sale cannot be deleted');
-        }
-      },
-    ],
   },
   fields: [
     {

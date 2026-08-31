@@ -8,7 +8,7 @@ import type { CreatedSaleRecord } from '@/lib/created-sale-share';
 import { calculatePrice, moneyEquals, multiplyMoney, roundMoney } from '@/lib/money';
 import { notifyEvent } from '@/lib/notify';
 import { resolveId } from '@/lib/payload-utils';
-import { assertSaleWithoutPayments, lockSaleForUpdate } from '@/lib/sale-payment-ledger';
+import { lockSaleForUpdate } from '@/lib/sale-payment-ledger';
 import { formatCurrency } from '@/lib/utils';
 import { formatSaleVariantDisplayName } from '@/lib/variant-display-name';
 import type { Sale } from '@/payload-types';
@@ -1004,10 +1004,26 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
 
     if (!sale) throw new Error('Venta no encontrada');
     verifySaleAccess(sale as Sale, callerId, callerRole);
-    assertSaleWithoutPayments(sale.amountPaid, 'delete');
 
     const saleSellerId = resolveId(sale.seller) ?? callerId;
     const saleOwnerId = resolveId(sale.owner) ?? callerId;
+
+    const payments = await payload.find({
+      collection: 'sale-payments',
+      where: { sale: { equals: saleId } },
+      limit: 10000,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    for (const payment of payments.docs) {
+      await payload.delete({
+        collection: 'sale-payments',
+        id: payment.id,
+        overrideAccess: true,
+        req: { transactionID },
+      });
+    }
 
     for (const item of sale.items) {
       await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`, transactionID);
@@ -1019,6 +1035,7 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
 
     try {
       revalidateTag(cacheTags.sales(callerId));
+      if (saleSellerId) revalidateTag(cacheTags.sales(saleSellerId));
       if (saleOwnerId) {
         revalidateTag(cacheTags.sales(saleOwnerId));
         revalidateTag(cacheTags.dashboard());
@@ -1061,7 +1078,6 @@ export async function editSaleFull(
 
     if (!sale) throw new Error('Venta no encontrada');
     verifySaleAccess(sale as Sale, callerId, callerRole);
-    assertSaleWithoutPayments(sale.amountPaid, 'edit');
 
     const saleSellerId = resolveId(sale.seller) ?? callerId;
     const saleOwnerId = resolveId(sale.owner) ?? callerId;
@@ -1217,6 +1233,7 @@ export async function editSaleFull(
 
     try {
       revalidateTag(cacheTags.sales(callerId));
+      if (saleSellerId) revalidateTag(cacheTags.sales(saleSellerId));
       if (saleOwnerId) {
         revalidateTag(cacheTags.sales(saleOwnerId));
         revalidateTag(cacheTags.dashboard());
