@@ -329,6 +329,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
 
     total = roundMoney(data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
     const isImmediate = data.paymentMethod !== 'credit';
+    const hasAmountToCollect = total > 0;
     const now = new Date().toISOString();
 
     sale = (await payload.create({
@@ -346,12 +347,14 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
           stockSource: item.stockSource,
         })),
         total,
-        amountPaid: isImmediate ? total : 0,
-        paymentStatus: isImmediate ? ('collected' as const) : ('pending' as const),
+        amountPaid: isImmediate && hasAmountToCollect ? total : 0,
+        paymentStatus: isImmediate && hasAmountToCollect ? ('collected' as const) : ('pending' as const),
         deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
         ...(data.immediateDelivery ? { deliveredAt: now } : {}),
-        ...(isImmediate ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' } : {}),
-        ...(isImmediate ? { collectedAt: now } : {}),
+        ...(isImmediate && hasAmountToCollect
+          ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' }
+          : {}),
+        ...(isImmediate && hasAmountToCollect ? { collectedAt: now } : {}),
         ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
         ...(data.notes ? { notes: data.notes } : {}),
       } as unknown as SaleCreateData,
@@ -359,7 +362,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
       req: { transactionID },
     })) as unknown as Sale;
 
-    if (isImmediate) {
+    if (isImmediate && hasAmountToCollect) {
       await payload.create({
         collection: 'sale-payments',
         data: {

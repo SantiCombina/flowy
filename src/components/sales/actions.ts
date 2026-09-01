@@ -79,6 +79,33 @@ export const getSaleOptionsAsOwnerAction = actionClient.action(async () => {
   return { success: true, ...options };
 });
 
+const PAYLOAD_FIELD_LABELS: Record<string, string> = {
+  Monto: 'El monto debe ser mayor a 0',
+};
+
+function translateSaleCreationError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+
+  const fieldInvalid = /^The following field is invalid: (.+)$/.exec(raw);
+  if (fieldInvalid) {
+    const field = fieldInvalid[1]?.trim();
+    if (field && PAYLOAD_FIELD_LABELS[field]) {
+      return PAYLOAD_FIELD_LABELS[field];
+    }
+    return `El campo "${field ?? 'desconocido'}" es inválido`;
+  }
+
+  if (raw.startsWith('Stock insuficiente')) {
+    return raw;
+  }
+
+  if (raw.startsWith('No se pudo iniciar la transacción')) {
+    return 'No se pudo registrar la venta. Intentá nuevamente en unos segundos.';
+  }
+
+  return 'No se pudo registrar la venta. Verificá los datos e intentá nuevamente.';
+}
+
 export const createSaleAction = actionClient.schema(saleSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
@@ -115,7 +142,12 @@ export const createSaleAction = actionClient.schema(saleSchema).action(async ({ 
     }
   }
 
-  return { success: true, sale: await createSaleAndMap(createSale, user.id, ownerId, parsedInput) };
+  try {
+    const sale = await createSaleAndMap(createSale, user.id, ownerId, parsedInput);
+    return { success: true, sale };
+  } catch (error) {
+    throw new Error(translateSaleCreationError(error));
+  }
 });
 
 export const registerSalePaymentAction = actionClient.schema(collectSaleSchema).action(async ({ parsedInput }) => {

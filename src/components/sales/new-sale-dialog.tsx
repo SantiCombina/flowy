@@ -335,16 +335,17 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         </div>
                       </div>
                     )}
-
-                    {serverError && (
-                      <div className="flex items-start gap-2 px-6 pb-4">
-                        <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 w-full">
-                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                          <p className="text-sm text-destructive">{serverError}</p>
-                        </div>
-                      </div>
-                    )}
                   </ResponsiveModalBody>
+
+                  {serverError && (
+                    <div
+                      role="alert"
+                      className="flex shrink-0 items-start gap-2 border-t border-destructive/20 bg-destructive/5 px-6 py-3"
+                    >
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                      <p className="text-sm leading-5 text-destructive">{serverError}</p>
+                    </div>
+                  )}
 
                   <SaleFooter
                     total={total}

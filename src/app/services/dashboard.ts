@@ -232,7 +232,6 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
             entry.count++;
           }
         }
-
       }
 
       for (const payment of salePaymentsResult.docs) totalCollected += payment.amount;
