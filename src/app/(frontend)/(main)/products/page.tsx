@@ -11,7 +11,7 @@ import { RealtimeRefresher } from '@/components/notifications/realtime-refresher
 import { ProductsSection } from '@/components/products/products-section';
 import { ColumnVisibilityDropdown } from '@/components/ui/column-visibility-dropdown';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { hasModuleAccess, MODULE_ACCESS, resolveProductsTenantId } from '@/lib/entitlements/module-access';
+import { MODULE_ACCESS, resolveModuleCapability, resolveProductsTenantId } from '@/lib/entitlements/module-access';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
 export const metadata: Metadata = {
@@ -81,12 +81,15 @@ async function ProductsPageInner({ guardedUser }: { guardedUser: Awaited<ReturnT
 
 async function ProductsContentWithGuard() {
   const guardedUser = await loadActiveGuardedUser();
+  const role = guardedUser.user.role;
 
-  if (guardedUser.user.role !== 'owner' && guardedUser.user.role !== 'admin') {
+  if (role !== 'owner' && role !== 'admin' && role !== 'seller') {
     redirect('/dashboard');
   }
 
-  if (!hasModuleAccess(guardedUser.capabilities, moduleAccess)) {
+  const requiredCapability = resolveModuleCapability(moduleAccess, role);
+
+  if (!requiredCapability || !guardedUser.capabilities.has(requiredCapability)) {
     return <PlanCapabilityDenied access={moduleAccess} />;
   }
 

@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import type { Capability } from '@/lib/entitlements/capabilities';
-import { MODULE_ACCESS } from '@/lib/entitlements/module-access';
+import { MODULE_ACCESS, resolveModuleCapability } from '@/lib/entitlements/module-access';
 import { filterNavigationItems } from '@/lib/entitlements/scoped-operations';
 import type { FeatureFlags } from '@/lib/features';
 import { queryKeys } from '@/lib/query-keys';
@@ -53,6 +53,7 @@ interface NavItem {
   feature: FeatureKey;
   roleOnly?: 'admin' | 'owner' | 'seller';
   capability?: Capability;
+  sellerCapability?: Capability;
 }
 
 const mainNavItems: NavItem[] = [
@@ -188,11 +189,13 @@ export function AppSidebar({ features, capabilities = [] }: AppSidebarProps) {
   const filteredMainNav = useMemo(
     () =>
       filterNavigationItems(
-        mainNavItems.filter((item) => {
-          if (item.feature !== null && !features[item.feature]) return false;
-          if (item.roleOnly && user?.role !== item.roleOnly) return false;
-          return true;
-        }),
+        mainNavItems
+          .map((item) => ({ ...item, capability: resolveModuleCapability(item, user?.role) }))
+          .filter((item) => {
+            if (item.feature !== null && !features[item.feature]) return false;
+            if (item.roleOnly && user?.role !== item.roleOnly) return false;
+            return true;
+          }),
         capabilities,
       ),
     [features, user, capabilities],

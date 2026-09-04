@@ -86,6 +86,7 @@ function ProductsTableComponent({
     queryKey: queryKeys.products.demand(),
     queryFn: () => getProductDemandSummaryAction(),
     staleTime: 5 * 60 * 1000,
+    enabled: showActions,
   });
 
   const demandMap = demandData?.success ? demandData.demand : undefined;
@@ -265,7 +266,13 @@ function ProductsTableComponent({
         sortValue: (v) => demandMap?.[v.id]?.lastSoldAt ?? '',
         cell: (variant) => {
           const lastSoldAt = demandMap?.[variant.id]?.lastSoldAt;
-          if (!lastSoldAt) return <span className="text-muted-foreground text-sm">Sin ventas</span>;
+          if (!lastSoldAt) {
+            return demandMap === undefined ? (
+              <span className="text-muted-foreground text-sm">—</span>
+            ) : (
+              <span className="text-muted-foreground text-sm">Sin ventas</span>
+            );
+          }
           return (
             <span className="text-sm">
               {new Date(lastSoldAt).toLocaleDateString('es-AR', {
