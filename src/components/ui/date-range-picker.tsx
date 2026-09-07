@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useFmt } from '@/hooks/use-fmt';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -23,11 +24,6 @@ interface DateRangePickerProps {
   onChange: (range: DateRangeValue | undefined) => void;
   placeholder?: string;
   className?: string;
-}
-
-function formatRange(range: DateRangeValue): string {
-  const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  return `${fmt(range.from)} — ${fmt(range.to)}`;
 }
 
 const today = () => new Date();
@@ -66,10 +62,15 @@ export function DateRangePicker({
   className,
 }: DateRangePickerProps) {
   const isMobile = useIsMobile();
+  const { formatShortDate } = useFmt();
   const [open, setOpen] = useState(false);
   const [selectingFrom, setSelectingFrom] = useState<Date | undefined>();
   const [hoveredDay, setHoveredDay] = useState<Date | undefined>();
   const lastHoveredIso = useRef<string | null>(null);
+
+  function formatRange(range: DateRangeValue): string {
+    return `${formatShortDate(range.from.toISOString())} — ${formatShortDate(range.to.toISOString())}`;
+  }
 
   const calendarSelected: DateRange | undefined = (() => {
     if (!selectingFrom) return value ? { from: value.from, to: value.to } : undefined;

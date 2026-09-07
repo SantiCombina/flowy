@@ -7,6 +7,7 @@ import type { PopulatedProductVariant } from '@/app/services/products';
 import type { MonthlyDemand } from '@/app/services/sales';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFmt } from '@/hooks/use-fmt';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -44,14 +45,6 @@ function formatMonthFull(month: string): string {
   return `${MONTH_FULL[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-}
-
 function getBarColor(entry: MonthlyDemand, maxUnits: number): string {
   if (maxUnits === 0) return 'hsl(var(--muted))';
   const ratio = entry.units / maxUnits;
@@ -62,6 +55,7 @@ function getBarColor(entry: MonthlyDemand, maxUnits: number): string {
 }
 
 export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps) {
+  const { formatShortDate } = useFmt();
   const { data, isPending, error } = useServerActionQuery({
     queryKey: queryKeys.variantSalesHistory.forVariant(variant?.id),
     queryFn: () => getVariantSalesHistoryAction({ variantId: variant!.id }),
@@ -123,7 +117,7 @@ export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps
                 <MetricCard
                   icon={Calendar}
                   label="Última venta"
-                  value={history.lastSoldAt ? formatDate(history.lastSoldAt) : '—'}
+                  value={history.lastSoldAt ? formatShortDate(history.lastSoldAt) : '—'}
                   empty={!history.lastSoldAt}
                   delay={0}
                 />

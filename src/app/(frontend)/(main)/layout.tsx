@@ -35,6 +35,8 @@ export default async function MainLayout({ children }: { children: React.ReactNo
 
   const businessName = user.role === 'owner' ? (user.businessName ?? null) : (ownerForSeller?.businessName ?? null);
 
+  const timezone = user.role === 'owner' ? (user.timezone ?? null) : (ownerForSeller?.timezone ?? null);
+
   const capabilityList = capabilitiesArray(capabilities);
 
   const fallback = (
@@ -54,6 +56,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         role: user.role,
         businessName,
         capabilities: capabilityList,
+        timezone,
       }}
     >
       <QueryProvider>

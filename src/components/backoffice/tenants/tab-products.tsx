@@ -3,7 +3,6 @@
 import { Package } from 'lucide-react';
 
 import type { TenantProductRow } from '@/app/services/backoffice/tenants';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -21,16 +20,11 @@ export function TabProducts({ products }: TabProductsProps) {
       {products.map((product) => (
         <Card key={product.id}>
           <CardHeader className="pb-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Package className="h-5 w-5" />
-                </div>
-                <CardTitle className="text-base">{product.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Package className="h-5 w-5" />
               </div>
-              <Badge variant={product.isActive ? 'success' : 'outline'}>
-                {product.isActive ? 'Activo' : 'Inactivo'}
-              </Badge>
+              <CardTitle className="text-base">{product.name}</CardTitle>
             </div>
             {product.description && <CardDescription className="line-clamp-2">{product.description}</CardDescription>}
           </CardHeader>

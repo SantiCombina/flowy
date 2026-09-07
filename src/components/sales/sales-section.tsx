@@ -43,9 +43,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
+import { useFmt } from '@/hooks/use-fmt';
 import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
 import { getSaleWhatsAppLink } from '@/lib/sale-whatsapp';
-import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { Zone } from '@/payload-types';
 
 import { deleteSaleAction, markAsDeliveredAction } from './actions';
@@ -157,6 +158,7 @@ function SalesSectionComponent({
   const user = useUser();
   const router = useRouter();
   const { getVisibleColumns } = useSettings();
+  const { formatDateParts, formatShortDate } = useFmt();
   const visibleColumns = getVisibleColumns('sales');
 
   const [sales, setSales] = useState<SaleRow[]>(initialSales);
@@ -287,8 +289,9 @@ function SalesSectionComponent({
     setCollectingModal(null);
   };
 
-  const handleWhatsApp = (sale: SaleRow) => {
-    window.open(getSaleWhatsAppLink(sale, user?.businessName ?? null), '_blank');
+  const handleWhatsApp = async (sale: SaleRow) => {
+    const url = await getSaleWhatsAppLink(sale, user?.businessName ?? null);
+    window.open(url, '_blank');
   };
 
   const handleMarkDelivered = async (saleId: number) => {

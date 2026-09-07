@@ -21,11 +21,6 @@ export const productFiltersSchema = z.object({
       invalid_type_error: 'La calidad debe ser un número.',
     })
     .optional(),
-  isActive: z
-    .boolean({
-      invalid_type_error: 'El estado debe ser un valor booleano.',
-    })
-    .optional(),
 });
 
 export type ProductFiltersValues = z.infer<typeof productFiltersSchema>;
@@ -54,11 +49,6 @@ export const variantFiltersSchema = z.object({
   presentation: z
     .number({
       invalid_type_error: 'La presentación debe ser un número.',
-    })
-    .optional(),
-  isActive: z
-    .boolean({
-      invalid_type_error: 'El estado debe ser un valor booleano.',
     })
     .optional(),
 });
@@ -134,11 +124,6 @@ export const createProductActionSchema = z.object({
       invalid_type_error: 'La imagen debe ser un número.',
     })
     .optional(),
-  isActive: z
-    .boolean({
-      invalid_type_error: 'El estado debe ser un valor booleano.',
-    })
-    .optional(),
 });
 
 export type CreateProductActionValues = z.infer<typeof createProductActionSchema>;
@@ -183,11 +168,6 @@ export const updateProductActionSchema = z.object({
   image: z
     .number({
       invalid_type_error: 'La imagen debe ser un número.',
-    })
-    .optional(),
-  isActive: z
-    .boolean({
-      invalid_type_error: 'El estado debe ser un valor booleano.',
     })
     .optional(),
 });

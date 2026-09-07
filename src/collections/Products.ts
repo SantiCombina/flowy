@@ -4,7 +4,7 @@ export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'brand', 'category', 'isActive'],
+    defaultColumns: ['name', 'brand', 'category'],
   },
   access: {
     create: ({ req: { user } }) => user?.role === 'admin' || user?.role === 'owner',
@@ -71,15 +71,6 @@ export const Products: CollectionConfig = {
       index: true,
       admin: {
         condition: () => false,
-      },
-    },
-    {
-      name: 'isActive',
-      type: 'checkbox',
-      defaultValue: true,
-      label: 'Activo',
-      admin: {
-        description: 'Desmarcar para ocultar el producto',
       },
     },
   ],

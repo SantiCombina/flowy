@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TableHead } from '@/components/ui/table';
+import { useFmt } from '@/hooks/use-fmt';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +23,6 @@ interface ColumnHeaderDateFilterProps {
   className?: string;
 }
 
-function formatRangeLabel(range: DateRangeValue): string {
-  const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
-  return `${fmt(range.from)} — ${fmt(range.to)}`;
-}
-
 export function ColumnHeaderDateFilter({
   title,
   sortKey,
@@ -38,6 +34,7 @@ export function ColumnHeaderDateFilter({
   className,
 }: ColumnHeaderDateFilterProps) {
   const isMobile = useIsMobile();
+  const { formatShortDate } = useFmt();
   const [open, setOpen] = useState(false);
   const isSorted = currentSortKey === sortKey;
   const hasFilter = !!value;
@@ -48,6 +45,10 @@ export function ColumnHeaderDateFilter({
       setOpen(false);
     }
   };
+
+  function formatRangeLabel(range: DateRangeValue): string {
+    return `${formatShortDate(range.from.toISOString())} — ${formatShortDate(range.to.toISOString())}`;
+  }
 
   const triggerButton = (onClick?: () => void) => (
     <button

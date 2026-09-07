@@ -5,7 +5,6 @@ import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { type UseFormReturn, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import type { SaleClientOption, SaleRow } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -224,7 +223,6 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
       }
 
       if (result?.data?.success) {
-        toast.success('Venta actualizada');
         onSuccess();
         onClose();
       }

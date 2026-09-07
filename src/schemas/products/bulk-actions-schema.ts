@@ -21,20 +21,3 @@ export const bulkUpdatePricesSchema = z.object({
 });
 
 export type BulkUpdatePricesValues = z.infer<typeof bulkUpdatePricesSchema>;
-
-export const bulkToggleActiveSchema = z.object({
-  productIds: z
-    .array(
-      z.number({
-        required_error: 'ID de producto requerido',
-        invalid_type_error: 'ID de producto inválido',
-      }),
-    )
-    .min(1, 'Debe seleccionar al menos un producto'),
-  isActive: z.boolean({
-    required_error: 'Estado requerido',
-    invalid_type_error: 'Estado inválido',
-  }),
-});
-
-export type BulkToggleActiveValues = z.infer<typeof bulkToggleActiveSchema>;

@@ -22,8 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettings } from '@/contexts/settings-context';
+import { useFmt } from '@/hooks/use-fmt';
 import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS, type ItemsPerPageOption } from '@/lib/constants/table-columns';
-import { cn, formatDate, formatDateParts } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 const ALL_TYPES: MovementType[] = [
   'entry',
@@ -117,6 +118,7 @@ interface HistorySectionProps {
 
 function HistorySectionComponent({ movements }: HistorySectionProps) {
   const { getVisibleColumns } = useSettings();
+  const { formatDate, formatDateParts } = useFmt();
   const visibleColumns = getVisibleColumns('history');
 
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>(undefined);

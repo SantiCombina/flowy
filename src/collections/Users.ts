@@ -245,6 +245,17 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'timezone',
+      type: 'select',
+      required: false,
+      defaultValue: 'America/Argentina/Buenos_Aires',
+      options: [{ label: 'Argentina (UTC-3)', value: 'America/Argentina/Buenos_Aires' }],
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Zona horaria del negocio (IANA)',
+      },
+    },
+    {
       name: 'activeEntitlementSnapshot',
       type: 'relationship',
       relationTo: 'tenant-entitlement-snapshots',

@@ -85,7 +85,6 @@ export interface TenantProductRow {
   id: number;
   name: string;
   description: string | null;
-  isActive: boolean;
   variantsCount: number;
   createdAt: string;
 }
@@ -264,7 +263,6 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
     id: product.id,
     name: product.name,
     description: product.description ?? null,
-    isActive: product.isActive ?? true,
     variantsCount: variantsCountMap.get(product.id) ?? 0,
     createdAt: product.createdAt,
   }));
@@ -401,7 +399,6 @@ export async function getTenantProducts(ownerId: number): Promise<TenantProductR
     id: product.id,
     name: product.name,
     description: product.description ?? null,
-    isActive: product.isActive ?? true,
     variantsCount: variantsCountMap.get(product.id) ?? 0,
     createdAt: product.createdAt,
   }));

@@ -1,3 +1,5 @@
+'use client';
+
 import { AlertTriangle, ImageOff, Receipt, ShoppingCart, TrendingUp, Users, Wallet } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -6,7 +8,8 @@ import type { OwnerDashboardStats, Period } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency, formatShortDate } from '@/lib/utils';
+import { useFmt } from '@/hooks/use-fmt';
+import { formatCurrency } from '@/lib/utils';
 
 import { PAYMENT_METHOD_STYLES } from './payment-methods-chart';
 import { PeriodSelector } from './period-selector';
@@ -64,6 +67,7 @@ interface OwnerDashboardProps {
 }
 
 export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPending }: OwnerDashboardProps) {
+  const { formatShortDate } = useFmt();
   const now = new Date();
   const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
   const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);

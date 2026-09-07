@@ -142,7 +142,7 @@ export async function registerStockMovement(
       ownerId,
       type: 'stock_low',
       title: 'Stock bajo',
-      body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
+      body: `Stock bajo: ${productName}, quedan ${newStock} unidades`,
       metadata: { variantId, newStock, minimumStock: variant.minimumStock },
     });
   }

@@ -25,7 +25,7 @@ import { assertAnyUserCapability, assertUserCapability } from '@/lib/entitlement
 import { getCurrentUser } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import { actionClient } from '@/lib/safe-action';
-import { bulkUpdatePricesSchema, bulkToggleActiveSchema } from '@/schemas/products/bulk-actions-schema';
+import { bulkUpdatePricesSchema } from '@/schemas/products/bulk-actions-schema';
 import {
   productFiltersSchema,
   variantFiltersSchema,
@@ -102,7 +102,6 @@ export const getVariantsAction = actionClient
       category: parsedInput.filters?.category,
       quality: parsedInput.filters?.quality,
       presentation: parsedInput.filters?.presentation,
-      isActive: parsedInput.filters?.isActive,
     };
     const result = await getVariantsWithProducts(ownerId, filters, parsedInput.options);
 
@@ -183,7 +182,6 @@ export const createProductAction = actionClient.schema(createProductActionSchema
     category: parsedInput.category,
     quality: parsedInput.quality,
     image: parsedInput.image,
-    isActive: parsedInput.isActive,
   };
   const product = await createProductWithQuota(productData, user.id);
 
@@ -212,7 +210,6 @@ export const updateProductAction = actionClient.schema(updateProductActionSchema
     category: data.category ?? null,
     quality: data.quality ?? null,
     image: data.image ?? null,
-    isActive: data.isActive,
   };
   const product = await updateProduct(id, productData, user.id);
 
@@ -457,22 +454,3 @@ export const bulkUpdateVariantPricesAction = actionClient
       updated: parsedInput.updates.length,
     };
   });
-
-export const bulkToggleProductsAction = actionClient.schema(bulkToggleActiveSchema).action(async ({ parsedInput }) => {
-  const user = await getCurrentUser();
-
-  if (!user || user.role !== 'owner') {
-    throw new Error('No autorizado');
-  }
-
-  await assertUserCapability(user, 'catalog.manage');
-
-  await Promise.all(parsedInput.productIds.map((id) => updateProduct(id, { isActive: parsedInput.isActive }, user.id)));
-
-  revalidatePath('/products');
-
-  return {
-    success: true,
-    updated: parsedInput.productIds.length,
-  };
-});

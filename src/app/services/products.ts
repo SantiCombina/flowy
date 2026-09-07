@@ -39,7 +39,6 @@ export interface CreateProductData {
   category?: number;
   quality?: number;
   image?: number;
-  isActive?: boolean;
 }
 
 export interface UpdateProductData {
@@ -49,7 +48,6 @@ export interface UpdateProductData {
   category?: number | null;
   quality?: number | null;
   image?: number | null;
-  isActive?: boolean;
 }
 
 export interface ProductFilters {
@@ -57,7 +55,6 @@ export interface ProductFilters {
   brand?: number;
   category?: number;
   quality?: number;
-  isActive?: boolean;
 }
 
 export async function getProducts(
@@ -92,9 +89,6 @@ export async function getProducts(
   }
   if (filters?.quality !== undefined) {
     where.quality = { equals: filters.quality };
-  }
-  if (filters?.isActive !== undefined) {
-    where.isActive = { equals: filters.isActive };
   }
 
   const result = await payload.find({
@@ -419,7 +413,6 @@ export interface VariantFilters {
   category?: number;
   quality?: number;
   presentation?: number;
-  isActive?: boolean;
 }
 
 async function _getVariantsWithProducts(
@@ -443,7 +436,7 @@ async function _getVariantsWithProducts(
   };
 
   let productIds: number[] | undefined;
-  if (filters?.brand || filters?.category || filters?.quality || filters?.isActive !== undefined || filters?.search) {
+  if (filters?.brand || filters?.category || filters?.quality || filters?.search) {
     const productWhere: Where = {
       owner: { equals: ownerId },
     };
@@ -456,9 +449,6 @@ async function _getVariantsWithProducts(
     }
     if (filters.quality) {
       productWhere.quality = { equals: filters.quality };
-    }
-    if (filters.isActive !== undefined) {
-      productWhere.isActive = { equals: filters.isActive };
     }
     if (filters.search) {
       productWhere.or = [{ name: { contains: filters.search } }, { description: { contains: filters.search } }];
@@ -513,7 +503,6 @@ async function _getVariantsWithProducts(
           category: { select: { id: true, name: true } },
           quality: { select: { id: true, name: true } },
           image: { select: { id: true, url: true } },
-          isActive: true,
         },
       } as unknown as true,
       presentation: { select: { id: true, label: true } } as unknown as true,

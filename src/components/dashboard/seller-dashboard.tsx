@@ -1,3 +1,5 @@
+'use client';
+
 import { Package, ShoppingCart, Star, Users, Wallet } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -5,7 +7,8 @@ import type { Period, SellerDashboardStats } from '@/app/services/dashboard';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatCurrency, formatShortDate } from '@/lib/utils';
+import { useFmt } from '@/hooks/use-fmt';
+import { formatCurrency } from '@/lib/utils';
 
 import { PeriodSelector } from './period-selector';
 import { StatCard } from './stat-card';
@@ -48,6 +51,7 @@ interface SellerDashboardProps {
 }
 
 export function SellerDashboard({ stats, userName, period, onPeriodChange, isPending }: SellerDashboardProps) {
+  const { formatShortDate } = useFmt();
   const maxInventoryQty = stats.inventory.length > 0 ? Math.max(...stats.inventory.map((i) => i.quantity)) : 1;
   const totalProductQuantity = stats.topProducts.reduce((sum, p) => sum + p.quantity, 0) || 1;
 

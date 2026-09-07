@@ -6,7 +6,7 @@ import type { TenantSaleRow } from '@/app/services/backoffice/tenants';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/empty-state';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface TabSalesProps {
   sales: TenantSaleRow[];
@@ -23,16 +23,6 @@ const PAYMENT_VARIANT: Record<TenantSaleRow['paymentStatus'], 'warning' | 'succe
   partially_collected: 'info',
   collected: 'success',
 };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export function TabSales({ sales }: TabSalesProps) {
   const columns: Column<TenantSaleRow>[] = [
@@ -80,7 +70,7 @@ export function TabSales({ sales }: TabSalesProps) {
       sortable: true,
       sortValue: (row) => row.createdAt,
       className: 'w-px',
-      cell: (row) => <div className="text-xs text-muted-foreground">{formatDateTime(row.createdAt)}</div>,
+      cell: (row) => <div className="text-xs text-muted-foreground">{formatDate(row.createdAt)}</div>,
     },
   ];
 

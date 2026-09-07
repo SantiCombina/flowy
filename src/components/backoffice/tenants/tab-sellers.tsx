@@ -6,17 +6,10 @@ import type { TenantSellerRow } from '@/app/services/backoffice/tenants';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/empty-state';
+import { formatShortDate } from '@/lib/utils';
 
 interface TabSellersProps {
   sellers: TenantSellerRow[];
-}
-
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
 }
 
 export function TabSellers({ sellers }: TabSellersProps) {

@@ -158,6 +158,7 @@ interface UpdateSellerData {
   businessPhone?: string;
   businessAddress?: string;
   ivaCondition?: 'responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable';
+  timezone?: 'America/Argentina/Buenos_Aires';
 }
 
 export async function updateSeller(sellerId: number, data: UpdateSellerData, ownerId: number): Promise<User> {
@@ -180,7 +181,7 @@ export async function updateSeller(sellerId: number, data: UpdateSellerData, own
     overrideAccess: true,
   });
 
-  return user as User;
+  return user as unknown as User;
 }
 
 export async function updateOwner(ownerId: number, data: UpdateSellerData): Promise<User> {
@@ -203,7 +204,7 @@ export async function updateOwner(ownerId: number, data: UpdateSellerData): Prom
     overrideAccess: true,
   });
 
-  return user as User;
+  return user as unknown as User;
 }
 
 export async function deleteSeller(sellerId: number, ownerId: number): Promise<void> {

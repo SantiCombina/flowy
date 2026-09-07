@@ -22,6 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
+import { useFmt } from '@/hooks/use-fmt';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
@@ -36,20 +37,6 @@ import { StockMovementModal } from './modals/stock-movement-modal';
 const ProductDemandSheet = dynamic(() => import('./modals/product-demand-sheet').then((m) => m.ProductDemandSheet), {
   ssr: false,
 });
-
-const statusDotColumn: Column<PopulatedProductVariant> = {
-  key: 'status',
-  header: '',
-  cell: (variant) => {
-    const isActive = variant.product.isActive ?? true;
-    return (
-      <div className="flex justify-center">
-        <div className={`h-2.5 w-2.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-300'}`} />
-      </div>
-    );
-  },
-  className: 'w-6 pr-0',
-};
 
 interface ProductsTableProps {
   variants: PopulatedProductVariant[];
@@ -73,6 +60,7 @@ function ProductsTableComponent({
   const router = useRouter();
   const { invalidateQueries } = useInvalidateQueries();
   const { getVisibleColumns, isLoading: isSettingsLoading } = useSettings();
+  const { formatShortDate } = useFmt();
 
   const visibleColumns = useMemo(
     () => (isSettingsLoading ? [] : getVisibleColumns('products')),
@@ -273,15 +261,7 @@ function ProductsTableComponent({
               <span className="text-muted-foreground text-sm">Sin ventas</span>
             );
           }
-          return (
-            <span className="text-sm">
-              {new Date(lastSoldAt).toLocaleDateString('es-AR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })}
-            </span>
-          );
+          return <span className="text-sm">{formatShortDate(lastSoldAt)}</span>;
         },
         className: 'w-px',
       },
@@ -318,7 +298,6 @@ function ProductsTableComponent({
 
   const columns = useMemo<Column<PopulatedProductVariant>[]>(
     () => [
-      statusDotColumn,
       ...Object.entries(allColumns)
         .filter(([key]) => shouldShowColumn(key))
         .map(([, column]) => column),

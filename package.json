@@ -21,7 +21,6 @@
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "seed:plans": "tsx scripts/seed-plan-versions.ts"
   },
-
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@payloadcms/db-postgres": "3.75.0",
@@ -40,6 +39,7 @@
     "cmdk": "^1.1.1",
     "cross-env": "^7.0.3",
     "date-fns": "^4.1.0",
+    "date-fns-tz": "3.2.0",
     "dotenv": "16.4.7",
     "framer-motion": "^12.40.0",
     "graphql": "^16.8.1",

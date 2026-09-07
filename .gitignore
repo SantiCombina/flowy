@@ -61,6 +61,7 @@ node_modules/
 # Agent artifacts
 .atl/
 .codegraph/
+openspec/
 
 # Docker
 docker-compose.yml

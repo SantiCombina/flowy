@@ -72,6 +72,7 @@ export default async function BackofficeGroupLayout({ children }: { children: Re
             name: user.name,
             email: user.email,
             role: user.role,
+            timezone: null,
           }}
         >
           <QueryProvider>

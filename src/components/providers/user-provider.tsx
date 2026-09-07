@@ -9,6 +9,7 @@ interface UserContextValue {
   role: 'admin' | 'owner' | 'seller';
   businessName?: string | null;
   capabilities?: string[];
+  timezone?: string | null;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);

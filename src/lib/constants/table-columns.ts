@@ -46,7 +46,6 @@ export const COLUMN_LABELS: Record<string, string> = {
   presentation: 'Presentación',
   stock: 'Stock',
   price: 'Precio',
-  isActive: 'Estado',
   cuit: 'CUIT/CUIL',
   phone: 'Teléfono',
   email: 'Email',

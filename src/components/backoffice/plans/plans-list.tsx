@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getMonthlyPriceUsd } from '@/lib/entitlements/plan-presets';
 import { formatUsdMonthlyPrice } from '@/lib/money';
+import { formatShortDate } from '@/lib/utils';
 
 import { PublishPlanDialog } from './publish-plan-dialog';
 
@@ -97,7 +98,7 @@ function PlanVersionCard({ version }: { version: PlanVersionSummary }) {
             Inmutable
           </Badge>
         </div>
-        <CardDescription>Publicada el {formatDate(version.publishedAt)}</CardDescription>
+        <CardDescription>Publicada el {formatShortDate(version.publishedAt)}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1.5">
@@ -127,12 +128,4 @@ function PlanVersionCard({ version }: { version: PlanVersionSummary }) {
       </CardContent>
     </Card>
   );
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
 }

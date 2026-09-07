@@ -4,7 +4,6 @@ import { useFormContext } from 'react-hook-form';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import type { ProductFormData } from '@/schemas/products/product-schema';
 
@@ -60,19 +59,6 @@ export function ProductInfoSection({ pendingImageFile, currentImageUrl, onFileSe
             <div className="min-h-5">
               <FormMessage />
             </div>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={control}
-        name="isActive"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-xl bg-white p-3 shadow-sm transition-all duration-200">
-            <FormLabel className="cursor-pointer font-normal">Producto activo</FormLabel>
-            <FormControl>
-              <Switch checked={field.value} onCheckedChange={field.onChange} />
-            </FormControl>
           </FormItem>
         )}
       />

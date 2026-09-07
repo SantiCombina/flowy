@@ -11,7 +11,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
-import { cn } from '@/lib/utils';
+import { cn, formatShortDate } from '@/lib/utils';
 
 import { listTenantsAction } from './actions';
 import { TenantsTableToolbar, type PlanFilterValue, type StateFilterValue } from './tenants-table-toolbar';
@@ -44,14 +44,6 @@ type TenantRow = ListTenantsResult['docs'][number];
 
 interface TenantsListProps {
   initialData: ListTenantsResult;
-}
-
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
 }
 
 export function TenantsList({ initialData }: TenantsListProps) {

@@ -96,10 +96,6 @@ export const productSchema = z.object({
       invalid_type_error: 'La imagen debe ser un número.',
     })
     .optional(),
-  isActive: z.boolean({
-    required_error: 'El estado es requerido.',
-    invalid_type_error: 'El estado debe ser un valor booleano.',
-  }),
   variants: z
     .array(variantSchema, {
       required_error: 'Las variantes son requeridas.',

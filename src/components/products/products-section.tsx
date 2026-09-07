@@ -1,29 +1,18 @@
 'use client';
 
-import { DollarSign, EyeOff, Eye, Plus, Warehouse, X } from 'lucide-react';
-import { useAction } from 'next-safe-action/hooks';
+import { DollarSign, Plus, Warehouse, X } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import type { PopulatedProductVariant } from '@/app/services/products';
 import { useUserOptional } from '@/components/providers/user-provider';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
 import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 
-import { getReferenceDataAction, bulkToggleProductsAction } from './actions';
+import { getReferenceDataAction } from './actions';
 import { BulkPriceSheet } from './modals/bulk-price-sheet';
 import { ProductModal } from './modals/product-modal-new/index';
 import { ProductsTable } from './products-table';
@@ -60,21 +49,16 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [bulkPriceKey, setBulkPriceKey] = useState(0);
-  const [bulkToggleTarget, setBulkToggleTarget] = useState<boolean | null>(null);
 
   const inventoryValue = useMemo(
     () => initialVariants.docs.reduce((sum, v) => sum + v.stock * v.costPrice, 0),
     [initialVariants],
   );
 
-  const { executeAsync: executeToggle, isExecuting: isToggling } = useAction(bulkToggleProductsAction);
-
   const selectedVariants = useMemo(
     () => initialVariants.docs.filter((v) => selectedKeys.has(`${v.id}-${v.product.id}`)),
     [initialVariants, selectedKeys],
   );
-
-  const uniqueProductIds = useMemo(() => [...new Set(selectedVariants.map((v) => v.product.id))], [selectedVariants]);
 
   const handleRefreshEntities = useCallback(async () => {
     const result = await getReferenceDataAction();
@@ -116,30 +100,6 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
     setSelectedKeys(new Set());
     invalidateQueries([queryKeys.products.list('', 1)]);
   }, [invalidateQueries]);
-
-  const handleBulkToggleConfirm = async () => {
-    if (bulkToggleTarget === null || uniqueProductIds.length === 0) return;
-
-    const result = await executeToggle({
-      productIds: uniqueProductIds,
-      isActive: bulkToggleTarget,
-    });
-
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success) {
-      const label = bulkToggleTarget ? 'activados' : 'pausados';
-      toast.warning(`${result.data.updated} productos ${label}`);
-      setSelectedKeys(new Set());
-      setBulkToggleTarget(null);
-      invalidateQueries([queryKeys.products.list('', 1)]);
-    } else {
-      toast.error('No se pudo actualizar el estado de los productos');
-    }
-  };
 
   return (
     <div className="flex flex-1 flex-col">
@@ -205,14 +165,6 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
               <DollarSign className="h-4 w-4" />
               <span className="hidden sm:inline">Editar precios</span>
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setBulkToggleTarget(false)}>
-              <EyeOff className="h-4 w-4" />
-              <span className="hidden sm:inline">Pausar</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setBulkToggleTarget(true)}>
-              <Eye className="h-4 w-4" />
-              <span className="hidden sm:inline">Activar</span>
-            </Button>
             <div className="h-5 w-px bg-border mx-1" />
             <Button
               variant="ghost"
@@ -249,25 +201,6 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
         variants={selectedVariants}
         onSuccess={handleBulkPriceSuccess}
       />
-
-      <AlertDialog open={bulkToggleTarget !== null} onOpenChange={(open) => !open && setBulkToggleTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{bulkToggleTarget ? '¿Activar productos?' : '¿Pausar productos?'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {bulkToggleTarget
-                ? `Se van a activar ${uniqueProductIds.length} producto${uniqueProductIds.length !== 1 ? 's' : ''} (de ${selectedKeys.size} variante${selectedKeys.size !== 1 ? 's' : ''} seleccionada${selectedKeys.size !== 1 ? 's' : ''}).`
-                : `Se van a pausar ${uniqueProductIds.length} producto${uniqueProductIds.length !== 1 ? 's' : ''} (de ${selectedKeys.size} variante${selectedKeys.size !== 1 ? 's' : ''} seleccionada${selectedKeys.size !== 1 ? 's' : ''}). No aparecerán en las ventas.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isToggling}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkToggleConfirm} disabled={isToggling}>
-              {isToggling ? 'Procesando' : bulkToggleTarget ? 'Activar' : 'Pausar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

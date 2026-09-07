@@ -6,6 +6,7 @@ import type { TenantSnapshotRow } from '@/app/services/backoffice/tenants';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { formatDate } from '@/lib/utils';
 
 interface TabSnapshotsProps {
   snapshots: TenantSnapshotRow[];
@@ -22,16 +23,6 @@ const PLAN_BADGE_VARIANT: Record<string, 'info' | 'violet' | 'sky'> = {
   medium: 'violet',
   professional: 'sky',
 };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function summarizeDiff(snap: TenantSnapshotRow): string {
   const parts: string[] = [];
@@ -73,7 +64,7 @@ export function TabSnapshots({ snapshots }: TabSnapshotsProps) {
                       </span>
                     )}
                   </CardTitle>
-                  <p className="text-xs text-muted-foreground">{formatDateTime(snap.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(snap.createdAt)}</p>
                 </div>
               </div>
             </CardHeader>

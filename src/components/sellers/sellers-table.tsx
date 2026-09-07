@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { useSettings } from '@/contexts/settings-context';
+import { useFmt } from '@/hooks/use-fmt';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { COLUMN_LABELS } from '@/lib/constants/table-columns';
 import { queryKeys } from '@/lib/query-keys';
@@ -61,6 +62,7 @@ function SellersTableComponent({
   onReturn,
 }: SellersTableProps) {
   const { getVisibleColumns } = useSettings();
+  const { formatShortDate } = useFmt();
   const visibleColumns = useMemo(() => getVisibleColumns('sellers'), [getVisibleColumns]);
   const { invalidateQueries } = useInvalidateQueries();
   const [sellerToDelete, setSellerToDelete] = useState<User | null>(null);
@@ -133,16 +135,7 @@ function SellersTableComponent({
         sortable: true,
         sortValue: (s) => s.createdAt,
         cell: (seller) => {
-          const date = new Date(seller.createdAt);
-          return (
-            <div className="text-sm text-muted-foreground">
-              {date.toLocaleDateString('es-AR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-              })}
-            </div>
-          );
+          return <div className="text-sm text-muted-foreground">{formatShortDate(seller.createdAt)}</div>;
         },
         className: 'w-px',
       },

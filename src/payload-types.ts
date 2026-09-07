@@ -216,6 +216,10 @@ export interface User {
    * Condición ante IVA
    */
   ivaCondition?: ('responsable_inscripto' | 'monotributista' | 'exento' | 'no_responsable') | null;
+  /**
+   * Zona horaria del negocio (IANA)
+   */
+  timezone?: 'America/Argentina/Buenos_Aires' | null;
   activeEntitlementSnapshot?: (number | null) | TenantEntitlementSnapshot;
   entitlementState?: ('provisioning' | 'active' | 'blocked') | null;
   updatedAt: string;
@@ -497,10 +501,6 @@ export interface Product {
   quality?: (number | null) | Quality;
   image?: (number | null) | Media;
   owner?: (number | null) | User;
-  /**
-   * Desmarcar para ocultar el producto
-   */
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1175,6 +1175,7 @@ export interface UsersSelect<T extends boolean = true> {
   businessPhone?: T;
   businessAddress?: T;
   ivaCondition?: T;
+  timezone?: T;
   activeEntitlementSnapshot?: T;
   entitlementState?: T;
   updatedAt?: T;
@@ -1401,7 +1402,6 @@ export interface ProductsSelect<T extends boolean = true> {
   quality?: T;
   image?: T;
   owner?: T;
-  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -15,10 +15,11 @@ import {
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFmt } from '@/hooks/use-fmt';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import type { User } from '@/payload-types';
 
 import { getCommissionDetailAction } from '../commission-actions';
@@ -68,6 +69,7 @@ interface SellerDetailsModalProps {
 
 export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsModalProps) {
   const { invalidateQueries } = useInvalidateQueries();
+  const { formatDate } = useFmt();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
 

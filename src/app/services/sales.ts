@@ -283,7 +283,7 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
             ownerId,
             type: 'stock_low',
             title: 'Stock bajo',
-            body: `Stock bajo: ${productName} — quedan ${newStock} unidades`,
+            body: `Stock bajo: ${productName}, quedan ${newStock} unidades`,
             metadata: { variantId: item.variantId, newStock, minimumStock: variant.minimumStock },
           });
         }

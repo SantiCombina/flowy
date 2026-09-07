@@ -73,7 +73,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
       brandId: '',
       categoryId: '',
       qualityId: '',
-      isActive: true,
       variants: [
         {
           presentationId: '',
@@ -117,7 +116,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
         brandId: typeof product.brand === 'object' && product.brand ? product.brand.id.toString() : '',
         categoryId: typeof product.category === 'object' && product.category ? product.category.id.toString() : '',
         qualityId: typeof product.quality === 'object' && product.quality ? product.quality.id.toString() : '',
-        isActive: product.isActive ?? true,
         variants: variants.map((v: ProductVariant) => ({
           id: v.id,
           presentationId: typeof v.presentation === 'object' && v.presentation ? v.presentation.id.toString() : '',
@@ -183,7 +181,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           category: data.categoryId ? parseInt(data.categoryId) : undefined,
           quality: data.qualityId ? parseInt(data.qualityId) : undefined,
           image: resolvedImageId,
-          isActive: data.isActive,
         });
 
         if (productResult?.serverError) {
@@ -249,7 +246,6 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           category: data.categoryId ? parseInt(data.categoryId) : undefined,
           quality: data.qualityId ? parseInt(data.qualityId) : undefined,
           image: resolvedImageId,
-          isActive: data.isActive,
         });
 
         if (productResult?.serverError) {

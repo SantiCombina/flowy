@@ -40,8 +40,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSettings } from '@/contexts/settings-context';
+import { useFmt } from '@/hooks/use-fmt';
 import { DEFAULT_ITEMS_PER_PAGE, ITEMS_PER_PAGE_OPTIONS } from '@/lib/constants/table-columns';
-import { cn, formatDateParts, formatShortDate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 import { deleteBudgetAction } from './actions';
 import { BudgetConvertDialog } from './budget-convert-dialog';
@@ -53,44 +54,6 @@ function formatPrice(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-}
-
-function getWhatsAppLink(budget: BudgetRow, businessName: string | null): string {
-  const name = businessName?.trim() || 'Flowy';
-  const total = formatPrice(budget.total);
-
-  const intro = budget.validUntil
-    ? `Hola! desde ${name} le informamos el detalle de su pedido con vencimiento el ${formatShortDate(budget.validUntil)} y un total de $ ${total}`
-    : `Hola! desde ${name} le informamos el detalle de su pedido con un total de $ ${total}`;
-
-  const lines: string[] = [intro, ''];
-
-  for (let i = 0; i < budget.items.length; i++) {
-    const item = budget.items[i];
-    lines.push(
-      `- ${item.variantName} | ${item.quantity} unidades - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
-    );
-    if (i < budget.items.length - 1) {
-      lines.push('');
-    }
-  }
-
-  if (budget.notes) {
-    lines.push('');
-    lines.push(`Notas: ${budget.notes}`);
-  }
-
-  lines.push('');
-  lines.push('Mensaje enviado desde www.flowy.ar - Sistema de gestión');
-
-  const text = encodeURIComponent(lines.join('\n'));
-
-  if (budget.clientPhone) {
-    const phone = budget.clientPhone.replace(/\D/g, '');
-    return `https://wa.me/${phone}?text=${text}`;
-  }
-
-  return `https://wa.me/?text=${text}`;
 }
 
 function StatusBadge({ status }: { status: BudgetRow['status'] }) {
@@ -162,7 +125,46 @@ function BudgetsSectionComponent({
   const canManageBudgets = capabilities?.includes('budget.manage') ?? isOwner;
   const canCreateSales = capabilities?.includes('sale.create') ?? isOwner;
   const { getVisibleColumns } = useSettings();
+  const { formatDateParts, formatShortDate } = useFmt();
   const visibleColumns = getVisibleColumns('budgets');
+
+  function getWhatsAppLink(budget: BudgetRow, businessName: string | null): string {
+    const name = businessName?.trim() || 'Flowy';
+    const total = formatPrice(budget.total);
+
+    const intro = budget.validUntil
+      ? `Hola! desde ${name} le informamos el detalle de su pedido con vencimiento el ${formatShortDate(budget.validUntil)} y un total de $ ${total}`
+      : `Hola! desde ${name} le informamos el detalle de su pedido con un total de $ ${total}`;
+
+    const lines: string[] = [intro, ''];
+
+    for (let i = 0; i < budget.items.length; i++) {
+      const item = budget.items[i];
+      lines.push(
+        `- ${item.variantName} | ${item.quantity} unidades - $ ${formatPrice(item.unitPrice)} c/u - Subtotal: $ ${formatPrice(item.subtotal)}`,
+      );
+      if (i < budget.items.length - 1) {
+        lines.push('');
+      }
+    }
+
+    if (budget.notes) {
+      lines.push('');
+      lines.push(`Notas: ${budget.notes}`);
+    }
+
+    lines.push('');
+    lines.push('Mensaje enviado desde www.flowy.ar - Sistema de gestión');
+
+    const text = encodeURIComponent(lines.join('\n'));
+
+    if (budget.clientPhone) {
+      const phone = budget.clientPhone.replace(/\D/g, '');
+      return `https://wa.me/${phone}?text=${text}`;
+    }
+
+    return `https://wa.me/?text=${text}`;
+  }
 
   const [budgets, setBudgets] = useState<BudgetRow[]>(initialBudgets);
 

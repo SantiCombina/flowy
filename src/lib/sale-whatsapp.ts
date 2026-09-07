@@ -1,4 +1,6 @@
-import { formatShortDate } from '@/lib/utils';
+'use server';
+
+import { getTenantFormatters } from '@/lib/tenant-datetime';
 
 export interface SaleWhatsAppDetails {
   date: string;
@@ -19,7 +21,8 @@ function formatPrice(value: number): string {
   });
 }
 
-export function getSaleWhatsAppLink(sale: SaleWhatsAppDetails, businessName: string | null): string {
+export async function getSaleWhatsAppLink(sale: SaleWhatsAppDetails, businessName: string | null): Promise<string> {
+  const { formatShortDate } = await getTenantFormatters();
   const name = businessName?.trim() || 'Flowy';
   const intro = `Hola! desde ${name} le informamos el detalle de su compra realizada el ${formatShortDate(sale.date)} con un total de $ ${formatPrice(sale.total)}`;
   const lines: string[] = [intro, ''];

@@ -63,7 +63,7 @@ export function saleCreationFlowReducer(
   }
 }
 
-export function getSaleCreationShareUrl(details: SaleCreationSuccessDetails): string {
+export async function getSaleCreationShareUrl(details: SaleCreationSuccessDetails): Promise<string> {
   return getSaleWhatsAppLink(details.sale, details.businessName);
 }
 
@@ -215,8 +215,9 @@ export function SaleCreationFlow({
   const createdSale = state.createdSale;
   if (!createdSale) return renderForm({ close, serverError: state.serverError, submit });
 
-  const share = () => {
-    openShare(getSaleCreationShareUrl(createdSale), '_blank');
+  const share = async () => {
+    const url = await getSaleCreationShareUrl(createdSale);
+    openShare(url, '_blank');
   };
 
   return <SaleCreationSuccessView details={createdSale} onShare={share} onClose={close} />;
