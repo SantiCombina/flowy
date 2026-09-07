@@ -256,9 +256,9 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
         ) : (
           <Form {...form}>
             <form onSubmit={handleFormSubmit} className="flex flex-1 flex-col min-h-0">
-              <ResponsiveModalBody className="flex-1 min-h-0 overflow-hidden p-0 sm:px-6 sm:py-4">
+              <ResponsiveModalBody className="flex-1 overflow-y-auto p-0 sm:block sm:overflow-hidden sm:px-6 sm:py-4">
                 {isMobile ? (
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
                     <div className="sticky top-0 z-10 bg-background px-6 pt-4 pb-0">
                       <TabsList className="w-full">
                         <TabsTrigger value="products" className="flex-1 gap-1.5">
@@ -272,7 +272,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         </TabsTrigger>
                       </TabsList>
                     </div>
-                    <TabsContent value="products" className="mt-0 flex-1 overflow-hidden px-6 py-4">
+                    <TabsContent value="products" className="mt-0 px-6 py-4">
                       <ProductsTab
                         form={form as unknown as UseFormReturn<SaleValues>}
                         fields={fields}
@@ -283,7 +283,7 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
                         canUsePersonalStock={canUsePersonalStock}
                       />
                     </TabsContent>
-                    <TabsContent value="details" className="mt-0 flex-1 overflow-hidden px-6 py-4">
+                    <TabsContent value="details" className="mt-0 px-6 py-4">
                       <DetailsTab
                         form={form as unknown as UseFormReturn<SaleValues>}
                         clients={localClients}
