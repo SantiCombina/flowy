@@ -15,10 +15,6 @@ export function ProductFormSkeleton() {
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-20 w-full rounded-md" />
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-6 w-11 rounded-full" />
-        </div>
       </div>
 
       <div className="space-y-4">
