@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -103,9 +102,6 @@ export function ReturnStockModal({ isOpen, onClose, onSuccess, seller }: ReturnS
           <ArrowUpFromLine className="h-5 w-5" />
           Registrar devolución de {seller.name}
         </ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Ingresá las cantidades que el vendedor móvil devuelve al depósito.
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">

@@ -32,6 +32,24 @@ interface UseProductFormProps {
   onClose: () => void;
 }
 
+const EMPTY_PRODUCT_FORM_VALUES: ProductFormData = {
+  name: '',
+  description: '',
+  brandId: '',
+  categoryId: '',
+  qualityId: '',
+  variants: [
+    {
+      presentationId: '',
+      code: '',
+      stock: 0,
+      minimumStock: 0,
+      costPrice: 0,
+      profitMargin: 0,
+    },
+  ],
+};
+
 async function uploadImage(file: File, altText: string): Promise<number> {
   const webpFile = await convertToWebP(file);
   const formData = new FormData();
@@ -67,23 +85,7 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
     resolver: zodResolver(productSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
-    defaultValues: {
-      name: '',
-      description: '',
-      brandId: '',
-      categoryId: '',
-      qualityId: '',
-      variants: [
-        {
-          presentationId: '',
-          code: '',
-          stock: 0,
-          minimumStock: 0,
-          costPrice: 0,
-          profitMargin: 0,
-        },
-      ],
-    },
+    defaultValues: EMPTY_PRODUCT_FORM_VALUES,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -132,6 +134,12 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
   }, [isEditing, productId, data, form.reset, loadImageFromProduct]);
 
   const handleClose = () => {
+    form.reset(EMPTY_PRODUCT_FORM_VALUES);
+    setVariantsToDelete([]);
+    setCurrentImageId(undefined);
+    setCurrentImageUrl(undefined);
+    setPreviousImageId(undefined);
+    setPendingImageFile(undefined);
     onClose();
   };
 

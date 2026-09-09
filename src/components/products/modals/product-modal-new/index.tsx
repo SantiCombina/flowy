@@ -8,7 +8,6 @@ import { Form } from '@/components/ui/form';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -83,11 +82,6 @@ export function ProductModal({
       <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-3xl">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>{isEditing ? 'Editar producto' : 'Nuevo producto'}</ResponsiveModalTitle>
-          <ResponsiveModalDescription>
-            {isEditing
-              ? 'Modificá los datos del producto y sus presentaciones.'
-              : 'Completá los datos del producto y al menos una presentación con su precio.'}
-          </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         {isLoading ? (

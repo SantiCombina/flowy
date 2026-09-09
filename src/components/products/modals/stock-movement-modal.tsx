@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -130,10 +129,6 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
           <PackagePlus className="h-5 w-5" />
           Registrar movimiento de stock
         </ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Completá los datos para registrar un movimiento de stock en este producto. Los campos marcados con * son
-          obligatorios.
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">

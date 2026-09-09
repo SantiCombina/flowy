@@ -17,7 +17,6 @@ import { PriceInput } from '@/components/ui/price-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -135,7 +134,6 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-sm">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Registrar cobro</ResponsiveModalTitle>
-        <ResponsiveModalDescription>Ingresá el monto recibido.</ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <Form {...form}>

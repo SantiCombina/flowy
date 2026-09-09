@@ -24,14 +24,7 @@ import type { Client } from '@/payload-types';
 import { editSaleFullSchema, type EditSaleFullValues } from '@/schemas/sales/edit-sale-full-schema';
 import { type SaleValues } from '@/schemas/sales/sale-schema';
 
-import { getClientsForSaleAction } from '../clients/actions';
-
-import {
-  editSaleFullAction,
-  getClientsForOwnerAction,
-  getSaleOptionsAction,
-  getSaleOptionsForOwnerAction,
-} from './actions';
+import { editSaleFullAction, getSaleOptionsAction, getSaleOptionsForOwnerAction } from './actions';
 import {
   AddProductSheet,
   DetailsTab,
@@ -148,22 +141,12 @@ export function EditSaleModal({ isOpen, onClose, onSuccess, sale, isSeller }: Ed
     setIsAddProductOpen(true);
   };
 
-  const handleNewClientSuccess = async (newClient: Client) => {
-    if (isSeller) {
-      const result = await getClientsForSaleAction();
-      if (result?.data?.success && result.data.clients) {
-        setClientsOverride(result.data.clients);
-      } else {
-        setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
-      }
-    } else {
-      const result = await getClientsForOwnerAction();
-      if (result?.data?.success && result.data.clients) {
-        setClientsOverride(result.data.clients);
-      } else {
-        setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
-      }
-    }
+  const handleNewClientSuccess = (newClient: Client) => {
+    setClientsOverride((prev) => {
+      const base = prev ?? clients;
+      if (base.some((c) => c.id === newClient.id)) return base;
+      return [...base, { id: newClient.id, name: newClient.name }];
+    });
     form.setValue('clientId', newClient.id);
     setIsClientModalOpen(false);
   };

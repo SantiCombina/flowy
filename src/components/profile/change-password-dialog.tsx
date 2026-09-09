@@ -12,7 +12,6 @@ import { PasswordInput } from '@/components/ui/password-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -74,7 +73,6 @@ export function ChangePasswordDialog() {
       <ResponsiveModal open={open} onOpenChange={handleOpenChange} className="sm:max-w-md">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>Cambiar contraseña</ResponsiveModalTitle>
-          <ResponsiveModalDescription>Ingresá tu contraseña actual y luego la nueva.</ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         <Form {...form}>

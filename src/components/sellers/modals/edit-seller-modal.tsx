@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -102,7 +101,6 @@ export function EditSellerModal({ isOpen, onClose, onSuccess, seller }: EditSell
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-xl">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Editar vendedor</ResponsiveModalTitle>
-        <ResponsiveModalDescription>Modificá los datos del vendedor.</ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <Form {...form}>

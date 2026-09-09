@@ -34,6 +34,8 @@ export interface EntitySelectFieldProps {
   onCreate: (name: string) => Promise<{ id: number; name: string } | null>;
   onDeleteEntity: (type: EntityType, id: number, name: string) => void;
   emptyMessage?: string;
+  disabledCreate?: boolean;
+  disabledOptionIds?: string[];
 }
 
 export interface VariantCardProps {

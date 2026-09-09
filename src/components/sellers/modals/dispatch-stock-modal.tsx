@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -107,10 +106,6 @@ export function DispatchStockModal({ isOpen, onClose, onSuccess, seller, variant
           <ArrowDownToLine className="h-5 w-5" />
           Despachar stock a {seller.name}
         </ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Ingresá las cantidades a enviar con el vendedor móvil. Solo se mostrarán productos con stock disponible en el
-          depósito.
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">

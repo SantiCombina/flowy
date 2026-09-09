@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, X, ChevronDown } from 'lucide-react';
+import { Fragment } from 'react';
 import * as React from 'react';
 
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,16 @@ interface ComboboxOption {
   disabled?: boolean;
 }
 
+export interface ComboboxItemRenderProps {
+  option: ComboboxOption;
+  index: number;
+  isHighlighted: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+  onMouseEnter: () => void;
+  setItemRef: (el: HTMLDivElement | null) => void;
+}
+
 interface ComboboxProps {
   options: ComboboxOption[];
   value: string;
@@ -25,6 +36,10 @@ interface ComboboxProps {
   className?: string;
   id?: string;
   footer?: React.ReactNode;
+  renderItem?: (props: ComboboxItemRenderProps) => React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSearchChange?: (search: string) => void;
   onCloseWithoutMatch?: (search: string) => void;
 }
 
@@ -46,9 +61,22 @@ export function Combobox({
   className,
   id,
   footer,
+  renderItem,
+  open: openProp,
+  onOpenChange,
+  onSearchChange,
   onCloseWithoutMatch,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
   const [search, setSearch] = React.useState('');
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -72,6 +100,10 @@ export function Combobox({
       itemRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
     }
   }, [highlightedIndex, open]);
+
+  React.useEffect(() => {
+    onSearchChange?.(search);
+  }, [search, onSearchChange]);
 
   const handleSelect = (optionValue: string) => {
     const option = options.find((o) => o.value === optionValue);
@@ -202,16 +234,34 @@ export function Combobox({
         }}
       >
         <div className="max-h-[min(300px,40svh)] overflow-y-auto py-1">
+          {/* eslint-disable react-hooks/refs */}
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">{emptyMessage}</div>
+          ) : renderItem ? (
+            filtered.map((option, index) => (
+              <Fragment key={option.value}>
+                {renderItem({
+                  option,
+                  index,
+                  isHighlighted: index === highlightedIndex,
+                  isSelected: value === option.value,
+                  onSelect: () => handleSelect(option.value),
+                  onMouseEnter: () => setHighlightedIndex(index),
+                  setItemRef: (el: HTMLDivElement | null) => {
+                    itemRefs.current[index] = el;
+                  },
+                })}
+              </Fragment>
+            ))
           ) : (
             filtered.map((option, index) => (
               <div
                 key={option.value}
-                ref={(el) => {
+                ref={(el: HTMLDivElement | null) => {
                   itemRefs.current[index] = el;
                 }}
                 onClick={() => handleSelect(option.value)}
+                onMouseEnter={() => setHighlightedIndex(index)}
                 className={cn(
                   'flex cursor-pointer items-center justify-between px-2 py-1.5 text-sm select-none mx-1 rounded-md',
                   index === highlightedIndex && 'bg-accent',
@@ -223,13 +273,14 @@ export function Combobox({
               </div>
             ))
           )}
-          {footer && (
-            <>
-              <div className="my-1 h-px bg-border" />
-              <div className="p-1">{footer}</div>
-            </>
-          )}
+          {/* eslint-enable react-hooks/refs */}
         </div>
+        {footer && (
+          <>
+            <div className="my-1 h-px bg-border" />
+            <div className="p-1">{footer}</div>
+          </>
+        )}
       </PopoverContent>
     </Popover>
   );

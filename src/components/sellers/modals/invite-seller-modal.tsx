@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -79,9 +78,6 @@ export function InviteSellerModal({ isOpen, onClose, onSuccess }: InviteSellerMo
     <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-md">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Invitar vendedor</ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Envía una invitación por email para agregar un nuevo vendedor a tu equipo.
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <Form {...form}>

@@ -34,8 +34,6 @@ import { queryKeys } from '@/lib/query-keys';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 
-import { getClientsForSaleAction } from '../clients/actions';
-
 import { createSaleAction, getSaleOptionsAction, getSaleOptionsAsOwnerAction } from './actions';
 import { SaleCreationFlow } from './sale-creation-flow';
 import {
@@ -170,13 +168,12 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
     setIsAddProductOpen(true);
   };
 
-  const handleNewClientSuccess = async (newClient: Client) => {
-    const result = await getClientsForSaleAction();
-    if (result?.data?.success && result.data.clients) {
-      setClientsOverride(result.data.clients);
-    } else {
-      setClientsOverride([...localClients, { id: newClient.id, name: newClient.name }]);
-    }
+  const handleNewClientSuccess = (newClient: Client) => {
+    setClientsOverride((prev) => {
+      const base = prev ?? optionsResult?.clients ?? [];
+      if (base.some((c) => c.id === newClient.id)) return base;
+      return [...base, { id: newClient.id, name: newClient.name }];
+    });
     form.setValue('clientId', newClient.id);
     setIsClientModalOpen(false);
   };

@@ -18,7 +18,6 @@ import { PriceInput } from '@/components/ui/price-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -108,14 +107,15 @@ export function RegisterCommissionPaymentModal({
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-md">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Registrar pago de comisión</ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Pago para {sellerName} — Saldo pendiente: {formatCurrency(pendingBalance)}
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
           <ResponsiveModalBody className="space-y-4">
+            <div className="rounded-lg bg-muted/30 p-3 shadow-sm space-y-0.5">
+              <p className="text-sm font-medium">Pago para {sellerName}</p>
+              <p className="text-xs text-muted-foreground">Saldo pendiente: {formatCurrency(pendingBalance)}</p>
+            </div>
             <FormField
               control={form.control}
               name="amount"

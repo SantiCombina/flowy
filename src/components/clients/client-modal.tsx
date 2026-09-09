@@ -1,9 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, Info, X } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -24,12 +25,10 @@ import { Input } from '@/components/ui/input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
 } from '@/components/ui/responsive-modal';
-import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
@@ -49,6 +48,13 @@ function formatCuit(raw: string): string {
   if (digits.length <= 2) return digits;
   if (digits.length <= 10) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
   return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+}
+
+function normalize(str: string) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 }
 
 interface ClientModalProps {
@@ -73,6 +79,7 @@ export function ClientModal({
   const { executeAsync: execUpdate, isExecuting: isUpdating } = useAction(updateClientAction);
   const isExecuting = isCreating || isUpdating;
   const { invalidateQueries } = useInvalidateQueries();
+  const queryClient = useQueryClient();
 
   const [localities, setLocalities] = useState<{ id: string; nombre: string }[]>([]);
   const [loadingLocalities, setLoadingLocalities] = useState(false);
@@ -81,12 +88,8 @@ export function ClientModal({
 
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
-  const [zoneToDelete, setZoneToDelete] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-
-  const { executeAsync: execDeleteZone, isExecuting: isDeletingZone } = useAction(deleteZoneAction);
+  const [zoneToDelete, setZoneToDelete] = useState<{ id: number; name: string } | null>(null);
+  const zoneWrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: zonesData } = useServerActionQuery({
     queryKey: queryKeys.zones.list(),
@@ -97,9 +100,27 @@ export function ClientModal({
 
   const zones = (zonesData?.zones ?? []) as Zone[];
 
-  const isDuplicateZone = zones.some((z) => z.name.toLowerCase() === newZoneName.trim().toLowerCase());
+  const handleCancelZone = () => {
+    setIsCreatingZone(false);
+    setNewZoneName('');
+  };
+
+  useEffect(() => {
+    if (!isCreatingZone) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (zoneWrapperRef.current?.contains(target)) return;
+      handleCancelZone();
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isCreatingZone]);
 
   const { executeAsync: execCreateZone } = useAction(createZoneAction);
+  const { executeAsync: execDeleteZone, isExecuting: isDeletingZone } = useAction(deleteZoneAction);
 
   const defaultValues = useMemo(
     () => ({
@@ -173,6 +194,41 @@ export function ClientModal({
     }
   };
 
+  const handleCreateZone = async () => {
+    const trimmed = newZoneName.trim();
+    if (!trimmed) return;
+
+    if (zones.some((z) => normalize(z.name) === normalize(trimmed))) {
+      const existing = zones.find((z) => normalize(z.name) === normalize(trimmed));
+      if (existing) form.setValue('zone', existing.id, { shouldDirty: true });
+      setNewZoneName('');
+      setIsCreatingZone(false);
+      return;
+    }
+
+    setIsCreatingZone(true);
+    try {
+      const result = await execCreateZone({ name: trimmed });
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+
+      if (result?.data?.success && result.data.zone) {
+        const newZone = result.data.zone as Zone;
+        queryClient.setQueryData<{ zones: Zone[] }>(queryKeys.zones.list(), (old) => {
+          const oldZones = old?.zones ?? [];
+          return { zones: [...oldZones, newZone] };
+        });
+        form.setValue('zone', newZone.id, { shouldDirty: true });
+        setNewZoneName('');
+        setIsCreatingZone(false);
+      }
+    } finally {
+      setIsCreatingZone(false);
+    }
+  };
+
   const handleDeleteZone = async (id: number) => {
     const result = await execDeleteZone({ id });
     if (result?.serverError) {
@@ -180,34 +236,21 @@ export function ClientModal({
       return;
     }
     if (result?.data?.success) {
-      invalidateQueries([queryKeys.zones.list()]);
+      queryClient.setQueryData<{ zones: Zone[] }>(queryKeys.zones.list(), (old) => {
+        const oldZones = old?.zones ?? [];
+        return { zones: oldZones.filter((z) => z.id !== id) };
+      });
       if (form.getValues('zone') === id) {
         form.setValue('zone', undefined, { shouldDirty: true });
       }
       setZoneToDelete(null);
+      invalidateQueries([queryKeys.zones.list()]);
       toast.warning('Zona eliminada');
     }
   };
 
-  const handleCreateZone = async () => {
-    const name = newZoneName.trim();
-    if (!name) return;
-
-    const result = await execCreateZone({ name });
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-
-    if (result?.data?.success && result.data.zone) {
-      const newZone = result.data.zone as Zone;
-      invalidateQueries([queryKeys.zones.list()]);
-      form.setValue('zone', newZone.id, { shouldDirty: true });
-      setNewZoneName('');
-      setIsCreatingZone(false);
-      toast.success(`Zona "${newZone.name}" creada`);
-    }
-  };
+  const isDuplicateZone =
+    newZoneName.trim().length > 0 && zones.some((z) => normalize(z.name) === normalize(newZoneName.trim()));
 
   const onSubmit = async (data: ClientValues) => {
     let result;
@@ -236,9 +279,6 @@ export function ClientModal({
       <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-lg">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle>{isEditMode ? 'Editar cliente' : 'Agregar cliente'}</ResponsiveModalTitle>
-          <ResponsiveModalDescription>
-            {isEditMode ? 'Modificá los datos del cliente.' : 'Completá los datos para registrar un nuevo cliente.'}
-          </ResponsiveModalDescription>
         </ResponsiveModalHeader>
 
         <Form {...form}>
@@ -433,14 +473,14 @@ export function ClientModal({
                               setIsCreatingZone(true);
                               field.onChange(undefined);
                             }}
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                            className="text-xs leading-none text-primary underline decoration-transparent hover:decoration-current focus:outline-none focus-visible:decoration-current flex items-center gap-1"
                           >
                             + Nueva zona
                           </button>
                         )}
                       </div>
                       {isCreatingZone ? (
-                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div ref={zoneWrapperRef} className="animate-in fade-in duration-200">
                           <div className="relative">
                             <Input
                               value={newZoneName}
@@ -451,11 +491,11 @@ export function ClientModal({
                                   if (!isDuplicateZone) void handleCreateZone();
                                 }
                                 if (e.key === 'Escape') {
-                                  setIsCreatingZone(false);
-                                  setNewZoneName('');
+                                  handleCancelZone();
                                 }
                               }}
                               autoFocus
+                              placeholder="Nombre de la zona"
                               className={cn('pr-20', isDuplicateZone && 'border-destructive')}
                             />
                             <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
@@ -470,10 +510,7 @@ export function ClientModal({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setIsCreatingZone(false);
-                                  setNewZoneName('');
-                                }}
+                                onClick={handleCancelZone}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                                 title="Cancelar"
                               >
@@ -487,52 +524,50 @@ export function ClientModal({
                         </div>
                       ) : (
                         <FormControl>
-                          <Select
-                            onValueChange={(v) => {
-                              if (v === '__clear__') {
-                                field.onChange(undefined);
-                                return;
-                              }
-                              field.onChange(Number(v));
-                            }}
+                          <Combobox
+                            options={zones.map((zone) => ({
+                              value: String(zone.id),
+                              label: zone.name,
+                            }))}
                             value={field.value ? String(field.value) : ''}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {field.value && (
-                                <SelectItem value="__clear__" className="text-muted-foreground cursor-pointer">
-                                  ✕ Sin zona
-                                </SelectItem>
-                              )}
-                              {zones.length === 0 ? (
-                                <SelectItem value="_empty" disabled>
-                                  No hay zonas creadas.
-                                </SelectItem>
-                              ) : (
-                                zones.map((zone) => (
-                                  <SelectItem key={zone.id} value={String(zone.id)} className="pr-16">
-                                    <SelectItemText>{zone.name}</SelectItemText>
-                                    <button
-                                      type="button"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setZoneToDelete({
-                                          id: zone.id,
-                                          name: zone.name,
-                                        });
-                                      }}
-                                      className="absolute right-8 p-1 rounded hover:bg-destructive/10 text-destructive transition-colors z-10"
-                                    >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
+                            onValueChange={(v) => field.onChange(v ? Number(v) : undefined)}
+                            placeholder=""
+                            searchPlaceholder=""
+                            emptyMessage="Sin coincidencias"
+                            renderItem={({ option, isHighlighted, isSelected, onSelect, onMouseEnter, setItemRef }) => (
+                              <div
+                                ref={setItemRef}
+                                onClick={onSelect}
+                                onMouseEnter={onMouseEnter}
+                                className={cn(
+                                  'relative flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-sm select-none mx-1 pr-12',
+                                  isHighlighted && 'bg-accent',
+                                )}
+                              >
+                                <span className="truncate">{option.label}</span>
+                                <button
+                                  type="button"
+                                  aria-label={`Eliminar zona ${option.label}`}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const id = Number(option.value);
+                                    const name = option.label;
+                                    setZoneToDelete({ id, name });
+                                  }}
+                                  className="absolute right-2 p-1 rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                                {isSelected && !isHighlighted && (
+                                  <Check className="absolute right-9 h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                            )}
+                          />
                         </FormControl>
                       )}
                       <div className="min-h-5">
@@ -561,10 +596,10 @@ export function ClientModal({
           </form>
         </Form>
 
-        <AlertDialog open={!!zoneToDelete} onOpenChange={() => setZoneToDelete(null)}>
+        <AlertDialog open={!!zoneToDelete} onOpenChange={(open) => !open && setZoneToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Desea eliminar zona?</AlertDialogTitle>
+              <AlertDialogTitle>¿Eliminar zona?</AlertDialogTitle>
               <AlertDialogDescription>
                 Está a punto de eliminar <span className="font-semibold">{zoneToDelete?.name}</span>. Esta acción no se
                 puede deshacer.

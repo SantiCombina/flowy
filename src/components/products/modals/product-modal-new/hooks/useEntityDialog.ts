@@ -294,7 +294,6 @@ export function useEntityDialog({
     if (!trimmedName) return null;
 
     try {
-      const label = getEntityLabel(type);
       let result:
         | Awaited<
             ReturnType<typeof createBrand | typeof createCategory | typeof createQuality | typeof createPresentation>
@@ -309,7 +308,6 @@ export function useEntityDialog({
             setBrands((prev) => [...prev, brand]);
             setValue('brandId', brand.id.toString());
             onRefreshEntities();
-            toast.success(`${label} creada exitosamente`);
             return { id: brand.id, name: brand.name };
           }
           break;
@@ -321,7 +319,6 @@ export function useEntityDialog({
             setCategories((prev) => [...prev, category]);
             setValue('categoryId', category.id.toString());
             onRefreshEntities();
-            toast.success(`${label} creada exitosamente`);
             return { id: category.id, name: category.name };
           }
           break;
@@ -333,7 +330,6 @@ export function useEntityDialog({
             setQualities((prev) => [...prev, quality]);
             setValue('qualityId', quality.id.toString());
             onRefreshEntities();
-            toast.success(`${label} creada exitosamente`);
             return { id: quality.id, name: quality.name };
           }
           break;
@@ -344,7 +340,6 @@ export function useEntityDialog({
             const { presentation } = result.data;
             setPresentations((prev) => [...prev, presentation]);
             onRefreshEntities();
-            toast.success(`${label} creada exitosamente`);
             return { id: presentation.id, name: presentation.label };
           }
           break;

@@ -60,21 +60,22 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
     [initialVariants, selectedKeys],
   );
 
-  const handleRefreshEntities = useCallback(async () => {
-    const result = await getReferenceDataAction();
-    if (result?.serverError) {
-      toast.error(result.serverError);
-      return;
-    }
-    if (result?.data?.success) {
-      setReferenceData({
-        brands: result.data.brands,
-        categories: result.data.categories,
-        qualities: result.data.qualities,
-        presentations: result.data.presentations,
-      });
-      toast.success('Datos de referencia actualizados');
-    }
+  const handleRefreshEntities = useCallback(() => {
+    void (async () => {
+      const result = await getReferenceDataAction();
+      if (result?.serverError) {
+        toast.error(result.serverError);
+        return;
+      }
+      if (result?.data?.success) {
+        setReferenceData({
+          brands: result.data.brands,
+          categories: result.data.categories,
+          qualities: result.data.qualities,
+          presentations: result.data.presentations,
+        });
+      }
+    })();
   }, []);
 
   const handleOpenCreateModal = () => {

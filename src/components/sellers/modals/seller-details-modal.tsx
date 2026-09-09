@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -135,12 +134,6 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
       <ResponsiveModal open={isOpen} onOpenChange={handleClose} className="sm:max-w-lg">
         <ResponsiveModalHeader>
           <ResponsiveModalTitle className="pr-8">{seller?.name ?? 'Detalles del vendedor'}</ResponsiveModalTitle>
-          <div className="flex items-center gap-2">
-            <ResponsiveModalDescription>{seller?.email}</ResponsiveModalDescription>
-            <Badge variant={seller?.isActive ? 'default' : 'secondary'} className="text-xs">
-              {seller?.isActive ? 'Activo' : 'Inactivo'}
-            </Badge>
-          </div>
         </ResponsiveModalHeader>
 
         <ResponsiveModalBody>
@@ -157,7 +150,16 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
             <TabsContent value="info" className="mt-4 space-y-5">
               <div className="space-y-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contacto</h3>
+                <DetailRow label="Email" value={seller?.email} />
                 <DetailRow label="Teléfono" value={seller?.phone} />
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground">Estado</span>
+                  <div>
+                    <Badge variant={seller?.isActive ? 'default' : 'secondary'} className="text-xs">
+                      {seller?.isActive ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">

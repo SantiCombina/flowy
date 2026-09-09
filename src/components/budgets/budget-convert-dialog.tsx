@@ -17,7 +17,6 @@ import { QuantityInput } from '@/components/ui/quantity-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
-  ResponsiveModalDescription,
   ResponsiveModalFooter,
   ResponsiveModalHeader,
   ResponsiveModalTitle,
@@ -306,9 +305,6 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-2xl">
       <ResponsiveModalHeader>
         <ResponsiveModalTitle>Convertir presupuesto a venta</ResponsiveModalTitle>
-        <ResponsiveModalDescription>
-          Elegí el origen del stock y ajustá cantidades. Los badges verdes/rojos indican disponibilidad.
-        </ResponsiveModalDescription>
       </ResponsiveModalHeader>
 
       <ResponsiveModalBody>
