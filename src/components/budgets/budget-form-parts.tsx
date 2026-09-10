@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CalendarIcon, Minus, PackageSearch, Plus, Trash2, UserPlus } from 'lucide-react';
+import { CalendarIcon, PackageSearch, Plus, Trash2, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FieldErrors, UseFormReturn } from 'react-hook-form';
 
@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PriceInput } from '@/components/ui/price-input';
-import { QuantityInput } from '@/components/ui/quantity-input';
 import {
   ResponsiveModal,
   ResponsiveModalBody,
@@ -27,6 +26,7 @@ import {
 } from '@/components/ui/responsive-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { StepperInput } from '@/components/ui/stepper-input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { BudgetValues } from '@/schemas/budgets/budget-schema';
@@ -75,72 +75,6 @@ function EmptyProductsState({ onAdd, disabled }: EmptyProductsStateProps) {
       <Button type="button" size="sm" onClick={onAdd} disabled={disabled} className="mt-4">
         <Plus className="h-4 w-4" />
         Agregar producto
-      </Button>
-    </div>
-  );
-}
-
-function StepperInput({
-  value,
-  onChange,
-  onBlur,
-  min = 1,
-  max,
-  disabled,
-  className,
-  size = 'default',
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  onBlur?: () => void;
-  min?: number;
-  max?: number;
-  disabled?: boolean;
-  className?: string;
-  size?: 'sm' | 'default';
-}) {
-  const canDecrease = !disabled && value > min;
-  const canIncrease = !disabled && (max === undefined || value < max);
-  const buttonSize = size === 'sm' ? 'h-8 w-8' : 'h-10 w-10';
-  const inputHeight = size === 'sm' ? 'h-8' : 'h-10';
-
-  return (
-    <div
-      className={cn(
-        'flex items-stretch rounded-xl has-[input:focus-visible]:ring-ring/50 has-[input:focus-visible]:ring-[3px]',
-        className,
-      )}
-    >
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => onChange(Math.max(min, value - 1))}
-        disabled={!canDecrease}
-        className={cn('rounded-r-none border-r-0', buttonSize)}
-      >
-        <Minus className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-      </Button>
-      <QuantityInput
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        max={max}
-        min={min}
-        disabled={disabled}
-        placeholder=""
-        className={cn(
-          'rounded-none border-x-0 text-center focus-visible:border-input focus-visible:ring-0',
-          inputHeight,
-        )}
-      />
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => onChange(max === undefined ? value + 1 : Math.min(max, value + 1))}
-        disabled={!canIncrease}
-        className={cn('rounded-l-none border-l-0', buttonSize)}
-      >
-        <Plus className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
       </Button>
     </div>
   );
@@ -296,13 +230,24 @@ function AddProductSheet({ open, onClose, variants, onAdd }: AddProductSheetProp
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Cantidad</Label>
-            <StepperInput value={quantity} onChange={setQuantity} min={1} disabled={!selectedVariant} size="sm" />
+            <Label htmlFor="add-budget-product-quantity" className="text-xs">
+              Cantidad
+            </Label>
+            <StepperInput
+              id="add-budget-product-quantity"
+              value={quantity}
+              onChange={setQuantity}
+              min={1}
+              disabled={!selectedVariant}
+              size="sm"
+            />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Precio unitario</Label>
-            <PriceInput value={unitPrice} onChange={setUnitPrice} className="h-8" />
+            <Label htmlFor="add-budget-product-unit-price" className="text-xs">
+              Precio unitario
+            </Label>
+            <PriceInput id="add-budget-product-unit-price" value={unitPrice} onChange={setUnitPrice} className="h-8" />
           </div>
         </div>
 
@@ -342,8 +287,14 @@ function ClientField({ form, clients, onNewClient, onClientChange }: ClientField
         <FormItem>
           <div className="flex items-center justify-between">
             <FormLabel>Cliente</FormLabel>
-            <Button type="button" variant="link" size="xs" onClick={onNewClient} className="gap-1 px-0">
-              <UserPlus className="h-3.5 w-3.5" />
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              onClick={onNewClient}
+              className="h-auto gap-1 px-0 leading-none underline decoration-transparent hover:decoration-current focus-visible:decoration-current"
+            >
+              <UserPlus className="h-3 w-3" />
               Nuevo cliente
             </Button>
           </div>

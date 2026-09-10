@@ -79,7 +79,7 @@ export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps
         if (!open) onClose();
       }}
     >
-      <SheetContent className="w-full sm:max-w-lg flex flex-col gap-0 p-0 overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col gap-0 p-0 overflow-y-auto" aria-describedby={undefined}>
         <div className="px-4 sm:px-6 pt-6 pb-5 border-b bg-muted/30 pr-12">
           <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground mb-1">
             Análisis de demanda

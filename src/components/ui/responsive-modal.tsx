@@ -21,17 +21,29 @@ interface ResponsiveModalProps {
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
   className?: string;
+  'aria-describedby'?: string;
 }
 
-export function ResponsiveModal({ open, onOpenChange, children, className }: ResponsiveModalProps) {
+export function ResponsiveModal({
+  open,
+  onOpenChange,
+  children,
+  className,
+  'aria-describedby': ariaDescribedBy,
+}: ResponsiveModalProps) {
   const isMobile = useIsMobile();
   const [portalContainer, setPortalContainer] = React.useState<HTMLElement | null>(null);
+  const descriptionId = ariaDescribedBy ?? undefined;
 
   if (isMobile) {
     return (
       <ResponsiveModalContext.Provider value={{ isMobile: true, portalContainer }}>
         <Drawer open={open} onOpenChange={onOpenChange}>
-          <DrawerContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0', className)}>
+          <DrawerContent
+            ref={setPortalContainer}
+            className={cn('flex flex-col gap-0 p-0', className)}
+            aria-describedby={descriptionId}
+          >
             <DrawerTitle className="sr-only">Modal</DrawerTitle>
             {children}
           </DrawerContent>
@@ -43,7 +55,11 @@ export function ResponsiveModal({ open, onOpenChange, children, className }: Res
   return (
     <ResponsiveModalContext.Provider value={{ isMobile: false, portalContainer }}>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent ref={setPortalContainer} className={cn('flex flex-col gap-0 p-0 overflow-y-auto', className)}>
+        <DialogContent
+          ref={setPortalContainer}
+          className={cn('flex flex-col gap-0 p-0 overflow-y-auto', className)}
+          aria-describedby={descriptionId}
+        >
           {children}
         </DialogContent>
       </Dialog>

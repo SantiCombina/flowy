@@ -6,8 +6,10 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import { PriceInput } from '@/components/ui/price-input';
+import { StepperInput } from '@/components/ui/stepper-input';
 import { calculatePrice } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { ProductFormData } from '@/schemas/products/product-schema';
@@ -43,6 +45,7 @@ export function VariantCard({
           variant="ghost"
           size="icon"
           onClick={() => onDelete(index)}
+          aria-label="Eliminar variante"
           className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="h-4 w-4" />
@@ -102,11 +105,16 @@ export function VariantCard({
             name={`variants.${index}.stock`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
+                <Label htmlFor={`variant-${index}-stock`} className="text-xs">
                   Stock <span className="text-sky">*</span>
-                </FormLabel>
+                </Label>
                 <FormControl>
-                  <NumberInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                  <StepperInput
+                    id={`variant-${index}-stock`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <div className="min-h-5">
                   <FormMessage />
@@ -120,9 +128,17 @@ export function VariantCard({
             name={`variants.${index}.minimumStock`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Stock mínimo</FormLabel>
+                <Label htmlFor={`variant-${index}-minimumStock`} className="text-xs">
+                  Stock mínimo
+                </Label>
                 <FormControl>
-                  <NumberInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} min={0} />
+                  <StepperInput
+                    id={`variant-${index}-minimumStock`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    min={0}
+                  />
                 </FormControl>
                 <div className="min-h-5">
                   <FormMessage />
@@ -139,11 +155,16 @@ export function VariantCard({
           name={`variants.${index}.costPrice`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <Label htmlFor={`variant-${index}-costPrice`} className="text-xs">
                 Precio de costo <span className="text-sky">*</span>
-              </FormLabel>
+              </Label>
               <FormControl>
-                <PriceInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                <PriceInput
+                  id={`variant-${index}-costPrice`}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
               </FormControl>
               <div className="min-h-5">
                 <FormMessage />

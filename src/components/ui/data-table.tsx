@@ -141,6 +141,7 @@ function DataTableComponent<T>({
                     checked={allPageSelected ? true : somePageSelected ? 'indeterminate' : false}
                     onCheckedChange={(checked) => handleSelectAll(checked === true)}
                     aria-label="Seleccionar todos"
+                    name="data-table-select-all"
                     className={cn('transition-opacity duration-150', hasSelection ? 'opacity-100' : 'opacity-0')}
                   />
                 </TableHead>
@@ -235,6 +236,7 @@ function DataTableComponent<T>({
                           checked={isSelected}
                           onCheckedChange={(checked) => handleSelectRow(itemKey, checked === true)}
                           aria-label="Seleccionar fila"
+                          name={`data-table-row-${itemKey}`}
                           className={cn(
                             'transition-opacity duration-150',
                             hasSelection || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
@@ -259,6 +261,7 @@ function DataTableComponent<T>({
         <div className="flex items-center gap-2">
           <span className="hidden sm:inline">Filas por página</span>
           <Select
+            name="items-per-page"
             value={String(itemsPerPage)}
             onValueChange={(v) => handleItemsPerPageChange(Number(v) as ItemsPerPageOption)}
           >
@@ -292,6 +295,7 @@ function DataTableComponent<T>({
           </span>
           <div className="flex items-center gap-1">
             <Button
+              type="button"
               variant="outline"
               className="h-9 w-9 p-0"
               onClick={() => setPage((p) => p - 1)}
@@ -301,6 +305,7 @@ function DataTableComponent<T>({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
+              type="button"
               variant="outline"
               className="h-9 w-9 p-0"
               onClick={() => setPage((p) => p + 1)}

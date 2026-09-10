@@ -81,6 +81,7 @@ export function SellersSection({ initialSellers, variants, commissionBalances, c
             placeholder="Buscar por nombre, email..."
             value={searchQuery}
             onChange={setSearchQuery}
+            name="sellers-search"
           />
           {canInviteSeller && (
             <Button onClick={() => setIsInviteModalOpen(true)}>

@@ -48,6 +48,7 @@ export function TenantsTableToolbar({
         placeholder="Buscar por nombre o email"
         value={search}
         onChange={onSearchChange}
+        name="tenants-search"
       />
 
       <div

@@ -66,7 +66,7 @@ export function ChangePasswordDialog() {
 
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
         Cambiar contraseña
       </Button>
 

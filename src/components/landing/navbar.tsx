@@ -86,7 +86,7 @@ export function Navbar({ isAuthenticated = false }: NavbarProps) {
               <Menu className="h-5 w-5 text-foreground" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-70 p-0">
+          <SheetContent side="right" className="w-70 p-0" aria-describedby={undefined}>
             <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-border p-4">

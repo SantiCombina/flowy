@@ -41,7 +41,7 @@ export function ActionMenu({ items }: ActionMenuProps) {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="Más acciones">
           <MoreVertical className="h-4 w-4" />
         </Button>
         <DrawerContent className="p-0 gap-0">
@@ -74,7 +74,7 @@ export function ActionMenu({ items }: ActionMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" aria-label="Más acciones">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

@@ -52,6 +52,7 @@ export function AssignmentsSection({ sellers }: AssignmentsSectionProps) {
               placeholder="Buscar por vendedor o producto..."
               value={searchQuery}
               onChange={setSearchQuery}
+              name="assignments-search"
             />
 
             {filteredSellers.length === 0 ? (

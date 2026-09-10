@@ -100,14 +100,15 @@ const SortableHead = memo(function SortableHead({
 }: SortableHeadProps) {
   return (
     <TableHead className={className}>
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onSort(column)}
-        className="flex items-center gap-1 hover:text-foreground transition-colors"
+        className="h-auto rounded-none p-0 font-normal gap-1 transition-colors hover:bg-transparent hover:text-foreground focus-visible:ring-0"
       >
         {label}
         <SortIcon column={column} sortKey={sortKey} sortDir={sortDir} />
-      </button>
+      </Button>
     </TableHead>
   );
 });
@@ -378,9 +379,11 @@ function HistorySectionComponent({ movements }: HistorySectionProps) {
                           )}
                           <TableCell className="text-right pr-2">
                             <Button
+                              type="button"
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              aria-label="Expandir o colapsar"
                               onClick={(e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 setExpandedId((prev) => (prev === movement.id ? null : movement.id));
@@ -438,6 +441,7 @@ function HistorySectionComponent({ movements }: HistorySectionProps) {
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Filas por página</span>
               <Select
+                name="items-per-page"
                 value={String(itemsPerPage)}
                 onValueChange={(v) => {
                   setItemsPerPage(Number(v) as ItemsPerPageOption);

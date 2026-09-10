@@ -59,7 +59,12 @@ export function ZoneFilter({ zones, value, onChange, onManageZones }: ZoneFilter
       <>
         {trigger}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="bottom" className="rounded-t-xl p-0 gap-0" showCloseButton={false}>
+          <SheetContent
+            side="bottom"
+            className="rounded-t-xl p-0 gap-0"
+            showCloseButton={false}
+            aria-describedby={undefined}
+          >
             <SheetTitle className="sr-only">Filtrar por zona</SheetTitle>
             <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-muted" />
             <div className="px-4 pt-4 pb-2">

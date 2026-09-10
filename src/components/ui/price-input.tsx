@@ -54,6 +54,7 @@ interface PriceInputProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 export function PriceInput({ value, onChange, onBlur, placeholder, className, ...props }: PriceInputProps) {

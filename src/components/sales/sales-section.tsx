@@ -664,6 +664,7 @@ function SalesSectionComponent({
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              aria-label="Expandir o colapsar"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleExpand(sale.id);
@@ -776,7 +777,11 @@ function SalesSectionComponent({
           <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Filas por página</span>
-              <Select value={String(filters.limit)} onValueChange={(v) => handleLimitChange(Number(v))}>
+              <Select
+                name="items-per-page"
+                value={String(filters.limit)}
+                onValueChange={(v) => handleLimitChange(Number(v))}
+              >
                 <SelectTrigger aria-label="Filas por página" className="h-9 w-auto px-3">
                   <SelectValue />
                 </SelectTrigger>

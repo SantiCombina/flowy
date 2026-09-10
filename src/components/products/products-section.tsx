@@ -111,6 +111,7 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
             placeholder="Buscar por nombre, código, marca..."
             value={searchQuery}
             onChange={setSearchQuery}
+            name="products-search"
           />
           {canCreateProduct && initialVariants.docs.length > 0 && (
             <div

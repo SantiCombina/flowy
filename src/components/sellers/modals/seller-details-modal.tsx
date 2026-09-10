@@ -177,7 +177,13 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium break-all">{seller?.cbu || '-'}</span>
                     {seller?.cbu && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleCopyCbu}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        aria-label="Copiar CBU"
+                        onClick={handleCopyCbu}
+                      >
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -225,11 +231,23 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
                         Detalle del período
                       </h3>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevMonth}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Mes anterior"
+                          onClick={handlePrevMonth}
+                        >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="text-sm font-medium min-w-120px text-center">{periodLabel}</span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNextMonth}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Mes siguiente"
+                          onClick={handleNextMonth}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>

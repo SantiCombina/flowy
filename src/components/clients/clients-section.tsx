@@ -75,6 +75,7 @@ export function ClientsSection({ clients, clientDebts, currentUser, capabilities
             placeholder={canUseContactFields ? 'Buscar por nombre, localidad, CUIT...' : 'Buscar por nombre'}
             value={searchQuery}
             onChange={setSearchQuery}
+            name="clients-search"
           />
 
           <div

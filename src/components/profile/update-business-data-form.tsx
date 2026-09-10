@@ -114,7 +114,7 @@ export function UpdateBusinessDataForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Condición IVA</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select name={field.name} onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="" />
@@ -132,7 +132,7 @@ export function UpdateBusinessDataForm({
           )}
         />
 
-        <Button type="submit" disabled={isExecuting} className="ml-auto block">
+        <Button type="submit" name="save-business-data" disabled={isExecuting} className="ml-auto block">
           {isExecuting ? 'Guardando' : 'Guardar cambios'}
         </Button>
       </form>
