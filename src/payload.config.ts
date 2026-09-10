@@ -37,6 +37,16 @@ import { Zones } from './collections/Zones';
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
+const normalizeDatabaseUrl = (raw: string): string => {
+  try {
+    const url = new URL(raw);
+    url.searchParams.set('sslmode', 'verify-full');
+    return url.toString();
+  } catch {
+    return raw;
+  }
+};
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -84,7 +94,7 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URL || '',
+      connectionString: normalizeDatabaseUrl(process.env.DATABASE_URL || ''),
       ssl:
         process.env.NODE_ENV === 'production'
           ? {
