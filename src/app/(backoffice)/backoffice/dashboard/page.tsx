@@ -17,5 +17,5 @@ export default async function AdminDashboardPage() {
 
   const initialStats = await getBackofficeDashboardStats();
 
-  return <AdminBackofficeDashboard userName={guardedUser.user.name} initialStats={initialStats} />;
+  return <AdminBackofficeDashboard initialStats={initialStats} />;
 }

@@ -14,7 +14,6 @@ type DashboardShellProps =
   | {
       kind: 'owner';
       userId: number;
-      userName: string;
       initialStats: OwnerDashboardStats;
       initialPeriod: Period;
     }
@@ -22,17 +21,14 @@ type DashboardShellProps =
       kind: 'seller';
       userId: number;
       ownerId: number;
-      userName: string;
       initialStats: SellerDashboardStats;
       initialPeriod: Period;
     };
 
 function OwnerDashboardShell({
-  userName,
   initialStats,
   initialPeriod,
 }: {
-  userName: string;
   initialStats: OwnerDashboardStats;
   initialPeriod: Period;
 }) {
@@ -57,25 +53,17 @@ function OwnerDashboardShell({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <OwnerDashboard
-        stats={stats}
-        userName={userName}
-        period={period}
-        onPeriodChange={handlePeriodChange}
-        isPending={isFetching}
-      />
+      <OwnerDashboard stats={stats} period={period} onPeriodChange={handlePeriodChange} isPending={isFetching} />
     </div>
   );
 }
 
 function SellerDashboardShell({
   ownerId,
-  userName,
   initialStats,
   initialPeriod,
 }: {
   ownerId: number;
-  userName: string;
   initialStats: SellerDashboardStats;
   initialPeriod: Period;
 }) {
@@ -100,32 +88,19 @@ function SellerDashboardShell({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <SellerDashboard
-        stats={stats}
-        userName={userName}
-        period={period}
-        onPeriodChange={handlePeriodChange}
-        isPending={isFetching}
-      />
+      <SellerDashboard stats={stats} period={period} onPeriodChange={handlePeriodChange} isPending={isFetching} />
     </div>
   );
 }
 
 export function DashboardShell(props: DashboardShellProps) {
   if (props.kind === 'owner') {
-    return (
-      <OwnerDashboardShell
-        userName={props.userName}
-        initialStats={props.initialStats}
-        initialPeriod={props.initialPeriod}
-      />
-    );
+    return <OwnerDashboardShell initialStats={props.initialStats} initialPeriod={props.initialPeriod} />;
   }
 
   return (
     <SellerDashboardShell
       ownerId={props.ownerId}
-      userName={props.userName}
       initialStats={props.initialStats}
       initialPeriod={props.initialPeriod}
     />

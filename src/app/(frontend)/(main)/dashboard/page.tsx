@@ -48,7 +48,6 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
         <DashboardShell
           kind="owner"
           userId={user.id}
-          userName={user.name}
           initialStats={await getOwnerDashboardStats(user.id, initialPeriod)}
           initialPeriod={initialPeriod}
         />
@@ -65,7 +64,6 @@ async function DashboardContent({ searchParams }: { searchParams: Promise<{ peri
         kind="seller"
         userId={user.id}
         ownerId={ownerId}
-        userName={user.name}
         initialStats={await getSellerDashboardStats(user.id, ownerId, initialPeriod)}
         initialPeriod={initialPeriod}
       />

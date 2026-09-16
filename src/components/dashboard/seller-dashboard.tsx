@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFmt } from '@/hooks/use-fmt';
+import { getPeriodLabel } from '@/lib/period-label';
 import { formatCurrency } from '@/lib/utils';
 
 import { PeriodSelector } from './period-selector';
@@ -44,22 +45,22 @@ const PERIOD_CHART_LABEL: Record<Period, string> = {
 
 interface SellerDashboardProps {
   stats: SellerDashboardStats;
-  userName: string;
   period: Period;
   onPeriodChange: (period: Period) => void;
   isPending: boolean;
 }
 
-export function SellerDashboard({ stats, userName, period, onPeriodChange, isPending }: SellerDashboardProps) {
+export function SellerDashboard({ stats, period, onPeriodChange, isPending }: SellerDashboardProps) {
   const { formatShortDate } = useFmt();
+  const periodLabel = getPeriodLabel(period);
   const maxInventoryQty = stats.inventory.length > 0 ? Math.max(...stats.inventory.map((i) => i.quantity)) : 1;
   const totalProductQuantity = stats.topProducts.reduce((sum, p) => sum + p.quantity, 0) || 1;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
       <PageHeader
-        title={`¡Hola, ${userName.split(' ')[0]}!`}
-        description="Tu desempeño de este período"
+        title="Tu desempeño"
+        description={periodLabel}
         actions={<PeriodSelector period={period} onPeriodChange={onPeriodChange} disabled={isPending} />}
       />
 
@@ -88,7 +89,8 @@ export function SellerDashboard({ stats, userName, period, onPeriodChange, isPen
           <StatCard
             title="Mis clientes"
             value={String(stats.clientsCount)}
-            subtitle="en tu cartera"
+            change={stats.newClients.change}
+            period={period}
             icon={Users}
             gradient="from-rose-500 to-pink-600"
             delay={150}

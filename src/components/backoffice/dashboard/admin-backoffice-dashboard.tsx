@@ -34,11 +34,10 @@ const PLAN_DISTRIBUTION_LABELS: Record<string, string> = {
 };
 
 interface AdminBackofficeDashboardProps {
-  userName: string;
   initialStats: BackofficeDashboardStats;
 }
 
-export function AdminBackofficeDashboard({ userName, initialStats }: AdminBackofficeDashboardProps) {
+export function AdminBackofficeDashboard({ initialStats }: AdminBackofficeDashboardProps) {
   const { invalidateQueries } = useInvalidateQueries();
   const monthLabel = format(new Date(), 'LLLL yyyy', { locale: es });
 
@@ -62,16 +61,13 @@ export function AdminBackofficeDashboard({ userName, initialStats }: AdminBackof
     planCode: entry.planCode,
     label: PLAN_DISTRIBUTION_LABELS[entry.planCode] ?? entry.planCode,
     count: entry.count,
-    color: PLAN_DISTRIBUTION_COLORS[entry.planCode] ?? '#94a3b8',
+    color: PLAN_DISTRIBUTION_COLORS[entry.planCode] ?? '#94a3f8',
     pct: totalDistribution > 0 ? Math.round((entry.count / totalDistribution) * 100) : 0,
   }));
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader
-        title={`Buen día, ${userName.split(' ')[0]}!`}
-        description={`Resumen de la plataforma · ${monthLabel}`}
-      />
+      <PageHeader title="Resumen de la plataforma" description={monthLabel} />
       <main
         className={`flex-1 space-y-6 px-4 pb-6 sm:px-6 transition-opacity duration-200 ${isExecuting ? 'opacity-50' : 'opacity-100'}`}
       >

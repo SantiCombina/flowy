@@ -44,7 +44,7 @@ export interface OwnerDashboardStats {
   revenue: { current: number; previous: number; change: number };
   salesCount: { current: number; previous: number; change: number };
   clientsTotal: number;
-  newClientsInPeriod: number;
+  newClients: { current: number; previous: number; change: number };
   activeProducts: number;
   warehouseVariantsWithStock: number;
   sellersCount: number;
@@ -62,6 +62,7 @@ export interface SellerDashboardStats {
   revenue: { current: number; previous: number; change: number };
   salesCount: { current: number; previous: number; change: number };
   clientsCount: number;
+  newClients: { current: number; previous: number; change: number };
   inventoryItems: number;
   inventoryUnits: number;
   salesByDay: DayData[];
@@ -235,7 +236,8 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
       }
 
       for (const payment of salePaymentsResult.docs) totalCollected += payment.amount;
-      const newClientsInPeriod = clients.filter((c) => c.createdAt >= currentStart).length;
+      const newClientsCurrent = clients.filter((c) => c.createdAt >= currentStart).length;
+      const newClientsPrevious = clients.filter((c) => c.createdAt >= prevStart && c.createdAt <= prevEnd).length;
       const warehouseVariantsWithStock = variantsResult.docs.filter((v) => v.stock > 0).length;
       const activeProducts = variantsResult.docs.length;
 
@@ -261,7 +263,11 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
         revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
         salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
         clientsTotal: clients.length,
-        newClientsInPeriod,
+        newClients: {
+          current: newClientsCurrent,
+          previous: newClientsPrevious,
+          change: calcChange(newClientsCurrent, newClientsPrevious),
+        },
         activeProducts,
         warehouseVariantsWithStock,
         sellersCount: sellers.length,
@@ -348,10 +354,18 @@ export async function getSellerDashboardStats(
         }
       }
 
+      const newClientsCurrent = clients.filter((c) => c.createdAt >= currentStart).length;
+      const newClientsPrevious = clients.filter((c) => c.createdAt >= prevStart && c.createdAt <= prevEnd).length;
+
       return {
         revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
         salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
         clientsCount: clients.length,
+        newClients: {
+          current: newClientsCurrent,
+          previous: newClientsPrevious,
+          change: calcChange(newClientsCurrent, newClientsPrevious),
+        },
         inventoryItems: inventory.length,
         inventoryUnits: inventory.reduce((sum, item) => sum + item.quantity, 0),
         salesByDay: chartData,

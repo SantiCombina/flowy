@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFmt } from '@/hooks/use-fmt';
+import { getPeriodLabel } from '@/lib/period-label';
 import { formatCurrency } from '@/lib/utils';
 
 import { PAYMENT_METHOD_STYLES } from './payment-methods-chart';
@@ -37,13 +38,6 @@ const PERIOD_REVENUE_LABEL: Record<Period, string> = {
   year: 'Ventas del año',
 };
 
-const PERIOD_NEW_CLIENTS_LABEL: Record<Period, string> = {
-  day: 'nuevos hoy',
-  week: 'nuevos esta semana',
-  month: 'nuevos este mes',
-  year: 'nuevos este año',
-};
-
 const PERIOD_CHART_LABEL: Record<Period, string> = {
   day: 'últimos 7 días',
   week: 'últimos 7 días',
@@ -60,25 +54,22 @@ const PERIOD_COLLECTED_LABEL: Record<Period, string> = {
 
 interface OwnerDashboardProps {
   stats: OwnerDashboardStats;
-  userName: string;
   period: Period;
   onPeriodChange: (period: Period) => void;
   isPending: boolean;
 }
 
-export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPending }: OwnerDashboardProps) {
+export function OwnerDashboard({ stats, period, onPeriodChange, isPending }: OwnerDashboardProps) {
   const { formatShortDate } = useFmt();
-  const now = new Date();
-  const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-  const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  const periodLabel = getPeriodLabel(period);
 
   const totalSellerRevenue = stats.salesBySeller.reduce((sum, s) => sum + s.total, 0) || 1;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
       <PageHeader
-        title={`Buen día, ${userName.split(' ')[0]}!`}
-        description={`Resumen de tu negocio · ${capitalizedMonth}`}
+        title="Resumen de tu negocio"
+        description={periodLabel}
         actions={<PeriodSelector period={period} onPeriodChange={onPeriodChange} disabled={isPending} />}
       />
 
@@ -107,11 +98,8 @@ export function OwnerDashboard({ stats, userName, period, onPeriodChange, isPend
           <StatCard
             title="Clientes totales"
             value={String(stats.clientsTotal)}
-            subtitle={
-              stats.newClientsInPeriod > 0
-                ? `+${stats.newClientsInPeriod} ${PERIOD_NEW_CLIENTS_LABEL[period]}`
-                : undefined
-            }
+            change={stats.newClients.change}
+            period={period}
             icon={Users}
             gradient="from-rose-500 to-pink-600"
             delay={150}
