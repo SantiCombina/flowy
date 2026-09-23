@@ -9,9 +9,20 @@ import { getSales } from '@/app/services/sales';
 import type { SaleRow } from '@/app/services/sales';
 import { getSellers } from '@/app/services/users';
 import { cacheTags } from '@/lib/cache-tags';
+import {
+  DEFAULT_TENANT_TZ,
+  getPeriodRangesInTz,
+  monthStartInstantInTz,
+  shiftDateKey,
+  toDateKeyInTz,
+  toMonthKeyInTz,
+  type Period,
+} from '@/lib/datetime';
 import { getPayloadClient } from '@/lib/payload';
 
-export type Period = 'day' | 'week' | 'month' | 'year';
+export type { Period } from '@/lib/datetime';
+
+const tz = DEFAULT_TENANT_TZ;
 
 export interface DayData {
   date: string;
@@ -72,60 +83,22 @@ export interface SellerDashboardStats {
   recentSales: SaleRow[];
 }
 
-function getPeriodRanges(period: Period) {
-  const now = new Date();
-
-  switch (period) {
-    case 'day': {
-      const currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      const prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString();
-      const prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, -1).toISOString();
-      const chartStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      return { currentStart, prevStart, prevEnd, chartStart };
-    }
-    case 'week': {
-      const dow = now.getDay();
-      const mondayOffset = dow === 0 ? -6 : 1 - dow;
-      const currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset).toISOString();
-      const prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset - 7).toISOString();
-      const prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset, 0, 0, -1).toISOString();
-      const chartStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      return { currentStart, prevStart, prevEnd, chartStart };
-    }
-    case 'month': {
-      const currentStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-      const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
-      const chartStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      return { currentStart, prevStart, prevEnd, chartStart };
-    }
-    case 'year': {
-      const currentStart = new Date(now.getFullYear(), 0, 1).toISOString();
-      const prevStart = new Date(now.getFullYear() - 1, 0, 1).toISOString();
-      const prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59).toISOString();
-      return { currentStart, prevStart, prevEnd, chartStart: currentStart };
-    }
-  }
-}
-
 function calcChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return Math.round(((current - previous) / previous) * 100);
 }
 
 function toDateKey(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return toDateKeyInTz(dateStr, tz);
 }
 
 function toMonthKey(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return toMonthKeyInTz(dateStr, tz);
 }
 
 function buildChartData(period: Period, chartStart: string): DayData[] {
   if (period === 'year') {
-    const year = new Date().getFullYear();
+    const year = toDateKeyInTz(chartStart, tz).slice(0, 4);
     return Array.from({ length: 12 }, (_, i) => ({
       date: `${year}-${String(i + 1).padStart(2, '0')}`,
       total: 0,
@@ -134,13 +107,10 @@ function buildChartData(period: Period, chartStart: string): DayData[] {
   }
 
   const days: DayData[] = [];
-  const start = new Date(chartStart);
-  start.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const startKey = toDateKeyInTz(chartStart, tz);
+  const todayKey = toDateKeyInTz(new Date(), tz);
 
-  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  for (let key = startKey; key <= todayKey; key = shiftDateKey(key, 1)) {
     days.push({ date: key, total: 0, count: 0 });
   }
   return days;
@@ -149,12 +119,10 @@ function buildChartData(period: Period, chartStart: string): DayData[] {
 export async function getOwnerDashboardStats(ownerId: number, period: Period = 'month'): Promise<OwnerDashboardStats> {
   return unstable_cache(
     async (): Promise<OwnerDashboardStats> => {
-      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
+      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRangesInTz(new Date(), tz, period);
       const payload = await getPayloadClient();
 
-      const twelveMonthsAgo = new Date(
-        new Date(currentStart).setMonth(new Date(currentStart).getMonth() - 12),
-      ).toISOString();
+      const twelveMonthsAgo = monthStartInstantInTz(currentStart, tz, -12);
 
       const [allSales, clients, sellers, sellersInventory, variantsResult, salePaymentsResult] = await Promise.all([
         getSales({ ownerId, dateFrom: twelveMonthsAgo }),
@@ -298,7 +266,7 @@ export async function getSellerDashboardStats(
 ): Promise<SellerDashboardStats> {
   return unstable_cache(
     async (): Promise<SellerDashboardStats> => {
-      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRanges(period);
+      const { currentStart, prevStart, prevEnd, chartStart } = getPeriodRangesInTz(new Date(), tz, period);
 
       const [mySales, clients, inventory] = await Promise.all([
         getSales({ sellerId, dateFrom: prevStart }),

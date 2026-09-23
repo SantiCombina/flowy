@@ -4,10 +4,13 @@ import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
+import { DEFAULT_TENANT_TZ, currentCivilMonth, monthRangeInTz } from '@/lib/datetime';
 import { calculateCommission } from '@/lib/money';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
+
+const tz = DEFAULT_TENANT_TZ;
 
 export interface CommissionSummary {
   totalCommission: number;
@@ -26,12 +29,6 @@ export interface CommissionPaymentRow {
   reference?: string | null;
   notes?: string | null;
   createdAt: string;
-}
-
-function getMonthRange(year: number, month: number): { from: string; to: string } {
-  const from = new Date(year, month - 1, 1);
-  const to = new Date(year, month, 1);
-  return { from: from.toISOString(), to: to.toISOString() };
 }
 
 export async function getCommissionSummary(
@@ -71,8 +68,8 @@ export async function getCommissionSummary(
 
   const pendingBalance = Math.max(0, totalCommission - totalPaid);
 
-  const p = period ?? { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
-  const { from, to } = getMonthRange(p.year, p.month);
+  const p = period ?? currentCivilMonth(tz);
+  const { from, to } = monthRangeInTz(p.year, p.month, tz);
 
   const periodSalesResult = await payload.find({
     collection: 'sales',
@@ -121,8 +118,8 @@ export async function getCommissionPayments(
 ): Promise<CommissionPaymentRow[]> {
   const payload = await getPayloadClient();
 
-  const p = period ?? { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
-  const { from, to } = getMonthRange(p.year, p.month);
+  const p = period ?? currentCivilMonth(tz);
+  const { from, to } = monthRangeInTz(p.year, p.month, tz);
 
   const result = await payload.find({
     collection: 'commission-payments',
