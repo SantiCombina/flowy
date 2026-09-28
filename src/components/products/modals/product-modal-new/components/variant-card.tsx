@@ -114,6 +114,7 @@ export function VariantCard({
                     value={field.value}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    min={0}
                   />
                 </FormControl>
                 <div className="min-h-5">

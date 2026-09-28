@@ -13,7 +13,7 @@ export function parseQuantityInputValue(value: string): number {
 }
 
 export function clampQuantityInputValue(value: number, max?: number, min = 1): number {
-  const minimum = Math.max(1, Math.trunc(min));
+  const minimum = Math.trunc(min);
   const maximum = max === undefined ? undefined : Math.max(minimum, Math.trunc(max));
   const parsedValue = Number.isFinite(value) ? Math.trunc(value) : minimum;
   const minClamped = Math.max(minimum, parsedValue);
