@@ -4,13 +4,10 @@ import { revalidateTag } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
-import { DEFAULT_TENANT_TZ, currentCivilMonth, monthRangeInTz } from '@/lib/datetime';
 import { calculateCommission } from '@/lib/money';
 import { getPayloadClient } from '@/lib/payload';
 import { resolveId } from '@/lib/payload-utils';
 import type { Sale } from '@/payload-types';
-
-const tz = DEFAULT_TENANT_TZ;
 
 export interface CommissionSummary {
   totalCommission: number;
@@ -29,6 +26,12 @@ export interface CommissionPaymentRow {
   reference?: string | null;
   notes?: string | null;
   createdAt: string;
+}
+
+function getMonthRange(year: number, month: number): { from: string; to: string } {
+  const from = new Date(year, month - 1, 1);
+  const to = new Date(year, month, 1);
+  return { from: from.toISOString(), to: to.toISOString() };
 }
 
 export async function getCommissionSummary(
@@ -55,7 +58,9 @@ export async function getCommissionSummary(
 
   const allPaymentsResult = await payload.find({
     collection: 'commission-payments',
-    where: { and: [{ seller: { equals: sellerId } }, { owner: { equals: ownerId } }] },
+    where: {
+      and: [{ seller: { equals: sellerId } }, { owner: { equals: ownerId } }],
+    },
     depth: 0,
     limit: 10000,
     overrideAccess: true,
@@ -68,8 +73,11 @@ export async function getCommissionSummary(
 
   const pendingBalance = Math.max(0, totalCommission - totalPaid);
 
-  const p = period ?? currentCivilMonth(tz);
-  const { from, to } = monthRangeInTz(p.year, p.month, tz);
+  const p = period ?? {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  };
+  const { from, to } = getMonthRange(p.year, p.month);
 
   const periodSalesResult = await payload.find({
     collection: 'sales',
@@ -108,7 +116,14 @@ export async function getCommissionSummary(
     periodPayments += payment.amount as number;
   }
 
-  return { totalCommission, totalPaid, pendingBalance, periodSales, periodCommission, periodPayments };
+  return {
+    totalCommission,
+    totalPaid,
+    pendingBalance,
+    periodSales,
+    periodCommission,
+    periodPayments,
+  };
 }
 
 export async function getCommissionPayments(
@@ -118,8 +133,11 @@ export async function getCommissionPayments(
 ): Promise<CommissionPaymentRow[]> {
   const payload = await getPayloadClient();
 
-  const p = period ?? currentCivilMonth(tz);
-  const { from, to } = monthRangeInTz(p.year, p.month, tz);
+  const p = period ?? {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  };
+  const { from, to } = getMonthRange(p.year, p.month);
 
   const result = await payload.find({
     collection: 'commission-payments',

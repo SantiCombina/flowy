@@ -150,11 +150,33 @@ function SellersTableComponent({
       cell: (seller) => (
         <ActionMenu
           items={[
-            { label: 'Ver detalles', icon: Eye, onClick: () => onViewDetails?.(seller) },
-            { label: 'Despachar stock', icon: ArrowDownToLine, onClick: () => onDispatch?.(seller) },
-            { label: 'Devolver stock', icon: ArrowUpFromLine, onClick: () => onReturn?.(seller) },
-            { label: 'Editar', icon: Pencil, onClick: () => onEdit?.(seller), separator: true },
-            { label: 'Eliminar', icon: Trash2, onClick: () => setSellerToDelete(seller), variant: 'destructive' },
+            {
+              label: 'Ver detalles',
+              icon: Eye,
+              onClick: () => onViewDetails?.(seller),
+            },
+            {
+              label: 'Despachar stock',
+              icon: ArrowDownToLine,
+              onClick: () => onDispatch?.(seller),
+            },
+            {
+              label: 'Devolver stock',
+              icon: ArrowUpFromLine,
+              onClick: () => onReturn?.(seller),
+            },
+            {
+              label: 'Editar',
+              icon: Pencil,
+              onClick: () => onEdit?.(seller),
+              separator: true,
+            },
+            {
+              label: 'Eliminar',
+              icon: Trash2,
+              onClick: () => setSellerToDelete(seller),
+              variant: 'destructive',
+            },
           ]}
         />
       ),

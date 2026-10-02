@@ -8,7 +8,9 @@ export const updateBusinessNameSchema = z.object({
     })
     .trim()
     .min(1, { message: 'El nombre del negocio no puede estar vacío.' })
-    .max(100, { message: 'El nombre del negocio debe tener como máximo 100 caracteres.' }),
+    .max(100, {
+      message: 'El nombre del negocio debe tener como máximo 100 caracteres.',
+    }),
 });
 
 export type UpdateBusinessNameValues = z.infer<typeof updateBusinessNameSchema>;

@@ -4,7 +4,10 @@ import { phoneSchema } from '@/lib/phone';
 
 export const clientSchema = z.object({
   name: z
-    .string({ required_error: 'El nombre es requerido', invalid_type_error: 'El nombre debe ser texto' })
+    .string({
+      required_error: 'El nombre es requerido',
+      invalid_type_error: 'El nombre debe ser texto',
+    })
     .trim()
     .min(1, 'El nombre es requerido')
     .max(200, 'El nombre no puede superar los 200 caracteres'),
@@ -47,13 +50,19 @@ export const clientSchema = z.object({
 export type ClientValues = z.infer<typeof clientSchema>;
 
 export const updateClientSchema = clientSchema.extend({
-  id: z.number({ required_error: 'El id es requerido', invalid_type_error: 'El id debe ser un número' }),
+  id: z.number({
+    required_error: 'El id es requerido',
+    invalid_type_error: 'El id debe ser un número',
+  }),
 });
 
 export type UpdateClientValues = z.infer<typeof updateClientSchema>;
 
 export const deleteClientSchema = z.object({
-  id: z.number({ required_error: 'El id es requerido', invalid_type_error: 'El id debe ser un número' }),
+  id: z.number({
+    required_error: 'El id es requerido',
+    invalid_type_error: 'El id debe ser un número',
+  }),
 });
 
 export type DeleteClientValues = z.infer<typeof deleteClientSchema>;

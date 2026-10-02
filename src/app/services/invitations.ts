@@ -21,9 +21,10 @@ interface ValidateInvitationResult {
   valid: boolean;
   invitation?: {
     id: number;
-    name: string;
+    name: string | null | undefined;
     email: string;
     role: 'owner' | 'seller';
+    businessName: string | null | undefined;
     createdBy: number | null;
   };
   error?: string;
@@ -98,13 +99,15 @@ export async function createInvitation(
   name: string,
   email: string,
   ownerId: number,
+  role: 'owner' | 'seller' = 'seller',
   dependencies?: InvitationServiceDependencies,
+  businessName?: string,
 ): Promise<Invitation> {
   const operations = dependencies ?? (await defaultInvitationDependencies());
 
   const invitation = await operations.create({
     collection: 'invitations',
-    data: buildInvitationCreateData(name, email, ownerId),
+    data: buildInvitationCreateData(name, email, businessName, role, ownerId),
     overrideAccess: true,
     context: { entitlementMutation: true },
   });
@@ -139,6 +142,7 @@ export async function validateInvitation(
       name: invitation.name,
       email: invitation.email,
       role: invitation.role as 'owner' | 'seller',
+      businessName: (invitation.businessName as string | null) ?? null,
       createdBy: typeof invitation.createdBy === 'number' ? invitation.createdBy : (invitation.createdBy?.id ?? null),
     },
   };
@@ -183,7 +187,7 @@ export async function createSellerInvitation(
 
 export async function acceptInvitation(
   token: string,
-  name: string,
+  name: string | null | undefined,
   email: string,
   password: string,
   dependencies?: AcceptInvitationDependencies,
@@ -265,7 +269,7 @@ async function runCreateSellerInvitation(
 
   const invitation = await dependencies.createInvitation({
     collection: 'invitations',
-    data: buildInvitationCreateData(name, email, ownerId),
+    data: buildInvitationCreateData(name, email, undefined, 'seller', ownerId),
     overrideAccess: true,
     context: { entitlementMutation: true },
     req: { transactionID: dependencies.transactionID },
@@ -292,13 +296,11 @@ async function runCreateSellerInvitation(
 
 async function runAcceptInvitation(
   token: string,
-  name: string,
+  name: string | null | undefined,
   email: string,
   password: string,
   dependencies: AcceptInvitationDependencies,
 ): Promise<User> {
-  await acquireTenantLock(dependencies.lock, dependencies.lockContext);
-
   const now = dependencies.now;
   const { docs: invitations } = await dependencies.findInvitation({
     collection: 'invitations',
@@ -317,17 +319,22 @@ async function runAcceptInvitation(
     throw new Error('El email no coincide con la invitación');
   }
 
+  if (invitation.role !== 'owner') {
+    await acquireTenantLock(dependencies.lock, dependencies.lockContext);
+  }
+
   const ownerId = typeof invitation.createdBy === 'number' ? invitation.createdBy : invitation.createdBy?.id;
 
   const existingUser = await dependencies
     .createUser({
       collection: 'users',
       data: {
-        name,
+        name: name ?? email,
         email,
         password,
         role: invitation.role,
         ...(invitation.role === 'seller' && ownerId ? { owner: ownerId } : {}),
+        ...(invitation.role === 'owner' && invitation.businessName ? { businessName: invitation.businessName } : {}),
       },
       overrideAccess: true,
       context: { entitlementMutation: true },
@@ -390,7 +397,7 @@ async function defaultInvitationDependencies(): Promise<InvitationServiceDepende
   return {
     now: () => new Date().toISOString(),
     create: async (args) => {
-      const invitation = await payload.create(args);
+      const invitation = await payload.create(args as never);
       return invitation as Invitation;
     },
     find: async (args) => {
@@ -419,15 +426,33 @@ async function defaultSeatCheckedInvitationDependencies(ownerId: number): Promis
     lock,
     lockContext: { transactionID, tenantId: ownerId },
     count: {
-      findUsers: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findInvitations: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findProducts: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findVariants: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findUsers: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findInvitations: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findProducts: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findVariants: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
     },
     countContext: { transactionID, tenantId: ownerId, now },
     createInvitation: async (args) => payload.create(args as never) as unknown as Promise<Invitation>,
     findSnapshot: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: TenantEntitlementSnapshot[] }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: TenantEntitlementSnapshot[];
+      }>,
     findUserById: async (args) => payload.findByID(args as never) as unknown as Promise<User>,
     emitMutation: async (args) => payload.create(args as never) as unknown,
     commit: async () => {

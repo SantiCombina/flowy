@@ -45,7 +45,12 @@ export const MODULE_ACCESS = {
   },
 } as const satisfies Record<
   string,
-  { href: string; title: string; capability: Capability; sellerCapability?: Capability }
+  {
+    href: string;
+    title: string;
+    capability: Capability;
+    sellerCapability?: Capability;
+  }
 >;
 
 export type ModuleRoute = keyof typeof MODULE_ACCESS;

@@ -12,4 +12,5 @@ export const cacheTags = {
   adminBackofficeDashboard: () => 'admin-backoffice-dashboard' as const,
   adminBackofficeTenants: () => 'admin-backoffice-tenants' as const,
   adminBackofficePlans: () => 'admin-backoffice-plans' as const,
+  adminBackofficeInvitations: () => 'admin-backoffice-invitations' as const,
 } as const;

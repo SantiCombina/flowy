@@ -26,8 +26,22 @@ export const SalePayments: CollectionConfig = {
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
   fields: [
-    { name: 'sale', type: 'relationship', relationTo: 'sales', required: true, index: true, label: 'Venta' },
-    { name: 'seller', type: 'relationship', relationTo: 'users', required: true, index: true, label: 'Vendedor' },
+    {
+      name: 'sale',
+      type: 'relationship',
+      relationTo: 'sales',
+      required: true,
+      index: true,
+      label: 'Venta',
+    },
+    {
+      name: 'seller',
+      type: 'relationship',
+      relationTo: 'users',
+      required: true,
+      index: true,
+      label: 'Vendedor',
+    },
     {
       name: 'owner',
       type: 'relationship',
@@ -37,7 +51,13 @@ export const SalePayments: CollectionConfig = {
       label: 'Propietario',
       admin: { condition: () => false },
     },
-    { name: 'amount', type: 'number', required: true, min: 0.01, label: 'Monto' },
+    {
+      name: 'amount',
+      type: 'number',
+      required: true,
+      min: 0.01,
+      label: 'Monto',
+    },
     {
       name: 'date',
       type: 'date',

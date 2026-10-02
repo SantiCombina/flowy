@@ -179,7 +179,11 @@ export const updateBudgetAction = actionClient
 
     const budgetData = canUseRecipientPhone
       ? parsedInput.data
-      : { ...parsedInput.data, clientPhone: undefined, saveClientPhone: undefined };
+      : {
+          ...parsedInput.data,
+          clientPhone: undefined,
+          saveClientPhone: undefined,
+        };
 
     const ownerId = user.role === 'owner' ? user.id : typeof user.owner === 'number' ? user.owner : user.owner?.id;
 
@@ -235,10 +239,14 @@ export const convertBudgetAction = actionClient
       notes: z
         .string({ invalid_type_error: 'Las notas deben ser texto.' })
         .trim()
-        .max(500, { message: 'Las notas no pueden superar los 500 caracteres.' })
+        .max(500, {
+          message: 'Las notas no pueden superar los 500 caracteres.',
+        })
         .optional(),
       immediateDelivery: z
-        .boolean({ invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.' })
+        .boolean({
+          invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.',
+        })
         .optional(),
     }),
   )

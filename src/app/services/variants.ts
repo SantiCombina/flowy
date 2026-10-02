@@ -164,15 +164,37 @@ async function defaultVariantQuotaDependencies(ownerId: number): Promise<Variant
     lock,
     lockContext: { transactionID, tenantId: ownerId },
     count: {
-      findUsers: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findInvitations: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findProducts: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findVariants: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findUsers: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findInvitations: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findProducts: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findVariants: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
     },
-    countContext: { transactionID, tenantId: ownerId, now: new Date().toISOString() },
+    countContext: {
+      transactionID,
+      tenantId: ownerId,
+      now: new Date().toISOString(),
+    },
     findUserById: async (args) => payload.findByID(args as never) as unknown as Promise<User>,
     findSnapshot: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: TenantEntitlementSnapshot[] }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: TenantEntitlementSnapshot[];
+      }>,
     createVariant: async (args) => payload.create(args as never) as unknown as Promise<ProductVariant>,
     emitMutation: async (args) => payload.create(args as never) as unknown,
     commit: async () => {

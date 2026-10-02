@@ -32,6 +32,13 @@ export const registerSchema = z
       required_error: 'El token es requerido.',
       invalid_type_error: 'El token debe ser una cadena de texto.',
     }),
+    businessName: z
+      .string({
+        invalid_type_error: 'El nombre del negocio debe ser una cadena de texto.',
+      })
+      .trim()
+      .max(120, { message: 'El nombre del negocio debe tener como máximo 120 caracteres.' })
+      .optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Las contraseñas no coinciden.',

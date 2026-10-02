@@ -52,7 +52,10 @@ async function runReactivateSeller(sellerId: number, dependencies: ReactivateSel
     throw new Error('El vendedor no tiene un dueño asignado');
   }
 
-  await acquireTenantLock(dependencies.lock, { ...dependencies.lockContext, tenantId: ownerId });
+  await acquireTenantLock(dependencies.lock, {
+    ...dependencies.lockContext,
+    tenantId: ownerId,
+  });
 
   const snapshot = await resolveTenantSnapshot(dependencies, ownerId);
   const quotas = snapshot ? planQuotasFromRow(snapshot.quotas ?? {}) : null;
@@ -126,16 +129,34 @@ async function defaultReactivateSellerDependencies(sellerId: number): Promise<Re
     lock,
     lockContext: { transactionID, tenantId: sellerId },
     count: {
-      findUsers: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findInvitations: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findProducts: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
-      findVariants: async (args) => payload.find(args as never) as unknown as { docs: unknown[]; totalDocs: number },
+      findUsers: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findInvitations: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findProducts: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
+      findVariants: async (args) =>
+        payload.find(args as never) as unknown as {
+          docs: unknown[];
+          totalDocs: number;
+        },
     },
     countContext: { transactionID, tenantId: sellerId, now },
     findUserById: async (args) => payload.findByID(args as never) as unknown as Promise<User>,
     updateUser: async (args) => payload.update(args as never) as unknown as Promise<User>,
     findSnapshot: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: TenantEntitlementSnapshot[] }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: TenantEntitlementSnapshot[];
+      }>,
     commit: async () => {
       await payload.db.commitTransaction(transactionID);
     },

@@ -27,7 +27,12 @@ export const getOwnerDashboardStatsAction = actionClient.schema(periodSchema).ac
 });
 
 export const getSellerDashboardStatsAction = actionClient
-  .schema(z.object({ period: z.enum(['day', 'week', 'month', 'year']), ownerId: z.number() }))
+  .schema(
+    z.object({
+      period: z.enum(['day', 'week', 'month', 'year']),
+      ownerId: z.number(),
+    }),
+  )
   .action(async ({ parsedInput }) => {
     const user = await getCurrentUser();
 

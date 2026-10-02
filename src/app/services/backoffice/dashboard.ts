@@ -47,7 +47,9 @@ async function computeBackofficeDashboardStats(): Promise<BackofficeDashboardSta
   const [ownersResult, notificationsResult, planVersionsResult] = await Promise.all([
     payload.find({
       collection: 'users',
-      where: { and: [{ role: { equals: 'owner' } }, { isDeleted: { not_equals: true } }] },
+      where: {
+        and: [{ role: { equals: 'owner' } }, { isDeleted: { not_equals: true } }],
+      },
       limit: 1000,
       depth: 1,
       overrideAccess: true,
@@ -81,7 +83,11 @@ async function computeBackofficeDashboardStats(): Promise<BackofficeDashboardSta
 
   let activeSubscribers = 0;
   let newSignupsThisMonth = 0;
-  const planCounts: Record<PlanCode, number> = { basic: 0, medium: 0, professional: 0 };
+  const planCounts: Record<PlanCode, number> = {
+    basic: 0,
+    medium: 0,
+    professional: 0,
+  };
   let mrr = 0;
   const ownerSignups: DashboardActivityItem[] = [];
 
@@ -129,7 +135,10 @@ async function computeBackofficeDashboardStats(): Promise<BackofficeDashboardSta
     newSignupsThisMonth,
     signupsTrend,
     activity,
-    planDistribution: PLAN_CODES.map((planCode) => ({ planCode, count: planCounts[planCode] })),
+    planDistribution: PLAN_CODES.map((planCode) => ({
+      planCode,
+      count: planCounts[planCode],
+    })),
   };
 }
 

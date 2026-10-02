@@ -14,7 +14,10 @@ const capabilityFields = (enumName: string) => [
     type: 'select' as const,
     required: true,
     enumName,
-    options: CAPABILITIES.map((capability) => ({ label: capability, value: capability })),
+    options: CAPABILITIES.map((capability) => ({
+      label: capability,
+      value: capability,
+    })),
   },
 ];
 
@@ -30,6 +33,11 @@ export const TenantEntitlementSnapshots: CollectionConfig = {
     update: () => false,
     delete: () => false,
   },
+  indexes: [
+    {
+      fields: ['planVersion', 'kind'],
+    },
+  ],
   hooks: {
     beforeChange: [
       async ({ data, context, operation, req }) => {
@@ -42,7 +50,12 @@ export const TenantEntitlementSnapshots: CollectionConfig = {
         assertSnapshotShape(data);
 
         const tenantId = relationshipId(data.tenant, 'Snapshot tenant');
-        const tenant = await req.payload.findByID({ collection: 'users', id: tenantId, overrideAccess: true, req });
+        const tenant = await req.payload.findByID({
+          collection: 'users',
+          id: tenantId,
+          overrideAccess: true,
+          req,
+        });
 
         if (tenant.role !== 'owner') {
           throw new Error('Snapshot tenant must be an owner');

@@ -194,7 +194,9 @@ export function SellerDashboard({ stats, period, onPeriodChange, isPending }: Se
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-linear-to-r from-amber-400 to-orange-500 transition-all duration-700"
-                        style={{ width: `${Math.round((item.quantity / maxInventoryQty) * 100)}%` }}
+                        style={{
+                          width: `${Math.round((item.quantity / maxInventoryQty) * 100)}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -221,7 +223,8 @@ export function SellerDashboard({ stats, period, onPeriodChange, isPending }: Se
                     <div className="min-w-0">
                       <p className="truncate font-medium">{sale.clientName ?? 'Sin registrar'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {sale.itemCount} producto{sale.itemCount !== 1 ? 's' : ''} · {formatShortDate(sale.date)}
+                        {sale.itemCount} producto
+                        {sale.itemCount !== 1 ? 's' : ''} · {formatShortDate(sale.date)}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">

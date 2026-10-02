@@ -56,7 +56,10 @@ async function uploadImage(file: File, altText: string): Promise<number> {
   formData.append('file', webpFile);
   formData.append('_payload', JSON.stringify({ alt: altText }));
 
-  const response = await fetch('/api/media', { method: 'POST', body: formData });
+  const response = await fetch('/api/media', {
+    method: 'POST',
+    body: formData,
+  });
   const data = (await response.json()) as PayloadMediaResponse;
 
   if (!response.ok) {
@@ -218,7 +221,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             const updateResult = await updateVariantAction({
               id: variant.id,
               code: variant.code || '',
-              ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
+              ...(variant.presentationId && {
+                presentation: parseInt(variant.presentationId),
+              }),
               stock: variant.stock,
               minimumStock: variant.minimumStock,
               costPrice: variant.costPrice,
@@ -232,7 +237,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
             const createResult = await createVariantAction({
               code: variant.code || '',
               product: productId,
-              ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
+              ...(variant.presentationId && {
+                presentation: parseInt(variant.presentationId),
+              }),
               stock: variant.stock,
               minimumStock: variant.minimumStock,
               costPrice: variant.costPrice,
@@ -272,7 +279,9 @@ export function useProductForm({ productId, isOpen, onSuccess, onClose }: UsePro
           const createResult = await createVariantAction({
             code: variant.code || '',
             product: newProductId,
-            ...(variant.presentationId && { presentation: parseInt(variant.presentationId) }),
+            ...(variant.presentationId && {
+              presentation: parseInt(variant.presentationId),
+            }),
             stock: variant.stock,
             minimumStock: variant.minimumStock,
             costPrice: variant.costPrice,

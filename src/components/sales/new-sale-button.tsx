@@ -21,7 +21,9 @@ export function NewSaleButton() {
 
   const handleSuccess = () => {
     void queryClient.invalidateQueries({ queryKey: ['sales'] });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.owner('month') });
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.dashboard.owner('month'),
+    });
   };
 
   return (

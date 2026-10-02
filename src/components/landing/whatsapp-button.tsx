@@ -38,7 +38,11 @@ export function WhatsAppButton() {
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ delay: index * 0.05, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  delay: index * 0.05,
+                  duration: 0.2,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               >
                 <Button variant="outline" className="cursor-pointer rounded-full px-4 py-2.5 text-sm shadow-lg" asChild>
                   <a href={contact.href} target="_blank" rel="noopener noreferrer">

@@ -78,7 +78,12 @@ export function SellerDetailsModal({ isOpen, onClose, seller }: SellerDetailsMod
 
   const { data, isPending: isLoadingCommissions } = useServerActionQuery({
     queryKey: queryKeys.sellers.commissions.detail(seller?.id, selectedYear, selectedMonth),
-    queryFn: () => getCommissionDetailAction({ sellerId: seller!.id, year: selectedYear, month: selectedMonth }),
+    queryFn: () =>
+      getCommissionDetailAction({
+        sellerId: seller!.id,
+        year: selectedYear,
+        month: selectedMonth,
+      }),
     enabled: activeTab === 'commissions' && !!seller,
     staleTime: 30_000,
   });

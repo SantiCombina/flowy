@@ -16,7 +16,11 @@ export const Zones: CollectionConfig = {
         return query;
       }
       if (user.role === 'seller') {
-        const query: Where = { owner: { equals: typeof user.owner === 'number' ? user.owner : user.owner?.id } };
+        const query: Where = {
+          owner: {
+            equals: typeof user.owner === 'number' ? user.owner : user.owner?.id,
+          },
+        };
         return query;
       }
       return false;

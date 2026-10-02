@@ -249,7 +249,12 @@ export async function createPresentation(
 
   const presentation = await payload.create({
     collection: 'presentations',
-    data: { label, amount: options?.amount ?? 1, unit: options?.unit ?? 'unidad', owner: ownerId },
+    data: {
+      label,
+      amount: options?.amount ?? 1,
+      unit: options?.unit ?? 'unidad',
+      owner: ownerId,
+    },
     overrideAccess: true,
   });
 
@@ -294,6 +299,10 @@ export async function deletePresentation(id: number, ownerId: number): Promise<v
     throw new Error('Presentación no encontrada');
   }
 
-  await payload.delete({ collection: 'presentations', id, overrideAccess: true });
+  await payload.delete({
+    collection: 'presentations',
+    id,
+    overrideAccess: true,
+  });
   revalidateTag('entities-presentations');
 }

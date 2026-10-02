@@ -190,7 +190,10 @@ export function AppSidebar({ features, capabilities = [] }: AppSidebarProps) {
     () =>
       filterNavigationItems(
         mainNavItems
-          .map((item) => ({ ...item, capability: resolveModuleCapability(item, user?.role) }))
+          .map((item) => ({
+            ...item,
+            capability: resolveModuleCapability(item, user?.role),
+          }))
           .filter((item) => {
             if (item.feature !== null && !features[item.feature]) return false;
             if (item.roleOnly && user?.role !== item.roleOnly) return false;

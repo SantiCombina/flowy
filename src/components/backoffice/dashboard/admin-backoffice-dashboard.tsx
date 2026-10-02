@@ -112,7 +112,10 @@ export function AdminBackofficeDashboard({ initialStats }: AdminBackofficeDashbo
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${entry.pct}%`, backgroundColor: entry.color }}
+                          style={{
+                            width: `${entry.pct}%`,
+                            backgroundColor: entry.color,
+                          }}
                         />
                       </div>
                     </div>

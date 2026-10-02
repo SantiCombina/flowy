@@ -88,7 +88,10 @@ export function ClientModal({
 
   const [isCreatingZone, setIsCreatingZone] = useState(false);
   const [newZoneName, setNewZoneName] = useState('');
-  const [zoneToDelete, setZoneToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [zoneToDelete, setZoneToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const zoneWrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: zonesData } = useServerActionQuery({
@@ -412,7 +415,10 @@ export function ClientModal({
                             {invalidProvincia ? (
                               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                                 <Info className="h-3.5 w-3.5 shrink-0" />
-                                <span>Sin coincidencias para &quot;{invalidProvincia}&quot;</span>
+                                <span>
+                                  Sin coincidencias para &quot;
+                                  {invalidProvincia}&quot;
+                                </span>
                               </p>
                             ) : (
                               <FormMessage />

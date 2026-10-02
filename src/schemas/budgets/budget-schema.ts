@@ -37,9 +37,15 @@ export const budgetSchema = z.object({
     .trim()
     .max(500, { message: 'Las notas deben tener como máximo 500 caracteres.' })
     .optional(),
-  validUntil: z.string({ invalid_type_error: 'La fecha de vencimiento debe ser una fecha válida.' }).optional(),
+  validUntil: z
+    .string({
+      invalid_type_error: 'La fecha de vencimiento debe ser una fecha válida.',
+    })
+    .optional(),
   saveClientPhone: z
-    .boolean({ invalid_type_error: 'El valor de guardar teléfono debe ser verdadero o falso.' })
+    .boolean({
+      invalid_type_error: 'El valor de guardar teléfono debe ser verdadero o falso.',
+    })
     .optional(),
 });
 

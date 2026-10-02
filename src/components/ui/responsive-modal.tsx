@@ -7,7 +7,10 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-const ResponsiveModalContext = React.createContext<{ isMobile: boolean; portalContainer?: HTMLElement | null }>({
+const ResponsiveModalContext = React.createContext<{
+  isMobile: boolean;
+  portalContainer?: HTMLElement | null;
+}>({
   isMobile: false,
   portalContainer: undefined,
 });

@@ -21,7 +21,10 @@ export function PushRegistration() {
       if (json.endpoint && json.keys) {
         await subscribePushAction({
           endpoint: json.endpoint,
-          keys: { p256dh: json.keys['p256dh'] ?? '', auth: json.keys['auth'] ?? '' },
+          keys: {
+            p256dh: json.keys['p256dh'] ?? '',
+            auth: json.keys['auth'] ?? '',
+          },
         });
       }
     };

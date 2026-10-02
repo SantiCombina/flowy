@@ -56,7 +56,10 @@ export function BulkPriceSheet({ isOpen, onClose, variants, onSuccess }: BulkPri
 
   const handleSave = async () => {
     const result = await executeAsync({
-      updates: rows.map((r) => ({ variantId: r.variantId, costPrice: r.costPrice })),
+      updates: rows.map((r) => ({
+        variantId: r.variantId,
+        costPrice: r.costPrice,
+      })),
     });
 
     if (result?.serverError) {
