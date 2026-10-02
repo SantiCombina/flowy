@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAction } from 'next-safe-action/hooks';
 import { useState } from 'react';
@@ -19,7 +20,7 @@ import { registerUser } from './actions';
 interface RegisterFormProps {
   token?: string;
   email?: string;
-  role?: string;
+  role?: 'owner' | 'seller';
 }
 
 export function RegisterForm({ token, email, role }: RegisterFormProps) {
@@ -67,28 +68,44 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
 
   if (!token || !email) {
     return (
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-sm shadow-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Invitación inválida</CardTitle>
+          <CardTitle className="text-2xl font-bold">Invitación inválida</CardTitle>
           <CardDescription>El enlace de invitación no es válido o ha expirado.</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="text-center">
+            <Link
+              href="/"
+              className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Volver al inicio
+            </Link>
+          </div>
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-sm shadow-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Crear cuenta</CardTitle>
+        <CardTitle className="text-2xl font-bold">Estás a un paso</CardTitle>
         <CardDescription>
-          Registrándose como <span className="font-medium capitalize">{role === 'owner' ? 'Dueño' : 'Vendedor'}</span>
+          Te registrás como <span className="font-medium capitalize">{role === 'owner' ? 'dueño' : 'vendedor'}</span>
           <br />
           <span className="text-foreground">{email}</span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              const firstError = Object.keys(errors)[0] as keyof RegisterValues;
+              if (firstError) form.setFocus(firstError);
+            })}
+            className="space-y-2"
+          >
             {error && <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
 
             <FormField
@@ -100,7 +117,9 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
                   <FormControl>
                     <PasswordInput {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <div className="min-h-5">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
@@ -114,7 +133,9 @@ export function RegisterForm({ token, email, role }: RegisterFormProps) {
                   <FormControl>
                     <PasswordInput {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <div className="min-h-5">
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />

@@ -41,9 +41,15 @@ export const saleSchema = z
       .trim()
       .max(500, { message: 'Las notas no pueden superar los 500 caracteres' })
       .optional(),
-    checkDueDate: z.string({ invalid_type_error: 'La fecha de cobro debe ser una fecha válida' }).optional(),
+    checkDueDate: z
+      .string({
+        invalid_type_error: 'La fecha de cobro debe ser una fecha válida',
+      })
+      .optional(),
     immediateDelivery: z
-      .boolean({ invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso' })
+      .boolean({
+        invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso',
+      })
       .optional(),
   })
   .superRefine((data, ctx) => {

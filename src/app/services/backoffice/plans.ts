@@ -2,16 +2,20 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-import { publishPlanVersion as publishPlanVersionEntitlement } from '@/app/services/entitlements';
+import {
+  publishPlanVersion as publishPlanVersionEntitlement,
+  type PublishPlanVersionResult,
+} from '@/app/services/entitlements';
 import { cacheTags } from '@/lib/cache-tags';
-import { CAPABILITIES, type PlanCode } from '@/lib/entitlements/capabilities';
+import { CAPABILITIES, type Capability, type PlanCode } from '@/lib/entitlements/capabilities';
 import { getPayloadClient } from '@/lib/payload';
-import type { PlanVersion } from '@/payload-types';
+import type { PlanVersion, User } from '@/payload-types';
 
 export interface PlanVersionSummary {
   id: number;
+  planCode: PlanCode;
   version: number;
-  capabilities: string[];
+  capabilities: readonly Capability[];
   quotas: {
     maxSellerSeats: number;
     maxProducts: number;
@@ -19,7 +23,7 @@ export interface PlanVersionSummary {
     maxVariantsPerTenant: number;
   };
   publishedAt: string;
-  createdBy: number | null;
+  createdByName: string | null;
 }
 
 export interface PlanVersionsByCode {
@@ -35,20 +39,26 @@ export async function listPlanVersions(): Promise<PlanVersionsByCode> {
     collection: 'plan-versions',
     sort: '-version',
     limit: 200,
-    depth: 0,
+    depth: 1,
     overrideAccess: true,
   });
 
-  const grouped: PlanVersionsByCode = { basic: [], medium: [], professional: [] };
+  const grouped: PlanVersionsByCode = {
+    basic: [],
+    medium: [],
+    professional: [],
+  };
 
   for (const version of result.docs as PlanVersion[]) {
+    const createdBy = version.createdBy && typeof version.createdBy === 'object' ? (version.createdBy as User) : null;
     const summary: PlanVersionSummary = {
       id: version.id,
+      planCode: version.planCode,
       version: version.version,
       capabilities: version.capabilities.map((entry) => entry.capability),
       quotas: { ...version.quotas },
       publishedAt: version.publishedAt,
-      createdBy: typeof version.createdBy === 'number' ? version.createdBy : (version.createdBy?.id ?? null),
+      createdByName: createdBy?.name ?? null,
     };
     grouped[version.planCode].push(summary);
   }
@@ -68,10 +78,14 @@ export interface PublishPlanVersionInput {
   createdBy: number;
 }
 
-export async function publishPlanVersion(input: PublishPlanVersionInput): Promise<void> {
-  await publishPlanVersionEntitlement(input.planCode, input.capabilities, input.quotas, input.createdBy);
+export async function publishPlanVersion(input: PublishPlanVersionInput): Promise<PublishPlanVersionResult> {
+  const result = await publishPlanVersionEntitlement(input.planCode, input.capabilities, input.quotas, input.createdBy);
 
   revalidatePath('/backoffice/plans');
+  revalidatePath('/dashboard');
+  revalidatePath('/settings');
   revalidateTag(cacheTags.adminBackofficePlans());
   revalidateTag(cacheTags.adminBackofficeDashboard());
+
+  return result;
 }

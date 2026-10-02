@@ -59,7 +59,10 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
   const alreadyEarnedCommission = calculateCommission(amountPaid, 3);
   const newCommission = calculateCommission(commissionBase, 3);
   const commission = alreadyEarnedCommission + newCommission;
-  const watchedPaymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
+  const watchedPaymentMethod = useWatch({
+    control: form.control,
+    name: 'paymentMethod',
+  });
   const afterPayment =
     Number.isFinite(watchedAmount) && watchedAmount > 0 ? subtractMoney(remaining, watchedAmount) : null;
   const isOverRemaining = Number.isFinite(watchedAmount) && Number(watchedAmount.toFixed(2)) > remaining;
@@ -199,9 +202,14 @@ export function CollectSaleModal({ isOpen, onClose, onSuccess, saleId, total, am
                           locale={es}
                           showOutsideDays={false}
                           formatters={{
-                            formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
+                            formatWeekdayName: (date) =>
+                              format(date, 'EEEEE', {
+                                locale: es,
+                              }).toUpperCase(),
                             formatCaption: (month, options) => {
-                              const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
+                              const str = format(month, 'LLLL yyyy', {
+                                locale: options?.locale ?? es,
+                              });
                               return str.charAt(0).toUpperCase() + str.slice(1);
                             },
                           }}

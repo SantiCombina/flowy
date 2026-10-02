@@ -127,7 +127,10 @@ export function NotificationBell() {
       if (json.endpoint && json.keys) {
         const result = await subscribePushAction({
           endpoint: json.endpoint,
-          keys: { p256dh: json.keys['p256dh'] ?? '', auth: json.keys['auth'] ?? '' },
+          keys: {
+            p256dh: json.keys['p256dh'] ?? '',
+            auth: json.keys['auth'] ?? '',
+          },
         });
         if (result?.data?.success) {
           setIsSubscribed(true);

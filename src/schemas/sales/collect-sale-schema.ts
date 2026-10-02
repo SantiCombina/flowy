@@ -20,7 +20,11 @@ export const collectSaleSchema = z
       required_error: 'El método de pago es requerido.',
       invalid_type_error: 'Método de pago inválido.',
     }),
-    checkDueDate: z.string({ invalid_type_error: 'La fecha de cobro debe ser una fecha válida.' }).optional(),
+    checkDueDate: z
+      .string({
+        invalid_type_error: 'La fecha de cobro debe ser una fecha válida.',
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.paymentMethod === 'check' && !data.checkDueDate) {

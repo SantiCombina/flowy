@@ -11,14 +11,33 @@ const formatCurrencyCompact = (value: number) => {
 };
 
 const METHODS = [
-  { key: 'cash', label: 'Efectivo', color: '#059669', bg: 'rgba(5,150,105,0.12)' },
-  { key: 'transfer', label: 'Transferencia', color: '#2563eb', bg: 'rgba(37,99,235,0.12)' },
-  { key: 'check', label: 'Cheque', color: '#7c3aed', bg: 'rgba(124,58,237,0.12)' },
+  {
+    key: 'cash',
+    label: 'Efectivo',
+    color: '#059669',
+    bg: 'rgba(5,150,105,0.12)',
+  },
+  {
+    key: 'transfer',
+    label: 'Transferencia',
+    color: '#2563eb',
+    bg: 'rgba(37,99,235,0.12)',
+  },
+  {
+    key: 'check',
+    label: 'Cheque',
+    color: '#7c3aed',
+    bg: 'rgba(124,58,237,0.12)',
+  },
 ] as const;
 
 export const PAYMENT_METHOD_STYLES: Record<string, { color: string; bg: string; label: string }> = {
   cash: { color: '#059669', bg: 'rgba(5,150,105,0.12)', label: 'Efectivo' },
-  transfer: { color: '#2563eb', bg: 'rgba(37,99,235,0.12)', label: 'Transferencia' },
+  transfer: {
+    color: '#2563eb',
+    bg: 'rgba(37,99,235,0.12)',
+    label: 'Transferencia',
+  },
   check: { color: '#7c3aed', bg: 'rgba(124,58,237,0.12)', label: 'Cheque' },
 };
 
@@ -107,7 +126,10 @@ export function PaymentMethodsChart({ cash, transfer, check }: PaymentMethodsCha
             <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ backgroundColor: entry.bg }}>
               <div
                 className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${entry.barWidth}%`, backgroundColor: entry.color }}
+                style={{
+                  width: `${entry.barWidth}%`,
+                  backgroundColor: entry.color,
+                }}
               />
             </div>
           </div>

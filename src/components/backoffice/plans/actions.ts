@@ -24,12 +24,14 @@ export const publishPlanAction = actionClient.schema(publishAdminPlanSchema).act
     throw new Error('No autorizado');
   }
 
-  await publishPlanVersionAction({
+  const result = await publishPlanVersionAction({
     planCode: parsedInput.planCode,
-    capabilities: parsedInput.capabilities.map((capability) => ({ capability })),
+    capabilities: parsedInput.capabilities.map((capability) => ({
+      capability,
+    })),
     quotas: parsedInput.quotas,
     createdBy: guardedUser.user.id,
   });
 
-  return { success: true };
+  return { success: true, migratedTenantsCount: result.migratedTenantsCount };
 });

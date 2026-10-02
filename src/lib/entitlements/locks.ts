@@ -57,7 +57,10 @@ export async function defaultLockDependencies(): Promise<LockDependencies> {
   const payload = await getPayloadClient();
 
   return {
-    find: async (args) => payload.find(args as never) as unknown as Promise<{ docs: EntitlementQuotaLock[] }>,
+    find: async (args) =>
+      payload.find(args as never) as unknown as Promise<{
+        docs: EntitlementQuotaLock[];
+      }>,
     create: async (args) => payload.create(args as never) as unknown as Promise<EntitlementQuotaLock>,
     update: async (args) => payload.update(args as never) as unknown as Promise<EntitlementQuotaLock>,
   };
@@ -70,7 +73,10 @@ export function buildLockContext(
 ): LockDependencies & { context: LockContext } {
   return {
     context: { transactionID, tenantId },
-    find: async (args) => payload.find(args as never) as unknown as Promise<{ docs: EntitlementQuotaLock[] }>,
+    find: async (args) =>
+      payload.find(args as never) as unknown as Promise<{
+        docs: EntitlementQuotaLock[];
+      }>,
     create: async (args) => payload.create(args as never) as unknown as Promise<EntitlementQuotaLock>,
     update: async (args) => payload.update(args as never) as unknown as Promise<EntitlementQuotaLock>,
   };

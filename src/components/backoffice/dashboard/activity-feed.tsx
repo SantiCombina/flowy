@@ -9,8 +9,18 @@ const RELATIVE_THRESHOLDS = [
   { seconds: 3600, divisor: 60, unit: 'minuto' as const },
   { seconds: 86400, divisor: 3600, unit: 'hora' as const },
   { seconds: 604800, divisor: 86400, unit: 'día' as const, useDays: true },
-  { seconds: 2592000, divisor: 604800, unit: 'semana' as const, useWeeks: true },
-  { seconds: 31536000, divisor: 2592000, unit: 'mes' as const, useMonths: true },
+  {
+    seconds: 2592000,
+    divisor: 604800,
+    unit: 'semana' as const,
+    useWeeks: true,
+  },
+  {
+    seconds: 31536000,
+    divisor: 2592000,
+    unit: 'mes' as const,
+    useMonths: true,
+  },
 ];
 
 function formatRelativeTime(iso: string): string {

@@ -2,18 +2,15 @@
 
 import { Building2, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { ListTenantsResult } from '@/app/services/backoffice/tenants';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, type Column } from '@/components/ui/data-table';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { queryKeys } from '@/lib/query-keys';
+import { normalizeText } from '@/lib/text';
 import { cn, formatShortDate } from '@/lib/utils';
 
-import { listTenantsAction } from './actions';
 import { TenantsTableToolbar, type PlanFilterValue, type StateFilterValue } from './tenants-table-toolbar';
 
 const PLAN_LABELS: Record<string, string> = {
@@ -47,32 +44,27 @@ interface TenantsListProps {
 }
 
 export function TenantsList({ initialData }: TenantsListProps) {
-  const { invalidateQueries } = useInvalidateQueries();
   const [search, setSearch] = useState('');
   const [planCode, setPlanCode] = useState<PlanFilterValue>('all');
   const [state, setState] = useState<StateFilterValue>('all');
-  const [data, setData] = useState<ListTenantsResult>(initialData);
 
-  const { execute: refetch, isExecuting } = useAction(listTenantsAction, {
-    onSuccess: ({ data: result }) => {
-      if (result?.success) {
-        setData(result.data);
-        invalidateQueries([queryKeys.adminBackoffice.tenants.list({})]);
-      }
-    },
-  });
-
-  useEffect(() => {
-    const trimmed = search.trim();
-    const params = {
-      search: trimmed || undefined,
-      planCode: planCode === 'all' ? undefined : planCode,
-      state: state === 'all' ? undefined : state,
-      page: 1,
-      limit: 20,
-    };
-    refetch(params);
-  }, [search, planCode, state, refetch]);
+  const filteredDocs = useMemo(() => {
+    let result = initialData.docs;
+    const trimmedSearch = search.trim();
+    if (trimmedSearch) {
+      const q = normalizeText(trimmedSearch);
+      result = result.filter(
+        (row) => normalizeText(row.businessName ?? '').includes(q) || normalizeText(row.email).includes(q),
+      );
+    }
+    if (planCode !== 'all') {
+      result = result.filter((row) => row.planCode === planCode);
+    }
+    if (state !== 'all') {
+      result = result.filter((row) => row.entitlementState === state);
+    }
+    return result;
+  }, [initialData.docs, search, planCode, state]);
 
   const columns: Column<TenantRow>[] = [
     {
@@ -161,21 +153,19 @@ export function TenantsList({ initialData }: TenantsListProps) {
           onSearchChange={setSearch}
           onPlanCodeChange={setPlanCode}
           onStateChange={setState}
-          totalCount={data.totalDocs}
+          totalCount={initialData.totalDocs}
         />
 
-        <div className={cn('transition-opacity duration-200', isExecuting ? 'opacity-50' : 'opacity-100')}>
-          {data.docs.length === 0 && !isExecuting && !isFiltered ? (
-            <EmptyState icon={Building2} title="Sin tenants registrados" />
-          ) : (
-            <DataTable<TenantRow>
-              data={data.docs}
-              columns={columns}
-              keyExtractor={(row) => row.id}
-              emptyMessage={isFiltered ? 'No se encontraron tenants con esos filtros' : 'Sin tenants registrados'}
-            />
-          )}
-        </div>
+        {filteredDocs.length === 0 && !isFiltered ? (
+          <EmptyState icon={Building2} title="Sin tenants registrados" />
+        ) : (
+          <DataTable<TenantRow>
+            data={filteredDocs}
+            columns={columns}
+            keyExtractor={(row) => row.id}
+            emptyMessage={isFiltered ? 'No se encontraron tenants con esos filtros' : 'Sin tenants registrados'}
+          />
+        )}
       </main>
     </div>
   );

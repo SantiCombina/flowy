@@ -2,6 +2,7 @@
 
 import { Building2, Filter } from 'lucide-react';
 
+import { InviteAdminDialog } from '@/components/backoffice/tenants/invite-admin-dialog';
 import { SearchInput } from '@/components/ui/search-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -87,6 +88,8 @@ export function TenantsTableToolbar({
           ))}
         </SelectContent>
       </Select>
+
+      <InviteAdminDialog />
     </div>
   );
 }

@@ -17,7 +17,9 @@ export const updateProfileSchema = z.object({
       invalid_type_error: 'El CUIT/CUIL debe ser una cadena de texto.',
     })
     .trim()
-    .regex(/^\d{2}-\d{8}-\d{1}$/, { message: 'Formato inválido. Usar XX-XXXXXXXX-X.' })
+    .regex(/^\d{2}-\d{8}-\d{1}$/, {
+      message: 'Formato inválido. Usar XX-XXXXXXXX-X.',
+    })
     .optional()
     .or(z.literal('')),
   cbu: z

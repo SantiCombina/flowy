@@ -39,7 +39,9 @@ export async function getUnreadCount(userId: number): Promise<number> {
 
   const result = await payload.find({
     collection: 'notifications',
-    where: { and: [{ recipient: { equals: userId } }, { read: { equals: false } }] },
+    where: {
+      and: [{ recipient: { equals: userId } }, { read: { equals: false } }],
+    },
     limit: 0,
     overrideAccess: true,
   });
@@ -76,7 +78,9 @@ export async function markAllNotificationsRead(userId: number): Promise<void> {
 
   const unread = await payload.find({
     collection: 'notifications',
-    where: { and: [{ recipient: { equals: userId } }, { read: { equals: false } }] },
+    where: {
+      and: [{ recipient: { equals: userId } }, { read: { equals: false } }],
+    },
     limit: 100,
     overrideAccess: true,
   });
@@ -125,7 +129,9 @@ export async function deletePushSubscription(userId: number, endpoint: string): 
 
   const existing = await payload.find({
     collection: 'push-subscriptions',
-    where: { and: [{ user: { equals: userId } }, { endpoint: { equals: endpoint } }] },
+    where: {
+      and: [{ user: { equals: userId } }, { endpoint: { equals: endpoint } }],
+    },
     limit: 1,
     overrideAccess: true,
   });

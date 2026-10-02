@@ -4,9 +4,7 @@ import type { Where } from 'payload';
 
 import type { PlanCode } from '@/lib/entitlements/capabilities';
 import { getPayloadClient } from '@/lib/payload';
-import { normalizeText } from '@/lib/text';
-import type { Product, ProductVariant, Sale, TenantEntitlementSnapshot, User } from '@/payload-types';
-import type { TenantListValues } from '@/schemas/backoffice/tenant-list-schema';
+import type { Invitation, Product, ProductVariant, Sale, TenantEntitlementSnapshot, User } from '@/payload-types';
 
 export interface TenantRow {
   id: number;
@@ -24,29 +22,16 @@ export interface ListTenantsResult {
   totalPages: number;
 }
 
-export async function listTenants(params: TenantListValues): Promise<ListTenantsResult> {
+export async function listTenants(params: { limit?: number } = {}): Promise<ListTenantsResult> {
   const payload = await getPayloadClient();
 
   const conditions: Where[] = [{ role: { equals: 'owner' } }, { isDeleted: { not_equals: true } }];
-
-  const trimmedSearch = params.search?.trim();
-  if (trimmedSearch) {
-    const normalized = normalizeText(trimmedSearch);
-    conditions.push({ or: [{ businessName: { like: normalized } }, { email: { like: trimmedSearch } }] });
-  }
-  if (params.planCode) {
-    conditions.push({ 'activeEntitlementSnapshot.planVersion.planCode': { equals: params.planCode } });
-  }
-  if (params.state) {
-    conditions.push({ entitlementState: { equals: params.state } });
-  }
 
   const result = await payload.find({
     collection: 'users',
     where: { and: conditions },
     sort: '-createdAt',
-    page: params.page,
-    limit: params.limit,
+    limit: params.limit ?? 1000,
     depth: 1,
     overrideAccess: true,
   });
@@ -67,9 +52,9 @@ export async function listTenants(params: TenantListValues): Promise<ListTenants
 
   return {
     docs,
-    totalDocs: result.totalDocs,
-    page: result.page ?? params.page,
-    totalPages: result.totalPages ?? 1,
+    totalDocs: docs.length,
+    page: 1,
+    totalPages: 1,
   };
 }
 
@@ -246,7 +231,9 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
   if (productIds.length > 0) {
     const variantsResult = await payload.find({
       collection: 'product-variants',
-      where: { and: [{ product: { in: productIds } }, { owner: { equals: id } }] },
+      where: {
+        and: [{ product: { in: productIds } }, { owner: { equals: id } }],
+      },
       limit: 5000,
       depth: 0,
       overrideAccess: true,
@@ -382,7 +369,9 @@ export async function getTenantProducts(ownerId: number): Promise<TenantProductR
   if (productIds.length > 0) {
     const variantsResult = await payload.find({
       collection: 'product-variants',
-      where: { and: [{ product: { in: productIds } }, { owner: { equals: ownerId } }] },
+      where: {
+        and: [{ product: { in: productIds } }, { owner: { equals: ownerId } }],
+      },
       limit: 5000,
       depth: 0,
       overrideAccess: true,
@@ -466,4 +455,44 @@ export async function getTenantSnapshots(ownerId: number): Promise<TenantSnapsho
   });
 
   return snapshots.sort((a, b) => b.sequence - a.sequence);
+}
+
+export interface PendingInvitationRow {
+  id: number;
+  name: string | null | undefined;
+  email: string;
+  role: 'owner' | 'seller';
+  expiresAt: string;
+  createdAt: string;
+  createdByEmail: string | null;
+}
+
+export async function listPendingInvitationsByCurrentAdmin(): Promise<PendingInvitationRow[]> {
+  const payload = await getPayloadClient();
+
+  const result = await payload.find({
+    collection: 'invitations',
+    where: {
+      state: { equals: 'pending' },
+    },
+    sort: '-createdAt',
+    limit: 200,
+    depth: 1,
+    overrideAccess: true,
+  });
+
+  return (result.docs as Invitation[]).map((invitation) => {
+    const createdBy = invitation.createdBy;
+    const createdByEmail =
+      createdBy && typeof createdBy === 'object' ? ((createdBy as { email?: string | null }).email ?? null) : null;
+    return {
+      id: invitation.id,
+      name: invitation.name,
+      email: invitation.email,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt ?? '',
+      createdAt: invitation.createdAt,
+      createdByEmail,
+    };
+  });
 }

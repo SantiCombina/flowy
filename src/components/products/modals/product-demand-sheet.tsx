@@ -169,13 +169,19 @@ export function ProductDemandSheet({ variant, onClose }: ProductDemandSheetProps
                         <XAxis
                           dataKey="month"
                           tickFormatter={formatMonth}
-                          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                          tick={{
+                            fontSize: 10,
+                            fill: 'hsl(var(--muted-foreground))',
+                          }}
                           tickLine={false}
                           axisLine={false}
                         />
                         <YAxis
                           allowDecimals={false}
-                          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                          tick={{
+                            fontSize: 10,
+                            fill: 'hsl(var(--muted-foreground))',
+                          }}
                           tickLine={false}
                           axisLine={false}
                           width={32}

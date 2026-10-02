@@ -106,7 +106,11 @@ export function ContactSection() {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ delay: 0.1, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        delay: 0.1,
+                        duration: 0.3,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                       className="relative flex items-center justify-center overflow-visible"
                     >
                       <div className="h-20 w-20 rounded-full bg-emerald-100" />
@@ -125,7 +129,11 @@ export function ContactSection() {
                             d="M9 10 L12 14 L19 6"
                             initial={{ pathLength: 0 }}
                             animate={{ pathLength: 1 }}
-                            transition={{ delay: 0.15, duration: 2, ease: [0.16, 1, 0.3, 1] }}
+                            transition={{
+                              delay: 0.15,
+                              duration: 2,
+                              ease: [0.16, 1, 0.3, 1],
+                            }}
                           />
                         </svg>
                       </div>
@@ -134,7 +142,11 @@ export function ContactSection() {
                     <motion.h3
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        delay: 0.7,
+                        duration: 0.4,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                       className="mt-4 text-xl font-semibold text-foreground"
                       style={{ fontFamily: 'var(--font-display)' }}
                     >
@@ -144,7 +156,11 @@ export function ContactSection() {
                     <motion.p
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.0, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        delay: 1.0,
+                        duration: 0.4,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                       className="mt-2 text-sm text-foreground/60"
                     >
                       Nos pondremos en contacto con vos en menos de 24 horas.
@@ -153,7 +169,11 @@ export function ContactSection() {
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.3, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{
+                        delay: 1.3,
+                        duration: 0.4,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
                     >
                       <Button variant="outline" className="mt-6 rounded-full" onClick={() => form.reset()}>
                         Enviar otro mensaje

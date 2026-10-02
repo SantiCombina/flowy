@@ -75,5 +75,8 @@ export const queryKeys = {
     plans: {
       list: () => ['adminBackoffice', 'plans', 'list'] as const,
     },
+    invitations: {
+      list: () => ['admin-backoffice', 'invitations', 'list'] as const,
+    },
   },
 } as const;

@@ -266,7 +266,12 @@ export async function runTenantReconciliationBatch(
     return batchResult(checkpoint);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown reconciliation failure';
-    const failed = { ...checkpoint, status: 'failed' as const, updatedAt: dependencies.now(), error: message };
+    const failed = {
+      ...checkpoint,
+      status: 'failed' as const,
+      updatedAt: dependencies.now(),
+      error: message,
+    };
     await dependencies.updateCheckpoint(stored.id, toRolloutRecord(failed));
     throw error;
   }
@@ -603,7 +608,9 @@ function toStoredRolloutRecord(record: EntitlementOutbox): RolloutRecord {
 
 function sourceTenantWhere(source: ReconciliationSource, tenantId: number): object {
   if (source === 'users') {
-    return { or: [{ id: { equals: tenantId } }, { owner: { equals: tenantId } }] };
+    return {
+      or: [{ id: { equals: tenantId } }, { owner: { equals: tenantId } }],
+    };
   }
   if (source === 'invitations') {
     return { createdBy: { equals: tenantId } };
@@ -633,15 +640,31 @@ async function validateTenantSnapshotAndQuotas(
   const quotas = snapshotQuotas(snapshot);
   const countDependencies: CountDependencies = {
     findUsers: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: unknown[]; totalDocs: number }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: unknown[];
+        totalDocs: number;
+      }>,
     findInvitations: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: unknown[]; totalDocs: number }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: unknown[];
+        totalDocs: number;
+      }>,
     findProducts: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: unknown[]; totalDocs: number }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: unknown[];
+        totalDocs: number;
+      }>,
     findVariants: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: unknown[]; totalDocs: number }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: unknown[];
+        totalDocs: number;
+      }>,
   };
-  const countContext = { transactionID, tenantId, now: new Date().toISOString() };
+  const countContext = {
+    transactionID,
+    tenantId,
+    now: new Date().toISOString(),
+  };
   const [seats, products, variants] = await Promise.all([
     countSeats(countDependencies, countContext),
     countProducts(countDependencies, countContext),
@@ -707,7 +730,11 @@ async function createInitialCheckpoint(
     tenantId: input.tenantId,
     status: 'running',
     highWaterIds: Object.fromEntries(highWaterEntries) as Record<ReconciliationSource, number>,
-    cursor: { source: RECONCILIATION_SOURCES[0], sourceIndex: 0, lastProcessedId: 0 },
+    cursor: {
+      source: RECONCILIATION_SOURCES[0],
+      sourceIndex: 0,
+      lastProcessedId: 0,
+    },
     processedRecords: 0,
     expectedSnapshotId,
     startedAt: timestamp,

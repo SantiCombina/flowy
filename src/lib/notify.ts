@@ -60,7 +60,14 @@ export async function notifyEvent(payload: NotifyPayload): Promise<void> {
   const { recipientId, ownerId, sellerId, type, title, body, metadata } = payload;
 
   try {
-    await persistNotification({ recipientId, ownerId, type, title, body, metadata });
+    await persistNotification({
+      recipientId,
+      ownerId,
+      type,
+      title,
+      body,
+      metadata,
+    });
   } catch (err) {
     if (process.env.NODE_ENV !== 'production') {
       console.error('[notify] persistNotification failed:', err);
@@ -68,7 +75,15 @@ export async function notifyEvent(payload: NotifyPayload): Promise<void> {
   }
 
   const results = await Promise.allSettled([
-    triggerPusher({ recipientId, ownerId, sellerId, type, title, body, metadata }),
+    triggerPusher({
+      recipientId,
+      ownerId,
+      sellerId,
+      type,
+      title,
+      body,
+      metadata,
+    }),
     sendPush({ recipientId, title, body }),
   ]);
 
@@ -147,7 +162,10 @@ async function sendPush({
     result.docs.map(async (sub) => {
       try {
         await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
+          },
           notificationPayload,
           { TTL: 60, urgency: 'high' },
         );

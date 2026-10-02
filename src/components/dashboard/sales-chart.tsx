@@ -113,7 +113,11 @@ export function SalesChart({ data, period, color = '#059669', gradientId }: Sale
               />
             }
             wrapperStyle={{ outline: 'none', zIndex: 9999 }}
-            cursor={{ stroke: resolvedColor, strokeWidth: 1, strokeDasharray: '4 4' }}
+            cursor={{
+              stroke: resolvedColor,
+              strokeWidth: 1,
+              strokeDasharray: '4 4',
+            }}
           />
           <Area
             type="monotone"

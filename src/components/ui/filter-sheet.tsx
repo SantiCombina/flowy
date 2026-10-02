@@ -36,7 +36,9 @@ export function FilterSheet({ trigger, items, title, align = 'end' }: FilterShee
     return (
       <>
         {React.isValidElement(trigger) ? (
-          React.cloneElement(trigger, { onClick: () => setOpen(true) } as React.HTMLAttributes<HTMLElement>)
+          React.cloneElement(trigger, {
+            onClick: () => setOpen(true),
+          } as React.HTMLAttributes<HTMLElement>)
         ) : (
           <div
             role="button"

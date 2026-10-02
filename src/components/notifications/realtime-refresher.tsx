@@ -50,7 +50,9 @@ export function RealtimeRefresher({ channel, events }: RealtimeRefresherProps) {
 
         timeoutRef.current = setTimeout(() => {
           for (const serialized of pendingKeysRef.current) {
-            void queryClient.invalidateQueries({ queryKey: JSON.parse(serialized) as string[] });
+            void queryClient.invalidateQueries({
+              queryKey: JSON.parse(serialized) as string[],
+            });
           }
           pendingKeysRef.current.clear();
         }, 2000);

@@ -4,13 +4,20 @@ interface InvitationValidationRecord {
   usedAt?: null | string;
 }
 
-export function buildInvitationCreateData(name: string, email: string, ownerId: number) {
+export function buildInvitationCreateData(
+  name: string,
+  email: string,
+  businessName?: string,
+  role: 'owner' | 'seller' = 'owner',
+  createdBy?: number,
+) {
   return {
     name,
     email,
-    role: 'seller' as const,
-    createdBy: ownerId,
+    role,
+    ...(businessName !== undefined ? { businessName } : {}),
     state: 'pending' as const,
+    ...(createdBy !== undefined ? { createdBy } : {}),
   };
 }
 

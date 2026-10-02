@@ -163,7 +163,9 @@ export function RegisterCommissionPaymentModal({
                         formatters={{
                           formatWeekdayName: (date) => format(date, 'EEEEE', { locale: es }).toUpperCase(),
                           formatCaption: (month, options) => {
-                            const str = format(month, 'LLLL yyyy', { locale: options?.locale ?? es });
+                            const str = format(month, 'LLLL yyyy', {
+                              locale: options?.locale ?? es,
+                            });
                             return str.charAt(0).toUpperCase() + str.slice(1);
                           },
                         }}

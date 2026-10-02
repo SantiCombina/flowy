@@ -138,7 +138,10 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const total = (watchedItems ?? []).reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
   const itemCount = watchedItems?.length ?? 0;
   const itemsError = useFirstItemsErrorMessage(form.formState.errors.items);
-  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: 'paymentMethod',
+  });
 
   const handleConfirmCancel = () => {
     draft.clearDraft();

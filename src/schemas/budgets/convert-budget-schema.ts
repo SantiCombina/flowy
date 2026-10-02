@@ -12,7 +12,9 @@ export const convertBudgetSchema = z.object({
     .max(500, { message: 'Las notas no pueden superar los 500 caracteres.' })
     .optional(),
   immediateDelivery: z
-    .boolean({ invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.' })
+    .boolean({
+      invalid_type_error: 'El valor de entrega inmediata debe ser verdadero o falso.',
+    })
     .optional(),
 });
 

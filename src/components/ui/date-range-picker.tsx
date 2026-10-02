@@ -30,10 +30,16 @@ const today = () => new Date();
 
 const PRESETS = [
   { label: 'Hoy', getRange: () => ({ from: today(), to: today() }) },
-  { label: 'Ayer', getRange: () => ({ from: subDays(today(), 1), to: subDays(today(), 1) }) },
+  {
+    label: 'Ayer',
+    getRange: () => ({ from: subDays(today(), 1), to: subDays(today(), 1) }),
+  },
   {
     label: 'Esta semana',
-    getRange: () => ({ from: startOfWeek(today(), { weekStartsOn: 1 }), to: endOfWeek(today(), { weekStartsOn: 1 }) }),
+    getRange: () => ({
+      from: startOfWeek(today(), { weekStartsOn: 1 }),
+      to: endOfWeek(today(), { weekStartsOn: 1 }),
+    }),
   },
   {
     label: 'Semana pasada',
@@ -42,9 +48,18 @@ const PRESETS = [
       return { from: start, to: endOfWeek(start, { weekStartsOn: 1 }) };
     },
   },
-  { label: 'Últimos 7 días', getRange: () => ({ from: subDays(today(), 6), to: today() }) },
-  { label: 'Últimos 30 días', getRange: () => ({ from: subDays(today(), 29), to: today() }) },
-  { label: 'Este mes', getRange: () => ({ from: startOfMonth(today()), to: endOfMonth(today()) }) },
+  {
+    label: 'Últimos 7 días',
+    getRange: () => ({ from: subDays(today(), 6), to: today() }),
+  },
+  {
+    label: 'Últimos 30 días',
+    getRange: () => ({ from: subDays(today(), 29), to: today() }),
+  },
+  {
+    label: 'Este mes',
+    getRange: () => ({ from: startOfMonth(today()), to: endOfMonth(today()) }),
+  },
   {
     label: 'Mes anterior',
     getRange: () => {
@@ -52,7 +67,13 @@ const PRESETS = [
       return { from: startOfMonth(prev), to: endOfMonth(prev) };
     },
   },
-  { label: 'Últimos 3 meses', getRange: () => ({ from: startOfMonth(subMonths(today(), 2)), to: endOfDay(today()) }) },
+  {
+    label: 'Últimos 3 meses',
+    getRange: () => ({
+      from: startOfMonth(subMonths(today(), 2)),
+      to: endOfDay(today()),
+    }),
+  },
 ];
 
 export function DateRangePicker({

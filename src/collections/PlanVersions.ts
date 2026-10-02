@@ -56,7 +56,10 @@ export const PlanVersions: CollectionConfig = {
           name: 'capability',
           type: 'select',
           required: true,
-          options: CAPABILITIES.map((capability) => ({ label: capability, value: capability })),
+          options: CAPABILITIES.map((capability) => ({
+            label: capability,
+            value: capability,
+          })),
         },
       ],
     },
@@ -67,8 +70,18 @@ export const PlanVersions: CollectionConfig = {
       fields: [
         { name: 'maxSellerSeats', type: 'number', required: true, min: 0 },
         { name: 'maxProducts', type: 'number', required: true, min: 0 },
-        { name: 'maxVariantsPerProduct', type: 'number', required: true, min: 0 },
-        { name: 'maxVariantsPerTenant', type: 'number', required: true, min: 0 },
+        {
+          name: 'maxVariantsPerProduct',
+          type: 'number',
+          required: true,
+          min: 0,
+        },
+        {
+          name: 'maxVariantsPerTenant',
+          type: 'number',
+          required: true,
+          min: 0,
+        },
       ],
     },
     {

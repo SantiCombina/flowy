@@ -545,7 +545,9 @@ export async function getBudgetConvertData(
   const [variantsResult, inventoryResult] = await Promise.all([
     payload.find({
       collection: 'product-variants',
-      where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
+      where: {
+        and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }],
+      },
       depth: 2,
       limit: variantIds.length,
       overrideAccess: true,
@@ -682,7 +684,9 @@ async function runConvertBudgetToSale(
   const variantIds = budget.items.map((item) => resolveId(item.variant) ?? 0);
   const variantsResult = await dependencies.findVariants({
     collection: 'product-variants',
-    where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
+    where: {
+      and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }],
+    },
     limit: variantIds.length,
     overrideAccess: true,
     req: { transactionID: dependencies.transactionID },
@@ -804,7 +808,10 @@ async function defaultConvertBudgetDependencies(ownerId: number): Promise<Conver
     lock,
     lockContext: { transactionID, tenantId: ownerId },
     findBudgetById: async (args) => payload.findByID(args as never) as unknown as Promise<Budget>,
-    findVariants: async (args) => payload.find(args as never) as unknown as Promise<{ docs: ProductVariant[] }>,
+    findVariants: async (args) =>
+      payload.find(args as never) as unknown as Promise<{
+        docs: ProductVariant[];
+      }>,
     updateVariant: async (args) => payload.update(args as never) as unknown as Promise<ProductVariant>,
     createStockMovement: async (args) => payload.create(args as never) as unknown,
     createSale: async (args) => payload.create(args as never) as unknown as Promise<Sale>,

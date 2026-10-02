@@ -306,7 +306,13 @@ function SalesSectionComponent({
       toast.success('Venta marcada como entregada.');
       setSales((prev) =>
         prev.map((s) =>
-          s.id === saleId ? { ...s, deliveryStatus: 'delivered' as const, deliveredAt: new Date().toISOString() } : s,
+          s.id === saleId
+            ? {
+                ...s,
+                deliveryStatus: 'delivered' as const,
+                deliveredAt: new Date().toISOString(),
+              }
+            : s,
         ),
       );
     }

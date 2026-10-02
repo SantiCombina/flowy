@@ -56,7 +56,11 @@ export function SignupsChart({ data }: SignupsChartProps) {
           <Tooltip
             content={<CustomTooltip />}
             wrapperStyle={{ outline: 'none', zIndex: 9999 }}
-            cursor={{ stroke: '#2563eb', strokeWidth: 1, strokeDasharray: '4 4' }}
+            cursor={{
+              stroke: '#2563eb',
+              strokeWidth: 1,
+              strokeDasharray: '4 4',
+            }}
           />
           <Area
             type="monotone"

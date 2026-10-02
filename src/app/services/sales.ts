@@ -193,7 +193,9 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
     const variantIds = data.items.map((item) => item.variantId);
     const variantsResult = await payload.find({
       collection: 'product-variants',
-      where: { and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }] },
+      where: {
+        and: [{ id: { in: variantIds } }, { owner: { equals: ownerId } }],
+      },
       depth: 2,
       limit: variantIds.length,
       overrideAccess: true,
@@ -284,7 +286,11 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
             type: 'stock_low',
             title: 'Stock bajo',
             body: `Stock bajo: ${productName}, quedan ${newStock} unidades`,
-            metadata: { variantId: item.variantId, newStock, minimumStock: variant.minimumStock },
+            metadata: {
+              variantId: item.variantId,
+              newStock,
+              minimumStock: variant.minimumStock,
+            },
           });
         }
       } else {
@@ -352,7 +358,9 @@ export async function createSale(sellerId: number, ownerId: number, data: SaleVa
         deliveryStatus: data.immediateDelivery ? ('delivered' as const) : ('pending' as const),
         ...(data.immediateDelivery ? { deliveredAt: now } : {}),
         ...(isImmediate && hasAmountToCollect
-          ? { paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check' }
+          ? {
+              paymentMethod: data.paymentMethod as 'cash' | 'transfer' | 'check',
+            }
           : {}),
         ...(isImmediate && hasAmountToCollect ? { collectedAt: now } : {}),
         ...(data.checkDueDate ? { checkDueDate: data.checkDueDate } : {}),
@@ -476,7 +484,12 @@ async function _getPaginatedSales(
   scope: { sellerId: number } | { ownerId: number },
   filters: SalesListFilters,
   options: SalesListOptions,
-): Promise<{ sales: SaleRow[]; totalCount: number; totalPages: number; page: number }> {
+): Promise<{
+  sales: SaleRow[];
+  totalCount: number;
+  totalPages: number;
+  page: number;
+}> {
   const payload = await getPayloadClient();
   const isSeller = 'sellerId' in scope;
 
@@ -494,7 +507,9 @@ async function _getPaginatedSales(
 
   if (filters.paymentStatus) {
     if (filters.paymentStatus === 'pending') {
-      conditions.push({ paymentStatus: { in: ['pending', 'partially_collected'] } });
+      conditions.push({
+        paymentStatus: { in: ['pending', 'partially_collected'] },
+      });
     } else {
       conditions.push({ paymentStatus: { equals: 'collected' } });
     }
@@ -534,7 +549,13 @@ async function _getPaginatedSales(
       id: true,
       date: true,
       seller: { select: { name: true } } as unknown as true,
-      client: { select: { id: true, name: true, zone: { select: { id: true, name: true } } } } as unknown as true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          zone: { select: { id: true, name: true } },
+        },
+      } as unknown as true,
       items: true,
       total: true,
       paymentMethod: true,
@@ -609,7 +630,12 @@ export async function getPaginatedSales(
   scope: { sellerId: number } | { ownerId: number },
   filters: SalesListFilters,
   options: SalesListOptions,
-): Promise<{ sales: SaleRow[]; totalCount: number; totalPages: number; page: number }> {
+): Promise<{
+  sales: SaleRow[];
+  totalCount: number;
+  totalPages: number;
+  page: number;
+}> {
   const tagId = 'sellerId' in scope ? scope.sellerId : scope.ownerId;
 
   return unstable_cache(
@@ -634,7 +660,13 @@ export async function getAllSales(scope: { sellerId: number } | { ownerId: numbe
       id: true,
       date: true,
       seller: { select: { name: true } } as unknown as true,
-      client: { select: { id: true, name: true, zone: { select: { id: true, name: true } } } } as unknown as true,
+      client: {
+        select: {
+          id: true,
+          name: true,
+          zone: { select: { id: true, name: true } },
+        },
+      } as unknown as true,
       items: true,
       total: true,
       paymentMethod: true,
@@ -912,7 +944,11 @@ function verifySaleAccess(sale: Sale, callerId: number, callerRole: 'owner' | 's
 
 async function restoreItemStock(
   payload: Awaited<ReturnType<typeof getPayloadClient>>,
-  item: { variant: number | { id: number }; quantity: number; stockSource?: string | null },
+  item: {
+    variant: number | { id: number };
+    quantity: number;
+    stockSource?: string | null;
+  },
   saleSellerId: number,
   ownerId: number,
   reason: string,
@@ -954,7 +990,9 @@ async function restoreItemStock(
   } else {
     const { docs } = await payload.find({
       collection: 'mobile-seller-inventory',
-      where: { and: [{ seller: { equals: saleSellerId } }, { variant: { equals: variantId } }] },
+      where: {
+        and: [{ seller: { equals: saleSellerId } }, { variant: { equals: variantId } }],
+      },
       limit: 1,
       overrideAccess: true,
       req: { transactionID },
@@ -1032,7 +1070,12 @@ export async function deleteSale(saleId: number, callerId: number, callerRole: '
       await restoreItemStock(payload, item, saleSellerId, saleOwnerId, `Venta #${saleId} eliminada`, transactionID);
     }
 
-    await payload.delete({ collection: 'sales', id: saleId, overrideAccess: true, req: { transactionID } });
+    await payload.delete({
+      collection: 'sales',
+      id: saleId,
+      overrideAccess: true,
+      req: { transactionID },
+    });
 
     await payload.db.commitTransaction(transactionID);
 
@@ -1313,7 +1356,10 @@ async function _getProductDemandSummary(ownerId: number): Promise<Record<number,
       const variantId = resolveId(item.variant) ?? 0;
       const existing = demandMap[variantId];
       if (!existing) {
-        demandMap[variantId] = { lastSoldAt: sale.date, totalUnits: item.quantity };
+        demandMap[variantId] = {
+          lastSoldAt: sale.date,
+          totalUnits: item.quantity,
+        };
       } else {
         existing.totalUnits += item.quantity;
         if (sale.date > (existing.lastSoldAt ?? '')) {
@@ -1370,7 +1416,11 @@ async function _getVariantSalesHistory(variantId: number, ownerId: number): Prom
   const monthMap = new Map<string, MonthlyDemand>();
   for (const m of monthly) monthMap.set(m.month, m);
 
-  const prevMonthEntry: MonthlyDemand = { month: previousMonthKey, units: 0, revenue: 0 };
+  const prevMonthEntry: MonthlyDemand = {
+    month: previousMonthKey,
+    units: 0,
+    revenue: 0,
+  };
   if (!monthMap.has(previousMonthKey)) monthMap.set(previousMonthKey, prevMonthEntry);
 
   let lastSoldAt: string | null = null;
@@ -1404,10 +1454,24 @@ async function _getVariantSalesHistory(variantId: number, ownerId: number): Prom
     }
   }
 
-  const currentMonth: MonthSummary = monthMap.get(currentMonthKey) ?? { units: 0, revenue: 0 };
-  const previousMonth: MonthSummary = monthMap.get(previousMonthKey) ?? { units: 0, revenue: 0 };
+  const currentMonth: MonthSummary = monthMap.get(currentMonthKey) ?? {
+    units: 0,
+    revenue: 0,
+  };
+  const previousMonth: MonthSummary = monthMap.get(previousMonthKey) ?? {
+    units: 0,
+    revenue: 0,
+  };
 
-  return { variantId, lastSoldAt, totalUnits, totalRevenue, monthly, currentMonth, previousMonth };
+  return {
+    variantId,
+    lastSoldAt,
+    totalUnits,
+    totalRevenue,
+    monthly,
+    currentMonth,
+    previousMonth,
+  };
 }
 
 export async function getVariantSalesHistory(variantId: number, ownerId: number): Promise<VariantSalesHistory> {

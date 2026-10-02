@@ -406,7 +406,11 @@ export interface PlanVersion {
  */
 export interface Invitation {
   id: number;
-  name: string;
+  name?: string | null;
+  /**
+   * Nombre del negocio para el nuevo owner
+   */
+  businessName?: string | null;
   email: string;
   role: 'owner' | 'seller';
   token?: string | null;
@@ -421,6 +425,7 @@ export interface Invitation {
    * Fecha en que se usó la invitación
    */
   usedAt?: string | null;
+  emailStatus: 'pending' | 'sent' | 'failed';
   updatedAt: string;
   createdAt: string;
 }
@@ -1308,6 +1313,7 @@ export interface EntitlementOutboxSelect<T extends boolean = true> {
  */
 export interface InvitationsSelect<T extends boolean = true> {
   name?: T;
+  businessName?: T;
   email?: T;
   role?: T;
   token?: T;
@@ -1319,6 +1325,7 @@ export interface InvitationsSelect<T extends boolean = true> {
   replacedAt?: T;
   replacedBy?: T;
   usedAt?: T;
+  emailStatus?: T;
   updatedAt?: T;
   createdAt?: T;
 }

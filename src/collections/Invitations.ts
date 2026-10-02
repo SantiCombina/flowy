@@ -46,6 +46,8 @@ export const Invitations: CollectionConfig = {
     ],
     beforeChange: [
       async ({ data, req, context, operation, originalDoc }) => {
+        if (context?.skipInvitationHooks) return data;
+
         if (
           data &&
           ('token' in data ||
@@ -98,6 +100,15 @@ export const Invitations: CollectionConfig = {
           throw new Error('Invitation token, creator, and email are immutable');
         }
 
+        if (
+          operation === 'update' &&
+          data &&
+          data.businessName !== undefined &&
+          data.businessName !== (originalDoc?.businessName ?? null)
+        ) {
+          throw new Error('Invitation businessName is immutable');
+        }
+
         if (operation === 'create' && req.user && data) {
           if (req.user.role === 'owner' && data.role !== 'seller') {
             throw new Error('Solo podés invitar vendedores');
@@ -116,11 +127,18 @@ export const Invitations: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, req, operation }) => {
+      async ({ doc, req, operation, context }) => {
+        if (context?.skipInvitationHooks) return doc;
         if (operation === 'create') {
-          const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000';
-          const registerUrl = `${baseUrl}/register?token=${doc.token}`;
+          const host = req.headers.get('host') ?? 'localhost:3000';
+          const baseUrl = `${req.protocol}://${host}`;
+          let registerUrl = `${baseUrl}/register?token=${doc.token}`;
+          if (doc.role === 'owner' && doc.businessName) {
+            registerUrl += `&businessName=${encodeURIComponent(doc.businessName)}`;
+          }
           const roleName = doc.role === 'owner' ? 'Dueño' : 'Vendedor';
+
+          let emailStatus: 'sent' | 'failed' = 'failed';
 
           try {
             const html = await render(InvitationEmail({ registerUrl, roleName }));
@@ -131,10 +149,41 @@ export const Invitations: CollectionConfig = {
               html,
             });
             if (error) {
-              req.payload.logger.error({ err: error, msg: 'Error enviando email de invitación' });
+              req.payload.logger.error({
+                err: error,
+                msg: 'Error enviando email de invitación',
+              });
+              emailStatus = 'failed';
+            } else {
+              emailStatus = 'sent';
             }
           } catch (error) {
-            req.payload.logger.error({ err: error, msg: 'Error enviando email de invitación' });
+            req.payload.logger.error({
+              err: error,
+              msg: 'Error enviando email de invitación',
+            });
+            emailStatus = 'failed';
+          }
+
+          try {
+            const updated = await req.payload.update({
+              collection: 'invitations',
+              id: doc.id,
+              data: { emailStatus } as never,
+              overrideAccess: true,
+              context: { ...req.context, skipInvitationHooks: true },
+              req,
+            });
+            if (!updated) {
+              req.payload.logger.error({
+                msg: 'No se pudo actualizar emailStatus de la invitación',
+              });
+            }
+          } catch (error) {
+            req.payload.logger.error({
+              err: error,
+              msg: 'Error actualizando emailStatus de la invitación',
+            });
           }
         }
         return doc;
@@ -145,7 +194,14 @@ export const Invitations: CollectionConfig = {
     {
       name: 'name',
       type: 'text',
-      required: true,
+    },
+    {
+      name: 'businessName',
+      type: 'text',
+      admin: {
+        description: 'Nombre del negocio para el nuevo owner',
+        condition: (data) => data?.role === 'owner',
+      },
     },
     {
       name: 'email',
@@ -236,6 +292,18 @@ export const Invitations: CollectionConfig = {
           pickerAppearance: 'dayAndTime',
         },
       },
+    },
+    {
+      name: 'emailStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'pending',
+      index: true,
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Sent', value: 'sent' },
+        { label: 'Failed', value: 'failed' },
+      ],
     },
   ],
 };

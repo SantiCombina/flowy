@@ -14,7 +14,9 @@ async function _getClients({ ownerId, sellerId }: { ownerId: number; sellerId?: 
   const payload = await getPayloadClient();
 
   const where: Where = sellerId
-    ? { and: [{ owner: { equals: ownerId } }, { createdBy: { equals: sellerId } }] }
+    ? {
+        and: [{ owner: { equals: ownerId } }, { createdBy: { equals: sellerId } }],
+      }
     : { owner: { equals: ownerId } };
 
   const result = await payload.find({

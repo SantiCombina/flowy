@@ -1,5 +1,7 @@
 'use server';
 
+import { sql } from '@payloadcms/db-postgres';
+
 import { CAPABILITIES } from '@/lib/entitlements/capabilities';
 import { acquireTenantLock, type LockContext, type LockDependencies } from '@/lib/entitlements/locks';
 import { planCapabilities, planQuotasFromRow } from '@/lib/entitlements/quotas';
@@ -115,6 +117,11 @@ export async function assignOrChangeTenantPlan(
   return changeTenantPlan(tenantId, planVersionId, createdBy);
 }
 
+export interface PublishPlanVersionResult {
+  version: PlanVersion;
+  migratedTenantsCount: number;
+}
+
 export async function publishPlanVersion(
   planCode: 'basic' | 'medium' | 'professional',
   capabilities: readonly { capability: (typeof CAPABILITIES)[number] }[],
@@ -125,34 +132,198 @@ export async function publishPlanVersion(
     maxVariantsPerTenant: number;
   },
   createdBy: number,
-): Promise<void> {
+): Promise<PublishPlanVersionResult> {
   const payload = await getPayloadClient();
-
   planCapabilities(planCode);
 
-  const latest = await payload.find({
-    collection: 'plan-versions',
-    where: { planCode: { equals: planCode } },
-    sort: '-version',
-    limit: 1,
-    overrideAccess: true,
-  });
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
+  }
 
-  const nextVersion = (latest.docs[0]?.version ?? 0) + 1;
+  try {
+    await acquirePlanPublishLock(payload, transactionID, planCode);
 
-  await payload.create({
-    collection: 'plan-versions',
-    data: {
-      planCode,
-      version: nextVersion,
-      capabilities: [...capabilities],
-      quotas,
-      publishedAt: new Date().toISOString(),
+    const latest = await payload.find({
+      collection: 'plan-versions',
+      where: { planCode: { equals: planCode } },
+      sort: '-version',
+      limit: 1,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    const previousVersion = latest.docs[0];
+    const nextVersionNumber = (previousVersion?.version ?? 0) + 1;
+    const now = new Date().toISOString();
+
+    const newVersion = (await payload.create({
+      collection: 'plan-versions',
+      data: {
+        planCode,
+        version: nextVersionNumber,
+        capabilities: [...capabilities],
+        quotas,
+        publishedAt: now,
+        createdBy,
+      },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID },
+    })) as PlanVersion;
+
+    if (!previousVersion) {
+      await payload.db.commitTransaction(transactionID);
+      return { version: newVersion, migratedTenantsCount: 0 };
+    }
+
+    const migratedTenantsCount = await migrateSnapshotsToNewVersion(
+      payload,
+      transactionID,
+      previousVersion.id,
+      newVersion.id,
       createdBy,
+      now,
+    );
+
+    await payload.db.commitTransaction(transactionID);
+    return { version: newVersion, migratedTenantsCount };
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
+}
+
+async function acquirePlanPublishLock(
+  payload: Awaited<ReturnType<typeof getPayloadClient>>,
+  transactionID: string | number,
+  planCode: 'basic' | 'medium' | 'professional',
+): Promise<void> {
+  // Serializes concurrent publishes for the same planCode so two admins cannot create
+  // duplicate version numbers or interleave snapshot migrations for the same plan.
+  // Released automatically when the surrounding transaction commits or rolls back.
+  const sessions = (payload.db as { sessions?: Record<string | number, { db?: unknown }> }).sessions;
+  const transaction = sessions?.[transactionID]?.db;
+
+  if (!isSqlExecutor(transaction)) {
+    throw new Error('No se pudo obtener la transacción de base de datos para el lock de publicación');
+  }
+
+  await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`flowy:plan-publish:${planCode}`}))`);
+}
+
+function isSqlExecutor(value: unknown): value is { execute: (query: unknown) => Promise<unknown> } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'execute' in value &&
+    typeof (value as { execute: unknown }).execute === 'function'
+  );
+}
+
+async function migrateSnapshotsToNewVersion(
+  payload: Awaited<ReturnType<typeof getPayloadClient>>,
+  transactionID: string | number,
+  previousVersionId: number,
+  newVersionId: number,
+  createdBy: number,
+  now: string,
+): Promise<number> {
+  const oldSnapshots = await payload.find({
+    collection: 'tenant-entitlement-snapshots',
+    where: {
+      and: [{ kind: { equals: 'plan' } }, { planVersion: { equals: previousVersionId } }],
     },
+    limit: 10000,
+    depth: 0,
     overrideAccess: true,
-    context: { entitlementMutation: true },
+    req: { transactionID },
   });
+
+  if (oldSnapshots.totalDocs > oldSnapshots.docs.length) {
+    payload.logger.warn({
+      msg: `Plan publish migration truncated: found ${oldSnapshots.totalDocs} snapshots but only processed ${oldSnapshots.docs.length}`,
+    });
+  }
+
+  let migratedCount = 0;
+
+  for (const oldSnapshot of oldSnapshots.docs as TenantEntitlementSnapshot[]) {
+    const tenantId = typeof oldSnapshot.tenant === 'number' ? oldSnapshot.tenant : oldSnapshot.tenant.id;
+
+    const idempotencyKey = `snapshot:${tenantId}:${newVersionId}:${oldSnapshot.sequence + 1}`;
+
+    let newSnapshot: TenantEntitlementSnapshot;
+    try {
+      newSnapshot = (await payload.create({
+        collection: 'tenant-entitlement-snapshots',
+        data: {
+          tenant: tenantId,
+          sequence: oldSnapshot.sequence + 1,
+          idempotencyKey,
+          kind: 'plan',
+          planVersion: newVersionId,
+          predecessor: oldSnapshot.id,
+          createdBy,
+        },
+        overrideAccess: true,
+        context: { entitlementMutation: true, entitlementNow: now },
+        req: { transactionID },
+      })) as TenantEntitlementSnapshot;
+    } catch (error) {
+      payload.logger.warn({
+        msg: `Skipping plan snapshot migration for tenant ${tenantId}: idempotency collision`,
+        err: error,
+      });
+      continue;
+    }
+
+    const tenant = await payload.findByID({
+      collection: 'users',
+      id: tenantId,
+      depth: 0,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    const activeSnapshotId =
+      typeof tenant.activeEntitlementSnapshot === 'number'
+        ? tenant.activeEntitlementSnapshot
+        : (tenant.activeEntitlementSnapshot?.id ?? null);
+
+    if (activeSnapshotId !== oldSnapshot.id) {
+      continue;
+    }
+
+    await payload.update({
+      collection: 'users',
+      id: tenantId,
+      data: { activeEntitlementSnapshot: newSnapshot.id },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID },
+    });
+
+    await payload.create({
+      collection: 'entitlement-outbox',
+      data: {
+        idempotencyKey: `mutation:${tenantId}:${newVersionId}:${newSnapshot.id}`,
+        kind: 'entitlement.mutation',
+        aggregate: `tenant:${tenantId}`,
+        payload: { tenantId, snapshotId: newSnapshot.id },
+        state: 'sent',
+        attempts: 0,
+        availableAt: now,
+      },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID },
+    });
+
+    migratedCount += 1;
+  }
+
+  return migratedCount;
 }
 
 export { transitionTenantState as _transitionTenantState };
@@ -447,7 +618,9 @@ export async function defaultEntitlementDependencies(tenantId: number): Promise<
     findPlanVersionById: async (args) => payload.findByID(args as never) as unknown as Promise<PlanVersion>,
     createSnapshot: async (args) => payload.create(args as never) as unknown as Promise<TenantEntitlementSnapshot>,
     findSnapshots: async (args) =>
-      payload.find(args as never) as unknown as Promise<{ docs: TenantEntitlementSnapshot[] }>,
+      payload.find(args as never) as unknown as Promise<{
+        docs: TenantEntitlementSnapshot[];
+      }>,
     emitMutation: async (args) => payload.create(args as never) as unknown,
     commit: async () => {
       await payload.db.commitTransaction(transactionID);

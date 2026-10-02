@@ -63,7 +63,10 @@ export function VariantCard({
                 label="Presentación"
                 value={field.value}
                 onChange={field.onChange}
-                options={presentations.map((p) => ({ id: p.id, name: p.label }))}
+                options={presentations.map((p) => ({
+                  id: p.id,
+                  name: p.label,
+                }))}
                 entityType="presentation"
                 onCreate={onCreatePresentation}
                 onDeleteEntity={(_type, id, name) => onDeletePresentation(id, name)}

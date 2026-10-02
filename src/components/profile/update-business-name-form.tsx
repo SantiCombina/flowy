@@ -39,7 +39,9 @@ export function UpdateBusinessNameForm({ initialValue }: UpdateBusinessNameFormP
 
     if (result.data?.success) {
       toast.success('Nombre del negocio actualizado correctamente.');
-      void queryClient.invalidateQueries({ queryKey: queryKeys.user.current() });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.user.current(),
+      });
     }
   }
 

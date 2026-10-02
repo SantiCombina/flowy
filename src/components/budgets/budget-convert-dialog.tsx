@@ -39,7 +39,10 @@ interface BudgetConvertDialogProps {
 }
 
 function formatPrice(value: number): string {
-  return value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 const PAYMENT_OPTIONS = [
@@ -245,7 +248,10 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
   }, [convertData, form]);
 
   const watchedItems = useWatch({ control: form.control, name: 'items' });
-  const paymentMethod = useWatch({ control: form.control, name: 'paymentMethod' });
+  const paymentMethod = useWatch({
+    control: form.control,
+    name: 'paymentMethod',
+  });
   const total = (watchedItems ?? []).reduce(
     (sum, item, idx) => sum + (item.quantity || 0) * (convertData?.items[idx]?.currentUnitPrice ?? 0),
     0,
@@ -299,7 +305,10 @@ export function BudgetConvertDialog({ budgetId, isOpen, onClose }: BudgetConvert
   };
 
   const formatTotal = (value: number) =>
-    value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    value.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
     <ResponsiveModal open={isOpen} onOpenChange={onClose} className="sm:max-w-2xl">

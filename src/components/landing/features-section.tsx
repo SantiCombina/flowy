@@ -29,10 +29,26 @@ const features = [
 ];
 
 const cardStyles = [
-  { icon: 'bg-orange-100 text-orange-600', accent: 'bg-orange-500', shadow: 'hover:shadow-orange-500/10' },
-  { icon: 'bg-sky-100 text-sky-600', accent: 'bg-sky-500', shadow: 'hover:shadow-sky-500/10' },
-  { icon: 'bg-violet-100 text-violet-600', accent: 'bg-violet-500', shadow: 'hover:shadow-violet-500/10' },
-  { icon: 'bg-emerald-100 text-emerald-600', accent: 'bg-emerald-500', shadow: 'hover:shadow-emerald-500/10' },
+  {
+    icon: 'bg-orange-100 text-orange-600',
+    accent: 'bg-orange-500',
+    shadow: 'hover:shadow-orange-500/10',
+  },
+  {
+    icon: 'bg-sky-100 text-sky-600',
+    accent: 'bg-sky-500',
+    shadow: 'hover:shadow-sky-500/10',
+  },
+  {
+    icon: 'bg-violet-100 text-violet-600',
+    accent: 'bg-violet-500',
+    shadow: 'hover:shadow-violet-500/10',
+  },
+  {
+    icon: 'bg-emerald-100 text-emerald-600',
+    accent: 'bg-emerald-500',
+    shadow: 'hover:shadow-emerald-500/10',
+  },
 ];
 
 export function FeaturesSection() {

@@ -278,15 +278,28 @@ function ProductsTableComponent({
         return (
           <ActionMenu
             items={[
-              { label: 'Registrar movimiento', icon: PackagePlus, onClick: () => setVariantForMovement(variant) },
-              { label: 'Ver demanda', icon: BarChart2, onClick: () => setVariantForDemand(variant) },
+              {
+                label: 'Registrar movimiento',
+                icon: PackagePlus,
+                onClick: () => setVariantForMovement(variant),
+              },
+              {
+                label: 'Ver demanda',
+                icon: BarChart2,
+                onClick: () => setVariantForDemand(variant),
+              },
               {
                 label: 'Editar',
                 icon: Pencil,
                 onClick: () => (onEdit ? onEdit(product.id) : router.push(`/products/${product.id}/edit`)),
                 separator: true,
               },
-              { label: 'Eliminar', icon: Trash2, onClick: () => setProductToDelete(product), variant: 'destructive' },
+              {
+                label: 'Eliminar',
+                icon: Trash2,
+                onClick: () => setProductToDelete(product),
+                variant: 'destructive',
+              },
             ]}
           />
         );

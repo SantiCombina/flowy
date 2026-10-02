@@ -4,12 +4,36 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { normalizeText } from '@/lib/text';
 
 const PALETTES = [
-  { avatar: 'bg-blue-500/10 text-blue-600', bar: 'from-blue-400 to-indigo-500', ring: 'ring-blue-500/20' },
-  { avatar: 'bg-emerald-500/10 text-emerald-600', bar: 'from-emerald-400 to-teal-500', ring: 'ring-emerald-500/20' },
-  { avatar: 'bg-violet-500/10 text-violet-600', bar: 'from-violet-400 to-purple-500', ring: 'ring-violet-500/20' },
-  { avatar: 'bg-orange-500/10 text-orange-600', bar: 'from-orange-400 to-amber-500', ring: 'ring-orange-500/20' },
-  { avatar: 'bg-pink-500/10 text-pink-600', bar: 'from-pink-400 to-rose-500', ring: 'ring-pink-500/20' },
-  { avatar: 'bg-cyan-500/10 text-cyan-600', bar: 'from-cyan-400 to-sky-500', ring: 'ring-cyan-500/20' },
+  {
+    avatar: 'bg-blue-500/10 text-blue-600',
+    bar: 'from-blue-400 to-indigo-500',
+    ring: 'ring-blue-500/20',
+  },
+  {
+    avatar: 'bg-emerald-500/10 text-emerald-600',
+    bar: 'from-emerald-400 to-teal-500',
+    ring: 'ring-emerald-500/20',
+  },
+  {
+    avatar: 'bg-violet-500/10 text-violet-600',
+    bar: 'from-violet-400 to-purple-500',
+    ring: 'ring-violet-500/20',
+  },
+  {
+    avatar: 'bg-orange-500/10 text-orange-600',
+    bar: 'from-orange-400 to-amber-500',
+    ring: 'ring-orange-500/20',
+  },
+  {
+    avatar: 'bg-pink-500/10 text-pink-600',
+    bar: 'from-pink-400 to-rose-500',
+    ring: 'ring-pink-500/20',
+  },
+  {
+    avatar: 'bg-cyan-500/10 text-cyan-600',
+    bar: 'from-cyan-400 to-sky-500',
+    ring: 'ring-cyan-500/20',
+  },
 ] as const;
 
 function getInitials(name: string): string {

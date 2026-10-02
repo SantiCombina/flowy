@@ -133,13 +133,22 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
           collection: 'product-variants',
           where: { owner: { equals: ownerId } },
           depth: 2,
-          select: { stock: true, costPrice: true, minimumStock: true, product: true, presentation: true, code: true },
+          select: {
+            stock: true,
+            costPrice: true,
+            minimumStock: true,
+            product: true,
+            presentation: true,
+            code: true,
+          },
           limit: 1000,
           overrideAccess: true,
         }),
         payload.find({
           collection: 'sale-payments',
-          where: { and: [{ owner: { equals: ownerId } }, { date: { greater_than_equal: currentStart } }] },
+          where: {
+            and: [{ owner: { equals: ownerId } }, { date: { greater_than_equal: currentStart } }],
+          },
           pagination: false,
           overrideAccess: true,
         }),
@@ -172,7 +181,11 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
             existingSeller.total += sale.total;
             existingSeller.count++;
           } else {
-            sellerMap.set(sale.sellerName, { name: sale.sellerName, total: sale.total, count: 1 });
+            sellerMap.set(sale.sellerName, {
+              name: sale.sellerName,
+              total: sale.total,
+              count: 1,
+            });
           }
 
           for (const item of sale.items) {
@@ -228,8 +241,16 @@ export async function getOwnerDashboardStats(ownerId: number, period: Period = '
         .slice(0, 10);
 
       return {
-        revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
-        salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
+        revenue: {
+          current: revCurrent,
+          previous: revPrevious,
+          change: calcChange(revCurrent, revPrevious),
+        },
+        salesCount: {
+          current: salesCurrent,
+          previous: salesPrevious,
+          change: calcChange(salesCurrent, salesPrevious),
+        },
         clientsTotal: clients.length,
         newClients: {
           current: newClientsCurrent,
@@ -326,8 +347,16 @@ export async function getSellerDashboardStats(
       const newClientsPrevious = clients.filter((c) => c.createdAt >= prevStart && c.createdAt <= prevEnd).length;
 
       return {
-        revenue: { current: revCurrent, previous: revPrevious, change: calcChange(revCurrent, revPrevious) },
-        salesCount: { current: salesCurrent, previous: salesPrevious, change: calcChange(salesCurrent, salesPrevious) },
+        revenue: {
+          current: revCurrent,
+          previous: revPrevious,
+          change: calcChange(revCurrent, revPrevious),
+        },
+        salesCount: {
+          current: salesCurrent,
+          previous: salesPrevious,
+          change: calcChange(salesCurrent, salesPrevious),
+        },
         clientsCount: clients.length,
         newClients: {
           current: newClientsCurrent,

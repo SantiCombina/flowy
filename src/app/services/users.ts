@@ -110,7 +110,10 @@ export async function loginUser(data: LoginUserData): Promise<LoginUserResult> {
   }
 
   if (user && user.isActive === false) {
-    return { success: false, error: 'Tu cuenta está desactivada. Contactá a tu administrador.' };
+    return {
+      success: false,
+      error: 'Tu cuenta está desactivada. Contactá a tu administrador.',
+    };
   }
 
   try {
@@ -123,7 +126,11 @@ export async function loginUser(data: LoginUserData): Promise<LoginUserResult> {
       return { success: false, error: 'Credenciales inválidas' };
     }
 
-    return { success: true, token: result.token, role: (result.user as User).role };
+    return {
+      success: true,
+      token: result.token,
+      role: (result.user as User).role,
+    };
   } catch {
     return { success: false, error: 'Credenciales inválidas' };
   }

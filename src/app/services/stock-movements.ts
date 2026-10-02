@@ -1,15 +1,13 @@
 'use server';
 
+import { endOfDay, startOfDay } from 'date-fns';
 import { revalidateTag, unstable_cache } from 'next/cache';
 import type { Where } from 'payload';
 
 import { cacheTags } from '@/lib/cache-tags';
-import { DEFAULT_TENANT_TZ, dayKeyToStartInstant, shiftDateKey, toDateKeyInTz } from '@/lib/datetime';
 import { notifyEvent } from '@/lib/notify';
 import { getPayloadClient } from '@/lib/payload';
 import type { Product, ProductVariant, StockMovement, User } from '@/payload-types';
-
-const tz = DEFAULT_TENANT_TZ;
 
 export type MovementType =
   | 'entry'
@@ -165,12 +163,14 @@ async function _getHistoryMovements(ownerId: number, filters: HistoryFilters = {
   const payload = await getPayloadClient();
 
   const conditions: Where[] = [{ owner: { equals: ownerId } }];
-  if (from) conditions.push({ createdAt: { greater_than_equal: dayKeyToStartInstant(toDateKeyInTz(from, tz), tz) } });
-  if (to) {
-    const toKey = toDateKeyInTz(to, tz);
-    const toEnd = new Date(new Date(dayKeyToStartInstant(shiftDateKey(toKey, 1), tz)).getTime() - 1).toISOString();
-    conditions.push({ createdAt: { less_than_equal: toEnd } });
-  }
+  if (from)
+    conditions.push({
+      createdAt: { greater_than_equal: startOfDay(from).toISOString() },
+    });
+  if (to)
+    conditions.push({
+      createdAt: { less_than_equal: endOfDay(to).toISOString() },
+    });
   if (types && types.length > 0) conditions.push({ type: { in: types } });
 
   const result = await payload.find({
