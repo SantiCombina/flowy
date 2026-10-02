@@ -130,8 +130,8 @@ export const Invitations: CollectionConfig = {
       async ({ doc, req, operation, context }) => {
         if (context?.skipInvitationHooks) return doc;
         if (operation === 'create') {
-          const host = req.headers.get('host') ?? 'localhost:3000';
-          const baseUrl = `${req.protocol}://${host}`;
+          const baseUrl =
+            process.env.NEXT_PUBLIC_SERVER_URL ?? `${req.protocol}://${req.headers.get('host') ?? 'localhost:3000'}`;
           let registerUrl = `${baseUrl}/register?token=${doc.token}`;
           if (doc.role === 'owner' && doc.businessName) {
             registerUrl += `&businessName=${encodeURIComponent(doc.businessName)}`;

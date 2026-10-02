@@ -78,11 +78,6 @@ export function InviteAdminDialog() {
         return;
       }
       if (result?.data) {
-        if (!result.data.emailSent) {
-          toast.warning('No se pudo enviar el email. Copiá el link manualmente.');
-        } else {
-          toast.success('Invitación creada');
-        }
         setCreatedResult({
           token: result.data.token,
           expiresAt: result.data.expiresAt,
