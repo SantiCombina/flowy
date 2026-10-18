@@ -15,6 +15,7 @@ import type { Brand, Category, Presentation, Quality } from '@/payload-types';
 import { getReferenceDataAction } from './actions';
 import { BulkPriceSheet } from './modals/bulk-price-sheet';
 import { ProductModal } from './modals/product-modal-new/index';
+import { PriceListButton } from './price-list-button';
 import { ProductsTable } from './products-table';
 
 interface RefData {
@@ -122,6 +123,7 @@ export function ProductsSection({ initialRefData, initialVariants, capabilities 
               <span className="text-sm font-semibold text-foreground">$ {inventoryValue.toLocaleString('es-AR')}</span>
             </div>
           )}
+          {(canCreateProduct || user?.role === 'seller') && <PriceListButton />}
           {canCreateProduct && (
             <Button onClick={handleOpenCreateModal}>
               <Plus className="h-4 w-4" />
