@@ -2,11 +2,7 @@
 
 import { getPriceList } from '@/app/services/price-list';
 import { assertUserCapability } from '@/lib/entitlements/guards';
-import {
-  MODULE_ACCESS,
-  resolveModuleCapability,
-  resolveProductsTenantId,
-} from '@/lib/entitlements/module-access';
+import { MODULE_ACCESS, resolveModuleCapability, resolveProductsTenantId } from '@/lib/entitlements/module-access';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
 
