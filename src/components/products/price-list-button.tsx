@@ -30,8 +30,19 @@ export function PriceListButton() {
       }
       const { createPriceListPdf } = await import('@/lib/price-list-pdf');
       const doc = await createPriceListPdf(result.data.priceList);
-      doc.save(`lista-de-precios-${result.data.priceList.date.replaceAll('/', '-')}.pdf`);
+      const filename = `lista-de-precios-${result.data.priceList.date.replaceAll('/', '-')}.pdf`;
+      const file = new File([doc.output('blob')], filename, { type: 'application/pdf' });
+
+      const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+        || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+      if (isMobileDevice && typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        doc.save(filename);
+      }
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
       toast.error(error instanceof PriceListPdfError ? error.message : 'No se pudo generar la lista de precios');
     } finally {
       setIsGenerating(false);
