@@ -8,8 +8,6 @@ import { uploadthingStorage } from '@payloadcms/storage-uploadthing';
 import { buildConfig } from 'payload';
 import sharp from 'sharp';
 
-import { enforceTenantAuthentication } from './lib/tenant-access';
-
 import { Brands } from './collections/Brands';
 import { Budgets } from './collections/Budgets';
 import { Categories } from './collections/Categories';
@@ -36,6 +34,7 @@ import { TenantEntitlementSnapshots } from './collections/TenantEntitlementSnaps
 import { TenantPlanPayments } from './collections/TenantPlanPayments';
 import { Users } from './collections/Users';
 import { Zones } from './collections/Zones';
+import { enforceTenantAuthentication } from './lib/tenant-access';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);

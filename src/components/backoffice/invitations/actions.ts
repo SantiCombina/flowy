@@ -4,7 +4,11 @@ import { render } from '@react-email/render';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { headers } from 'next/headers';
 
-import { cancelAdminOwnerInvitation, recordAdminInvitationEmailStatus, renewAdminOwnerInvitation } from '@/app/services/backoffice/invitations';
+import {
+  cancelAdminOwnerInvitation,
+  recordAdminInvitationEmailStatus,
+  renewAdminOwnerInvitation,
+} from '@/app/services/backoffice/invitations';
 import { InvitationEmail } from '@/emails/invitation-email';
 import { cacheTags } from '@/lib/cache-tags';
 import { getCurrentUserWithCapabilities } from '@/lib/entitlements/guards';
@@ -27,7 +31,8 @@ export const resendInvitationAction = actionClient.schema(resendInvitationSchema
   const guardedUser = await getCurrentUserWithCapabilities();
   if (!guardedUser || guardedUser.user.role !== 'admin') throw new Error('No autorizado');
   const requestHeaders = await headers();
-  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL ??
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SERVER_URL ??
     `${requestHeaders.get('x-forwarded-proto') ?? 'http'}://${requestHeaders.get('host') ?? 'localhost:3000'}`;
   const invitation = await renewAdminOwnerInvitation(guardedUser.user.id, parsedInput.id);
   let emailSent = false;
@@ -36,12 +41,15 @@ export const resendInvitationAction = actionClient.schema(resendInvitationSchema
     registerUrl.searchParams.set('token', invitation.token);
     if (invitation.businessName) registerUrl.searchParams.set('businessName', invitation.businessName);
     const html = await render(InvitationEmail({ registerUrl: registerUrl.toString(), roleName: 'Dueño' }));
-    const { error } = await resend.emails.send({
-      from: `Flowy <${process.env.EMAIL_FROM ?? 'noreply@flowy.ar'}>`,
-      to: invitation.email,
-      subject: 'Invitación a Flowy',
-      html,
-    }, { idempotencyKey: `invitation-resend-${invitation.id}` });
+    const { error } = await resend.emails.send(
+      {
+        from: `Flowy <${process.env.EMAIL_FROM ?? 'noreply@flowy.ar'}>`,
+        to: invitation.email,
+        subject: 'Invitación a Flowy',
+        html,
+      },
+      { idempotencyKey: `invitation-resend-${invitation.id}` },
+    );
     emailSent = !error;
   } catch {
     emailSent = false;

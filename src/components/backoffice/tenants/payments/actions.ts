@@ -11,7 +11,7 @@ import { deleteTenantPaymentSchema, tenantPaymentSchema } from '@/schemas/backof
 async function requireAdminAndTenant(ownerId: number) {
   const admin = await getCurrentUser();
   if (!admin || admin.role !== 'admin') throw new Error('No autorizado');
-  if (!await getManagedTenant(ownerId)) throw new Error('Tenant no encontrado');
+  if (!(await getManagedTenant(ownerId))) throw new Error('Tenant no encontrado');
   return admin;
 }
 
@@ -27,9 +27,11 @@ export const saveTenantPaymentAction = actionClient.schema(tenantPaymentSchema).
   return { success: true };
 });
 
-export const deleteTenantPaymentAction = actionClient.schema(deleteTenantPaymentSchema).action(async ({ parsedInput }) => {
-  const admin = await requireAdminAndTenant(parsedInput.ownerId);
-  await deleteTenantPayment(parsedInput.ownerId, parsedInput.paymentId, admin);
-  refreshPayments(parsedInput.ownerId);
-  return { success: true };
-});
+export const deleteTenantPaymentAction = actionClient
+  .schema(deleteTenantPaymentSchema)
+  .action(async ({ parsedInput }) => {
+    const admin = await requireAdminAndTenant(parsedInput.ownerId);
+    await deleteTenantPayment(parsedInput.ownerId, parsedInput.paymentId, admin);
+    refreshPayments(parsedInput.ownerId);
+    return { success: true };
+  });

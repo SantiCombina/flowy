@@ -6,7 +6,15 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { InvitationRow } from '@/app/services/backoffice/invitations';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
@@ -55,7 +63,12 @@ export function CancelInvitationDialog({ invitation, onClose }: CancelInvitation
   }
 
   return (
-    <AlertDialog open={invitation !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
+    <AlertDialog
+      open={invitation !== null}
+      onOpenChange={(open) => {
+        if (!open && !busy) onClose();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Cancelar invitación</AlertDialogTitle>

@@ -19,8 +19,12 @@ import { cacheTags } from '@/lib/cache-tags';
 import { getCurrentUserWithCapabilities } from '@/lib/entitlements/guards';
 import { getCurrentUser } from '@/lib/payload';
 import { actionClient } from '@/lib/safe-action';
+import {
+  changeTenantPlanSchema,
+  reactivateTenantSchema,
+  tenantControlDateSchema,
+} from '@/schemas/backoffice/manage-tenant-schema';
 import { tenantDetailSchema } from '@/schemas/backoffice/tenant-detail-schema';
-import { changeTenantPlanSchema, reactivateTenantSchema, tenantControlDateSchema } from '@/schemas/backoffice/manage-tenant-schema';
 
 async function requireManagedTenant(id: number) {
   const user = await getCurrentUser();
@@ -64,15 +68,17 @@ export const changeTenantPlanAction = actionClient.schema(changeTenantPlanSchema
   return { success: true };
 });
 
-export const updateTenantControlDateAction = actionClient.schema(tenantControlDateSchema).action(async ({ parsedInput }) => {
-  await requireManagedTenant(parsedInput.id);
-  await updateTenantControlDate(
-    parsedInput.id,
-    parsedInput.planControlDate ? `${parsedInput.planControlDate}T12:00:00.000Z` : null,
-  );
-  refreshTenant(parsedInput.id);
-  return { success: true };
-});
+export const updateTenantControlDateAction = actionClient
+  .schema(tenantControlDateSchema)
+  .action(async ({ parsedInput }) => {
+    await requireManagedTenant(parsedInput.id);
+    await updateTenantControlDate(
+      parsedInput.id,
+      parsedInput.planControlDate ? `${parsedInput.planControlDate}T12:00:00.000Z` : null,
+    );
+    refreshTenant(parsedInput.id);
+    return { success: true };
+  });
 
 export const getTenantDetailAction = actionClient.schema(tenantDetailSchema).action(async ({ parsedInput }) => {
   const guardedUser = await getCurrentUserWithCapabilities();

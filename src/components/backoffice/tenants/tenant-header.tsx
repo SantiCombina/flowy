@@ -38,7 +38,11 @@ interface TenantHeaderProps {
 export function TenantHeader({ data }: TenantHeaderProps) {
   const { owner, activePlan, stats } = data;
   const planLabel = activePlan ? (PLAN_LABELS[activePlan.planCode] ?? activePlan.planCode) : null;
-  const stateLabel = !owner.isActive ? 'Desactivado' : owner.entitlementState ? (STATE_LABELS[owner.entitlementState] ?? owner.entitlementState) : 'En preparación';
+  const stateLabel = !owner.isActive
+    ? 'Desactivado'
+    : owner.entitlementState
+      ? (STATE_LABELS[owner.entitlementState] ?? owner.entitlementState)
+      : 'En preparación';
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-2 pb-4 sm:px-6">
@@ -68,26 +72,40 @@ export function TenantHeader({ data }: TenantHeaderProps) {
 
         <div className="flex flex-col gap-3 sm:items-end">
           <div className="flex flex-wrap items-center gap-2">
-          {planLabel && activePlan ? (
-            <Badge variant={PLAN_BADGE_VARIANT[activePlan.planCode] ?? 'info'}>
-              {planLabel} · v{activePlan.version}
-            </Badge>
-          ) : (
-            <Badge variant="outline">{owner.hasCustomPlan ? 'Plan personalizado' : 'Sin plan'}</Badge>
-          )}
-          {stateLabel && (
-            <Badge variant={!owner.isActive ? 'error' : owner.entitlementState ? STATE_BADGE_VARIANT[owner.entitlementState] : 'warning'}>
-              {stateLabel}
-            </Badge>
-          )}
+            {planLabel && activePlan ? (
+              <Badge variant={PLAN_BADGE_VARIANT[activePlan.planCode] ?? 'info'}>
+                {planLabel} · v{activePlan.version}
+              </Badge>
+            ) : (
+              <Badge variant="outline">{owner.hasCustomPlan ? 'Plan personalizado' : 'Sin plan'}</Badge>
+            )}
+            {stateLabel && (
+              <Badge
+                variant={
+                  !owner.isActive
+                    ? 'error'
+                    : owner.entitlementState
+                      ? STATE_BADGE_VARIANT[owner.entitlementState]
+                      : 'warning'
+                }
+              >
+                {stateLabel}
+              </Badge>
+            )}
           </div>
           <TenantManagement data={data} />
         </div>
       </div>
 
       <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-        <div><dt className="text-muted-foreground">Plan asignado desde</dt><dd>{activePlan ? formatPlanDate(activePlan.assignedAt) : 'Sin asignación de plan'}</dd></div>
-        <div><dt className="text-muted-foreground">Fecha de control</dt><dd>{owner.planControlDate ? formatPlanDate(owner.planControlDate) : 'Sin fecha'}</dd></div>
+        <div>
+          <dt className="text-muted-foreground">Plan asignado desde</dt>
+          <dd>{activePlan ? formatPlanDate(activePlan.assignedAt) : 'Sin asignación de plan'}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Fecha de control</dt>
+          <dd>{owner.planControlDate ? formatPlanDate(owner.planControlDate) : 'Sin fecha'}</dd>
+        </div>
       </dl>
 
       <dl className="grid grid-cols-3 gap-3 rounded-xl bg-card p-4 shadow-sm">
@@ -100,7 +118,12 @@ export function TenantHeader({ data }: TenantHeaderProps) {
 }
 
 function formatPlanDate(value: string): string {
-  return new Intl.DateTimeFormat('es-AR', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
 }
 
 function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {

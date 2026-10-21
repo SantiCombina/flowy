@@ -16,7 +16,10 @@ export function formatPaymentDate(value: string): string {
 
 export function todayInArgentina(): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   }).formatToParts(new Date());
   const part = (type: string) => parts.find((entry) => entry.type === type)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;

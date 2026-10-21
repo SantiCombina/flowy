@@ -2,8 +2,8 @@
 
 import type { Where } from 'payload';
 
-import { buildInvitationCreateData, isInvitationUsable } from '@/lib/entitlements/invitation-boundary';
 import { assertInvitationTransition } from '@/lib/entitlements/invariants';
+import { buildInvitationCreateData, isInvitationUsable } from '@/lib/entitlements/invitation-boundary';
 import { hasPendingOwnerInvitation, lockInvitation, lockInvitationEmail } from '@/lib/invitation-locks';
 import { getPayloadClient } from '@/lib/payload';
 import type { Invitation } from '@/payload-types';
@@ -196,15 +196,25 @@ export async function renewAdminOwnerInvitation(adminId: number, id: number) {
     await lockInvitation(payload.db.sessions, transactionID, original.token);
     const invitation = await payload.findByID({ collection: 'invitations', id, depth: 0, overrideAccess: true, req });
     if (
-      !['pending', 'expired'].includes(invitation.state) || invitation.usedAt || invitation.acceptedUser ||
-      invitation.cancelledAt || invitation.replacedAt || invitation.replacedBy
-    ) throw new Error('Solo se pueden reenviar invitaciones pendientes o vencidas');
+      !['pending', 'expired'].includes(invitation.state) ||
+      invitation.usedAt ||
+      invitation.acceptedUser ||
+      invitation.cancelledAt ||
+      invitation.replacedAt ||
+      invitation.replacedBy
+    )
+      throw new Error('Solo se pueden reenviar invitaciones pendientes o vencidas');
     const now = new Date().toISOString();
     if (await hasPendingOwnerInvitation(payload.db.sessions, transactionID, email, now, id)) {
       throw new Error('Ya existe otra invitación pendiente para este email. Actualizá el listado.');
     }
     const users = await payload.find({
-      collection: 'users', where: { email: { equals: email } }, limit: 1, depth: 0, overrideAccess: true, req,
+      collection: 'users',
+      where: { email: { equals: email } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req,
     });
     if (users.docs.length) throw new Error('El email ya está registrado');
     assertInvitationTransition({ nextState: 'pending' });
@@ -218,14 +228,19 @@ export async function renewAdminOwnerInvitation(adminId: number, id: number) {
     if (!renewed.token || !renewed.expiresAt) throw new Error('No se pudo generar el nuevo enlace');
     if (invitation.state === 'pending') {
       await payload.update({
-        collection: 'invitations', id,
+        collection: 'invitations',
+        id,
         data: { state: 'replaced', replacedAt: now, replacedBy: renewed.id },
-        overrideAccess: true, context: { entitlementMutation: true, skipInvitationHooks: false }, req,
+        overrideAccess: true,
+        context: { entitlementMutation: true, skipInvitationHooks: false },
+        req,
       });
     }
     await payload.db.commitTransaction(transactionID);
     return {
-      id: renewed.id, token: renewed.token, email: renewed.email,
+      id: renewed.id,
+      token: renewed.token,
+      email: renewed.email,
       businessName: renewed.businessName ?? null,
     };
   } catch (error) {
@@ -237,7 +252,10 @@ export async function renewAdminOwnerInvitation(adminId: number, id: number) {
 export async function recordAdminInvitationEmailStatus(id: number, emailStatus: 'sent' | 'failed'): Promise<void> {
   const payload = await getPayloadClient();
   await payload.update({
-    collection: 'invitations', id, data: { emailStatus }, overrideAccess: true,
+    collection: 'invitations',
+    id,
+    data: { emailStatus },
+    overrideAccess: true,
     context: { entitlementMutation: true },
   });
 }

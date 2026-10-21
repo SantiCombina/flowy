@@ -1,5 +1,5 @@
-import type { TenantDetailData } from '@/app/services/backoffice/tenants';
 import type { TenantPaymentHistory } from '@/app/services/backoffice/tenant-payments';
+import type { TenantDetailData } from '@/app/services/backoffice/tenants';
 import type { TenantPaymentListValues } from '@/schemas/backoffice/tenant-payment-schema';
 
 import { TenantTabs } from './tabs';

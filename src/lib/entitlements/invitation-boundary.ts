@@ -16,9 +16,10 @@ export function buildInvitationCreateData(
     email,
     role,
     ...(businessName !== undefined ? { businessName } : {}),
-    state: 'pending' as const,
+    state: 'pending',
+    emailStatus: 'pending',
     ...(createdBy !== undefined ? { createdBy } : {}),
-  };
+  } satisfies RequiredDataFromCollectionSlug<'invitations'>;
 }
 
 export function isInvitationUsable(invitation: InvitationValidationRecord, now: string): boolean {
@@ -48,4 +49,4 @@ export function buildInvitationValidationWhere(token: string, now: string): Wher
     ],
   };
 }
-import type { Where } from 'payload';
+import type { RequiredDataFromCollectionSlug, Where } from 'payload';

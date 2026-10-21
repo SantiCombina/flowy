@@ -396,7 +396,10 @@ export async function deactivateTenant(ownerId: number): Promise<void> {
           nonce,
           action: 'tenant.deactivated',
           previousState: owner.entitlementState ?? 'provisioning',
-          snapshotId: typeof owner.activeEntitlementSnapshot === 'number' ? owner.activeEntitlementSnapshot : owner.activeEntitlementSnapshot?.id ?? null,
+          snapshotId:
+            typeof owner.activeEntitlementSnapshot === 'number'
+              ? owner.activeEntitlementSnapshot
+              : (owner.activeEntitlementSnapshot?.id ?? null),
         },
         state: 'sent',
         attempts: 0,
@@ -417,7 +420,11 @@ export type ReactivateTenantResult =
   | { requiresRecovery: true }
   | { requiresRecovery: false; entitlementState: NonNullable<User['entitlementState']> };
 
-export async function reactivateTenant(ownerId: number, recoveryConfirmed: boolean, adminId: number): Promise<ReactivateTenantResult> {
+export async function reactivateTenant(
+  ownerId: number,
+  recoveryConfirmed: boolean,
+  adminId: number,
+): Promise<ReactivateTenantResult> {
   const payload = await getPayloadClient();
   const deps = await defaultEntitlementDependencies(ownerId);
   try {
@@ -450,11 +457,18 @@ export async function reactivateTenant(ownerId: number, recoveryConfirmed: boole
       req: { transactionID: deps.transactionID },
     });
     const previous = history.docs[0]?.payload;
-    const snapshotId = typeof owner.activeEntitlementSnapshot === 'number' ? owner.activeEntitlementSnapshot : owner.activeEntitlementSnapshot?.id ?? null;
+    const snapshotId =
+      typeof owner.activeEntitlementSnapshot === 'number'
+        ? owner.activeEntitlementSnapshot
+        : (owner.activeEntitlementSnapshot?.id ?? null);
     let entitlementState: NonNullable<User['entitlementState']> = 'blocked';
     if (
-      owner.isActive === false && previous && typeof previous === 'object' && !Array.isArray(previous) &&
-      previous.action === 'tenant.deactivated' && previous.tenantId === ownerId
+      owner.isActive === false &&
+      previous &&
+      typeof previous === 'object' &&
+      !Array.isArray(previous) &&
+      previous.action === 'tenant.deactivated' &&
+      previous.tenantId === ownerId
     ) {
       if (previous.previousState === 'blocked') entitlementState = 'blocked';
       if (previous.previousState === 'provisioning' && previous.snapshotId === snapshotId) {

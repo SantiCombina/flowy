@@ -33,8 +33,9 @@ export function PriceListButton() {
       const filename = `lista-de-precios-${result.data.priceList.date.replaceAll('/', '-')}.pdf`;
       const file = new File([doc.output('blob')], filename, { type: 'application/pdf' });
 
-      const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-        || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+      const isMobileDevice =
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
 
       if (isMobileDevice && typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] });

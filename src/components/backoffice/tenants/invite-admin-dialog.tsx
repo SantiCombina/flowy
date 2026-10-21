@@ -172,7 +172,7 @@ export function InviteAdminDialog() {
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={(event) => form.handleSubmit(onSubmit)(event)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"

@@ -6,7 +6,15 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { TenantPaymentRow } from '@/app/services/backoffice/tenant-payments';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { formatPaymentDate } from '@/lib/tenant-payment-values';
 
@@ -46,12 +54,30 @@ export function DeletePaymentDialog({ ownerId, payment, onClose }: DeletePayment
   }
 
   return (
-    <AlertDialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
+    <AlertDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !busy) onClose();
+      }}
+    >
       <AlertDialogContent>
-        <AlertDialogHeader><AlertDialogTitle>Eliminar pago</AlertDialogTitle><AlertDialogDescription>
-          Se eliminará definitivamente el pago de {payment.planLabel} del {formatPaymentDate(payment.paidAt)} por {payment.currency} {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(payment.amount)}. Esta acción no se puede deshacer y no modifica el plan ni el acceso del tenant.
-        </AlertDialogDescription></AlertDialogHeader>
-        <AlertDialogFooter><AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel><Button variant="destructive" disabled={busy} onClick={remove}>{busy ? 'Eliminando…' : 'Eliminar pago'}</Button></AlertDialogFooter>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Eliminar pago</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se eliminará definitivamente el pago de {payment.planLabel} del {formatPaymentDate(payment.paidAt)} por{' '}
+            {payment.currency}{' '}
+            {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+              payment.amount,
+            )}
+            . Esta acción no se puede deshacer y no modifica el plan ni el acceso del tenant.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+          <Button variant="destructive" disabled={busy} onClick={remove}>
+            {busy ? 'Eliminando…' : 'Eliminar pago'}
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );

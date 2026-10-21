@@ -6,7 +6,15 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { InvitationRow } from '@/app/services/backoffice/invitations';
-import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
 import { queryKeys } from '@/lib/query-keys';
@@ -63,18 +71,25 @@ export function ResendInvitationDialog({ invitation, onClose }: ResendInvitation
   }
 
   return (
-    <AlertDialog open={invitation !== null} onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
+    <AlertDialog
+      open={invitation !== null}
+      onOpenChange={(open) => {
+        if (!open && !busy) onClose();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Reenviar invitación</AlertDialogTitle>
           <AlertDialogDescription>
-            Se enviará un nuevo enlace a {invitation?.email}, válido por 7 días desde su creación.
-            El enlace anterior dejará de funcionar y la invitación se conservará en el historial.
+            Se enviará un nuevo enlace a {invitation?.email}, válido por 7 días desde su creación. El enlace anterior
+            dejará de funcionar y la invitación se conservará en el historial.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Volver</AlertDialogCancel>
-          <Button disabled={busy} onClick={handleResend}>{busy ? 'Reenviando…' : 'Reenviar invitación'}</Button>
+          <Button disabled={busy} onClick={handleResend}>
+            {busy ? 'Reenviando…' : 'Reenviar invitación'}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

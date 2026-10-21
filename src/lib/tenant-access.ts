@@ -22,10 +22,10 @@ export async function hasTenantAccess(payload: Payload, user: User, req?: Partia
 
   return Boolean(
     owner &&
-      owner.role === 'owner' &&
-      owner.isActive !== false &&
-      !owner.isDeleted &&
-      owner.entitlementState !== 'blocked',
+    owner.role === 'owner' &&
+    owner.isActive !== false &&
+    !owner.isDeleted &&
+    owner.entitlementState !== 'blocked',
   );
 }
 
