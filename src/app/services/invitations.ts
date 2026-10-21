@@ -10,6 +10,7 @@ import {
 } from '@/lib/entitlements/invitation-boundary';
 import { acquireTenantLock, type LockContext, type LockDependencies } from '@/lib/entitlements/locks';
 import { countSeats, snapshotQuotas, type CountContext, type CountDependencies } from '@/lib/entitlements/quotas';
+import { lockInvitation } from '@/lib/invitation-locks';
 import type { Invitation, TenantEntitlementSnapshot, User } from '@/payload-types';
 
 async function getPayloadClient() {
@@ -202,48 +203,48 @@ export async function acceptInvitation(
     throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  const now = new Date().toISOString();
-  const preflight = await payload.find({
-    collection: 'invitations',
-    where: buildInvitationValidationWhere(token, now),
-    limit: 1,
-    overrideAccess: true,
-    req: { transactionID },
-  });
-  const invitation = (preflight.docs as Invitation[])[0];
-
-  if (!invitation || !isInvitationUsable(invitation, now)) {
-    await payload.db.rollbackTransaction(transactionID);
-    throw new Error('Invitación inválida o expirada');
-  }
-
-  const tenantId = typeof invitation.createdBy === 'number' ? invitation.createdBy : (invitation.createdBy?.id ?? 0);
-  const { defaultLockDependencies } = await import('@/lib/entitlements/locks');
-  const lock = await defaultLockDependencies();
-
-  const deps: AcceptInvitationDependencies = {
-    transactionID,
-    now,
-    tenantId,
-    lock,
-    lockContext: { transactionID, tenantId },
-    findInvitation: async (args) => payload.find(args as never) as unknown as Promise<{ docs: Invitation[] }>,
-    createUser: async (args) => payload.create(args as never) as unknown as Promise<User>,
-    updateInvitation: async (args) => payload.update(args as never) as unknown,
-    commit: async () => {
-      await payload.db.commitTransaction(transactionID);
-    },
-    rollback: async () => {
-      await payload.db.rollbackTransaction(transactionID);
-    },
-  };
-
   try {
+    await lockInvitation(payload.db.sessions, transactionID, token);
+    const now = new Date().toISOString();
+    const preflight = await payload.find({
+      collection: 'invitations',
+      where: buildInvitationValidationWhere(token, now),
+      limit: 1,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+    const invitation = (preflight.docs as Invitation[])[0];
+
+    if (!invitation || !isInvitationUsable(invitation, now)) {
+      throw new Error('Invitación inválida o expirada');
+    }
+
+    const tenantId = typeof invitation.createdBy === 'number' ? invitation.createdBy : (invitation.createdBy?.id ?? 0);
+    const { defaultLockDependencies } = await import('@/lib/entitlements/locks');
+    const lock = await defaultLockDependencies();
+
+    const deps: AcceptInvitationDependencies = {
+      transactionID,
+      now,
+      tenantId,
+      lock,
+      lockContext: { transactionID, tenantId },
+      findInvitation: async (args) => payload.find(args as never) as unknown as Promise<{ docs: Invitation[] }>,
+      createUser: async (args) => payload.create(args as never) as unknown as Promise<User>,
+      updateInvitation: async (args) => payload.update(args as never) as unknown,
+      commit: async () => {
+        await payload.db.commitTransaction(transactionID);
+      },
+      rollback: async () => {
+        await payload.db.rollbackTransaction(transactionID);
+      },
+    };
+
     const user = await runAcceptInvitation(token, name, email, password, deps);
     await deps.commit();
     return user;
   } catch (error) {
-    await deps.rollback();
+    await payload.db.rollbackTransaction(transactionID);
     throw error;
   }
 }
@@ -315,7 +316,9 @@ async function runAcceptInvitation(
     throw new Error('Invitación inválida o expirada');
   }
 
-  if (invitation.email !== email) {
+  const registrationEmail = invitation.role === 'owner' ? email.trim().toLowerCase() : email;
+  const invitationEmail = invitation.role === 'owner' ? invitation.email.trim().toLowerCase() : invitation.email;
+  if (invitationEmail !== registrationEmail) {
     throw new Error('El email no coincide con la invitación');
   }
 
@@ -330,7 +333,7 @@ async function runAcceptInvitation(
       collection: 'users',
       data: {
         name: name ?? email,
-        email,
+        email: registrationEmail,
         password,
         role: invitation.role,
         ...(invitation.role === 'seller' && ownerId ? { owner: ownerId } : {}),

@@ -2,6 +2,7 @@ import type { CollectionConfig, Where } from 'payload';
 
 import { assertTrustedWrite } from '@/lib/entitlements/invariants';
 import { enforceSellerLoginEntitlement } from '@/lib/entitlements/seller-login';
+import { hasTenantAccess } from '@/lib/tenant-access';
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -47,7 +48,14 @@ export const Users: CollectionConfig = {
     delete: ({ req: { user } }) => user?.role === 'admin',
   },
   hooks: {
-    beforeLogin: [enforceSellerLoginEntitlement],
+    beforeLogin: [
+      async ({ req, user }) => {
+        if (!(await hasTenantAccess(req.payload, user, req))) {
+          throw new Error('El acceso a esta cuenta está desactivado');
+        }
+      },
+      enforceSellerLoginEntitlement,
+    ],
     beforeChange: [
       async ({ data, context, operation, originalDoc, req }) => {
         if (hasEntitlementMutation(data, operation, originalDoc)) {
@@ -154,6 +162,9 @@ export const Users: CollectionConfig = {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,
+      access: {
+        update: ({ req: { user } }) => user?.role === 'admin',
+      },
       admin: {
         description: 'Si está desactivado, el usuario no puede iniciar sesión',
       },
@@ -253,6 +264,19 @@ export const Users: CollectionConfig = {
       admin: {
         condition: (data) => data?.role === 'owner',
         description: 'Zona horaria del negocio (IANA)',
+      },
+    },
+    {
+      name: 'planControlDate',
+      type: 'date',
+      access: {
+        create: ({ req: { user } }) => user?.role === 'admin',
+        update: ({ req: { user } }) => user?.role === 'admin',
+      },
+      admin: {
+        condition: (data) => data?.role === 'owner',
+        description: 'Fecha informativa de control del plan. No bloquea el acceso.',
+        date: { pickerAppearance: 'dayOnly' },
       },
     },
     {

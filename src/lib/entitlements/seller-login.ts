@@ -50,7 +50,9 @@ export const enforceSellerLoginEntitlement: CollectionBeforeLoginHook<User> = as
     req,
   });
 
-  if (owner.role !== 'owner') throw new Error('Seller access is not included in the current plan');
+  if (owner.role !== 'owner' || owner.isActive === false || owner.isDeleted) {
+    throw new Error('Seller access is not included in the current plan');
+  }
 
   const state = owner.entitlementState ?? 'provisioning';
   if (state === 'provisioning') return;

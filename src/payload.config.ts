@@ -8,6 +8,8 @@ import { uploadthingStorage } from '@payloadcms/storage-uploadthing';
 import { buildConfig } from 'payload';
 import sharp from 'sharp';
 
+import { enforceTenantAuthentication } from './lib/tenant-access';
+
 import { Brands } from './collections/Brands';
 import { Budgets } from './collections/Budgets';
 import { Categories } from './collections/Categories';
@@ -31,6 +33,7 @@ import { Sales } from './collections/Sales';
 import { Settings } from './collections/Settings';
 import { StockMovements } from './collections/StockMovements';
 import { TenantEntitlementSnapshots } from './collections/TenantEntitlementSnapshots';
+import { TenantPlanPayments } from './collections/TenantPlanPayments';
 import { Users } from './collections/Users';
 import { Zones } from './collections/Zones';
 
@@ -48,6 +51,7 @@ const normalizeDatabaseUrl = (raw: string): string => {
 };
 
 export default buildConfig({
+  onInit: enforceTenantAuthentication,
   admin: {
     user: Users.slug,
     importMap: {
@@ -64,6 +68,7 @@ export default buildConfig({
     Users,
     PlanVersions,
     TenantEntitlementSnapshots,
+    TenantPlanPayments,
     EntitlementQuotaLocks,
     EntitlementOutbox,
     Invitations,

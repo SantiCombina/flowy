@@ -2,7 +2,9 @@
 
 import type { Where } from 'payload';
 
+import { defaultEntitlementDependencies } from '@/app/services/entitlements';
 import type { PlanCode } from '@/lib/entitlements/capabilities';
+import { acquireTenantLock } from '@/lib/entitlements/locks';
 import { getPayloadClient } from '@/lib/payload';
 import type { Invitation, Product, ProductVariant, Sale, TenantEntitlementSnapshot, User } from '@/payload-types';
 
@@ -32,7 +34,7 @@ export async function listTenants(params: { limit?: number } = {}): Promise<List
     where: { and: conditions },
     sort: '-createdAt',
     limit: params.limit ?? 1000,
-    depth: 1,
+    depth: 2,
     overrideAccess: true,
   });
 
@@ -102,6 +104,7 @@ export interface TenantSnapshotRow {
 }
 
 export interface TenantDetailData {
+  availablePlans: { id: number; label: string }[];
   owner: {
     id: number;
     businessName: string | null;
@@ -109,8 +112,13 @@ export interface TenantDetailData {
     email: string;
     entitlementState: 'provisioning' | 'active' | 'blocked' | null;
     createdAt: string;
+    isActive: boolean;
+    planControlDate: string | null;
+    hasCustomPlan: boolean;
   };
   activePlan: {
+    id: number;
+    assignedAt: string;
     planCode: PlanCode;
     version: number;
     capabilities: string[];
@@ -135,17 +143,15 @@ export interface TenantDetailData {
 
 const PLAN_MOBILE_CAPABILITY = 'inventory.mobile';
 
-function resolveActivePlan(
-  snapshot: User['activeEntitlementSnapshot'],
-  entitlementState: User['entitlementState'],
-): TenantDetailData['activePlan'] {
-  if (entitlementState === 'provisioning' || entitlementState === 'blocked') return null;
+function resolveActivePlan(snapshot: User['activeEntitlementSnapshot']): TenantDetailData['activePlan'] {
   if (!snapshot || typeof snapshot === 'number') return null;
 
   const planVersion = snapshot.planVersion;
   if (!planVersion || typeof planVersion === 'number') return null;
 
   return {
+    id: planVersion.id,
+    assignedAt: snapshot.createdAt,
     planCode: planVersion.planCode,
     version: planVersion.version,
     capabilities: planVersion.capabilities.map((entry) => entry.capability),
@@ -166,21 +172,21 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
     owner = (await payload.findByID({
       collection: 'users',
       id,
-      depth: 1,
+      depth: 2,
       overrideAccess: true,
     })) as User;
   } catch {
     return null;
   }
 
-  if (owner.role !== 'owner') {
+  if (owner.role !== 'owner' || owner.isDeleted) {
     return null;
   }
 
-  const activePlan = resolveActivePlan(owner.activeEntitlementSnapshot, owner.entitlementState);
+  const activePlan = resolveActivePlan(owner.activeEntitlementSnapshot);
   const planHasMobile = planGrantsMobile(activePlan);
 
-  const [sellersResult, productsResult, salesResult, snapshotsResult] = await Promise.all([
+  const [sellersResult, productsResult, salesResult, snapshotsResult, plansResult] = await Promise.all([
     payload.find({
       collection: 'users',
       where: {
@@ -213,6 +219,14 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
       sort: '-sequence',
       limit: 1000,
       depth: 1,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'plan-versions',
+      where: { publishedAt: { less_than_equal: new Date().toISOString() } },
+      sort: '-version',
+      pagination: false,
+      depth: 0,
       overrideAccess: true,
     }),
   ]);
@@ -293,6 +307,12 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
   snapshots.sort((a, b) => b.sequence - a.sequence);
 
   return {
+    availablePlans: plansResult.docs
+      .filter((plan, index, plans) => plans.findIndex((entry) => entry.planCode === plan.planCode) === index)
+      .map((plan) => ({
+        id: plan.id,
+        label: `${plan.planCode.charAt(0).toUpperCase()}${plan.planCode.slice(1)} · v${plan.version}`,
+      })),
     owner: {
       id: owner.id,
       businessName: owner.businessName ?? null,
@@ -300,6 +320,10 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
       email: owner.email,
       entitlementState: owner.entitlementState ?? null,
       createdAt: owner.createdAt,
+      isActive: owner.isActive !== false,
+      planControlDate: owner.planControlDate ?? null,
+      hasCustomPlan:
+        typeof owner.activeEntitlementSnapshot === 'object' && owner.activeEntitlementSnapshot?.kind === 'custom',
     },
     activePlan,
     sellers,
@@ -313,6 +337,176 @@ export async function getTenantDetail(id: number): Promise<TenantDetailData | nu
       lastSaleAt: sales[0]?.createdAt ?? null,
     },
   };
+}
+
+export async function getManagedTenant(ownerId: number): Promise<User | null> {
+  const payload = await getPayloadClient();
+  const owner = await payload.findByID({
+    collection: 'users',
+    id: ownerId,
+    depth: 0,
+    overrideAccess: true,
+    disableErrors: true,
+  });
+  return owner?.role === 'owner' && !owner.isDeleted ? owner : null;
+}
+
+export async function updateTenantControlDate(ownerId: number, planControlDate: string | null): Promise<void> {
+  const payload = await getPayloadClient();
+  await payload.update({
+    collection: 'users',
+    where: { and: [{ id: { equals: ownerId } }, { role: { equals: 'owner' } }, { isDeleted: { not_equals: true } }] },
+    data: { planControlDate },
+    overrideAccess: true,
+  });
+}
+
+export async function deactivateTenant(ownerId: number): Promise<void> {
+  const deps = await defaultEntitlementDependencies(ownerId);
+  try {
+    const nonce = await acquireTenantLock(deps.lock, deps.lockContext);
+    const owner = await deps.findUserById({
+      collection: 'users',
+      id: ownerId,
+      depth: 0,
+      overrideAccess: true,
+      req: { transactionID: deps.transactionID },
+    });
+    if (owner.role !== 'owner' || owner.isDeleted) throw new Error('Tenant no encontrado');
+    if (owner.isActive === false) {
+      await deps.rollback();
+      return;
+    }
+    await deps.updateUser({
+      collection: 'users',
+      id: ownerId,
+      data: { isActive: false, entitlementState: 'blocked' },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID: deps.transactionID },
+    });
+    await deps.emitMutation({
+      collection: 'entitlement-outbox',
+      data: {
+        idempotencyKey: `mutation:${ownerId}:${nonce}:deactivate`,
+        kind: 'entitlement.mutation',
+        aggregate: `tenant:${ownerId}`,
+        payload: {
+          tenantId: ownerId,
+          nonce,
+          action: 'tenant.deactivated',
+          previousState: owner.entitlementState ?? 'provisioning',
+          snapshotId: typeof owner.activeEntitlementSnapshot === 'number' ? owner.activeEntitlementSnapshot : owner.activeEntitlementSnapshot?.id ?? null,
+        },
+        state: 'sent',
+        attempts: 0,
+        availableAt: deps.now,
+      },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID: deps.transactionID },
+    });
+    await deps.commit();
+  } catch (error) {
+    await deps.rollback();
+    throw error;
+  }
+}
+
+export type ReactivateTenantResult =
+  | { requiresRecovery: true }
+  | { requiresRecovery: false; entitlementState: NonNullable<User['entitlementState']> };
+
+export async function reactivateTenant(ownerId: number, recoveryConfirmed: boolean, adminId: number): Promise<ReactivateTenantResult> {
+  const payload = await getPayloadClient();
+  const deps = await defaultEntitlementDependencies(ownerId);
+  try {
+    const nonce = await acquireTenantLock(deps.lock, deps.lockContext);
+    const owner = await deps.findUserById({
+      collection: 'users',
+      id: ownerId,
+      depth: 0,
+      overrideAccess: true,
+      req: { transactionID: deps.transactionID },
+    });
+    if (owner.role !== 'owner' || owner.isDeleted) throw new Error('Tenant no encontrado');
+    if (owner.isActive !== false && owner.entitlementState !== 'blocked') {
+      await deps.rollback();
+      return { requiresRecovery: false, entitlementState: owner.entitlementState ?? 'provisioning' };
+    }
+    const history = await payload.find({
+      collection: 'entitlement-outbox',
+      where: {
+        and: [
+          { aggregate: { equals: `tenant:${ownerId}` } },
+          { kind: { equals: 'entitlement.mutation' } },
+          { idempotencyKey: { contains: ':deactivate' } },
+        ],
+      },
+      sort: '-id',
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+      req: { transactionID: deps.transactionID },
+    });
+    const previous = history.docs[0]?.payload;
+    const snapshotId = typeof owner.activeEntitlementSnapshot === 'number' ? owner.activeEntitlementSnapshot : owner.activeEntitlementSnapshot?.id ?? null;
+    let entitlementState: NonNullable<User['entitlementState']> = 'blocked';
+    if (
+      owner.isActive === false && previous && typeof previous === 'object' && !Array.isArray(previous) &&
+      previous.action === 'tenant.deactivated' && previous.tenantId === ownerId
+    ) {
+      if (previous.previousState === 'blocked') entitlementState = 'blocked';
+      if (previous.previousState === 'provisioning' && previous.snapshotId === snapshotId) {
+        entitlementState = 'provisioning';
+      }
+      if (previous.previousState === 'active' && previous.snapshotId === snapshotId && snapshotId !== null) {
+        entitlementState = 'active';
+      }
+    }
+    const needsRecovery = entitlementState === 'blocked';
+    if (needsRecovery && !recoveryConfirmed) {
+      await deps.rollback();
+      return { requiresRecovery: true };
+    }
+    if (needsRecovery) entitlementState = 'provisioning';
+    await deps.updateUser({
+      collection: 'users',
+      id: ownerId,
+      data: { isActive: true, entitlementState },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID: deps.transactionID },
+    });
+    await deps.emitMutation({
+      collection: 'entitlement-outbox',
+      data: {
+        idempotencyKey: `mutation:${ownerId}:${nonce}:reactivate`,
+        kind: 'entitlement.mutation',
+        aggregate: `tenant:${ownerId}`,
+        payload: {
+          tenantId: ownerId,
+          nonce,
+          action: needsRecovery ? 'tenant.access-recovered' : 'tenant.reactivated',
+          recoveryConfirmed: needsRecovery && recoveryConfirmed,
+          adminId,
+          entitlementState,
+          snapshotId,
+        },
+        state: 'sent',
+        attempts: 0,
+        availableAt: deps.now,
+      },
+      overrideAccess: true,
+      context: { entitlementMutation: true },
+      req: { transactionID: deps.transactionID },
+    });
+    await deps.commit();
+    return { requiresRecovery: false, entitlementState };
+  } catch (error) {
+    await deps.rollback();
+    throw error;
+  }
 }
 
 export async function getTenantSellers(ownerId: number): Promise<TenantSellerRow[]> {
@@ -332,13 +526,13 @@ export async function getTenantSellers(ownerId: number): Promise<TenantSellerRow
     payload.findByID({
       collection: 'users',
       id: ownerId,
-      depth: 1,
+      depth: 2,
       overrideAccess: true,
     }),
   ]);
 
   const owner = ownerResult as User;
-  const activePlan = resolveActivePlan(owner.activeEntitlementSnapshot, owner.entitlementState);
+  const activePlan = resolveActivePlan(owner.activeEntitlementSnapshot);
   const planHasMobile = planGrantsMobile(activePlan);
 
   return (sellersResult.docs as User[]).map((seller) => ({

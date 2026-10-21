@@ -364,6 +364,9 @@ async function runAssignPlanToTenant(
   });
 
   const currentState = user.entitlementState ?? 'provisioning';
+  if (user.role !== 'owner' || user.isDeleted || user.isActive === false) {
+    throw new Error('El tenant no está disponible para asignar un plan');
+  }
   const previousSnapshotId = resolveUserSnapshotId(user.activeEntitlementSnapshot);
 
   if (previousSnapshotId !== null) {
@@ -450,6 +453,10 @@ async function runChangeTenantPlan(
     overrideAccess: true,
     req: { transactionID: dependencies.transactionID },
   });
+
+  if (user.role !== 'owner' || user.isDeleted || user.isActive === false || user.entitlementState === 'blocked') {
+    throw new Error('El tenant está desactivado o bloqueado');
+  }
 
   const previousSnapshotId = resolveUserSnapshotId(user.activeEntitlementSnapshot);
   if (previousSnapshotId === null) {

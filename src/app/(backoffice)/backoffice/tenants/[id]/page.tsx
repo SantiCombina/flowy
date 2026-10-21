@@ -2,11 +2,14 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { getTenantDetail } from '@/app/services/backoffice/tenants';
+import { getTenantPaymentHistory } from '@/app/services/backoffice/tenant-payments';
 import { TenantDetail } from '@/components/backoffice/tenants/tenant-detail';
 import { getCurrentUserWithCapabilities } from '@/lib/entitlements/guards';
+import { tenantPaymentListSchema } from '@/schemas/backoffice/tenant-payment-schema';
 
 interface TenantDetailPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function parseTenantId(raw: string | undefined): number | null {
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: TenantDetailPageProps): Promi
   return { title };
 }
 
-export default async function BackofficeTenantDetailPage({ params }: TenantDetailPageProps) {
+export default async function BackofficeTenantDetailPage({ params, searchParams }: TenantDetailPageProps) {
   const guardedUser = await getCurrentUserWithCapabilities();
   if (!guardedUser || guardedUser.user.role !== 'admin') {
     redirect('/dashboard');
@@ -44,5 +47,10 @@ export default async function BackofficeTenantDetailPage({ params }: TenantDetai
     notFound();
   }
 
-  return <TenantDetail initialData={detail} />;
+  const query = await searchParams;
+  const rawTab = Array.isArray(query.tab) ? query.tab[0] : query.tab;
+  const activeTab = ['pagos', 'sellers', 'productos', 'ventas', 'snapshots'].includes(rawTab ?? '') ? rawTab : 'pagos';
+  const paymentFilters = tenantPaymentListSchema.parse({ page: query.paymentPage, search: '', currency: query.paymentCurrency, method: query.paymentMethod });
+  const payments = activeTab === 'pagos' ? await getTenantPaymentHistory(tenantId, paymentFilters) : undefined;
+  return <TenantDetail initialData={detail} payments={payments} paymentFilters={paymentFilters} />;
 }

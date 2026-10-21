@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     'plan-versions': PlanVersion;
     'tenant-entitlement-snapshots': TenantEntitlementSnapshot;
+    'tenant-plan-payments': TenantPlanPayment;
     'entitlement-quota-locks': EntitlementQuotaLock;
     'entitlement-outbox': EntitlementOutbox;
     invitations: Invitation;
@@ -102,6 +103,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     'plan-versions': PlanVersionsSelect<false> | PlanVersionsSelect<true>;
     'tenant-entitlement-snapshots': TenantEntitlementSnapshotsSelect<false> | TenantEntitlementSnapshotsSelect<true>;
+    'tenant-plan-payments': TenantPlanPaymentsSelect<false> | TenantPlanPaymentsSelect<true>;
     'entitlement-quota-locks': EntitlementQuotaLocksSelect<false> | EntitlementQuotaLocksSelect<true>;
     'entitlement-outbox': EntitlementOutboxSelect<false> | EntitlementOutboxSelect<true>;
     invitations: InvitationsSelect<false> | InvitationsSelect<true>;
@@ -220,6 +222,10 @@ export interface User {
    * Zona horaria del negocio (IANA)
    */
   timezone?: 'America/Argentina/Buenos_Aires' | null;
+  /**
+   * Fecha informativa de control del plan. No bloquea el acceso.
+   */
+  planControlDate?: string | null;
   activeEntitlementSnapshot?: (number | null) | TenantEntitlementSnapshot;
   entitlementState?: ('provisioning' | 'active' | 'blocked') | null;
   updatedAt: string;
@@ -426,6 +432,29 @@ export interface Invitation {
    */
   usedAt?: string | null;
   emailStatus: 'pending' | 'sent' | 'failed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenant-plan-payments".
+ */
+export interface TenantPlanPayment {
+  id: number;
+  tenant: number | User;
+  /**
+   * Dejar vacío para un plan personalizado.
+   */
+  planVersion?: (number | null) | PlanVersion;
+  planLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  paidAt: string;
+  paymentMethod: 'cash' | 'transfer';
+  amount: number;
+  currency: 'ARS' | 'USD';
+  registeredBy: number | User;
+  updatedBy: number | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -1032,6 +1061,10 @@ export interface PayloadLockedDocument {
         value: number | TenantEntitlementSnapshot;
       } | null)
     | ({
+        relationTo: 'tenant-plan-payments';
+        value: number | TenantPlanPayment;
+      } | null)
+    | ({
         relationTo: 'entitlement-quota-locks';
         value: number | EntitlementQuotaLock;
       } | null)
@@ -1181,6 +1214,7 @@ export interface UsersSelect<T extends boolean = true> {
   businessAddress?: T;
   ivaCondition?: T;
   timezone?: T;
+  planControlDate?: T;
   activeEntitlementSnapshot?: T;
   entitlementState?: T;
   updatedAt?: T;
@@ -1276,6 +1310,25 @@ export interface TenantEntitlementSnapshotsSelect<T extends boolean = true> {
       };
   predecessor?: T;
   createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenant-plan-payments_select".
+ */
+export interface TenantPlanPaymentsSelect<T extends boolean = true> {
+  tenant?: T;
+  planVersion?: T;
+  planLabel?: T;
+  periodStart?: T;
+  periodEnd?: T;
+  paidAt?: T;
+  paymentMethod?: T;
+  amount?: T;
+  currency?: T;
+  registeredBy?: T;
+  updatedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

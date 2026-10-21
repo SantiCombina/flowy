@@ -22,11 +22,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useInvalidateQueries } from '@/hooks/use-invalidate-queries';
-import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
 import { adminInvitationSchema, type AdminInvitationValues } from '@/schemas/backoffice/admin-invitation-schema';
 
-import { createInvitationAction, listInvitationsAction } from './invitations/actions';
+import { createInvitationAction } from './invitations/actions';
 
 const DEFAULT_VALUES: AdminInvitationValues = {
   name: '',
@@ -49,6 +48,7 @@ export function InviteAdminDialog() {
   const [open, setOpen] = useState(false);
   const [createdResult, setCreatedResult] = useState<CreatedResult | null>(null);
   const codeRef = useRef<HTMLElement>(null);
+  const submitting = useRef(false);
   const router = useRouter();
   const { invalidateQueries } = useInvalidateQueries();
 
@@ -59,22 +59,22 @@ export function InviteAdminDialog() {
 
   const { executeAsync, isExecuting } = useAction(createInvitationAction);
 
-  const { data: pendingInvitations, isPending: isLoadingPending } = useServerActionQuery({
-    queryKey: queryKeys.adminBackoffice.invitations.list(),
-    queryFn: () => listInvitationsAction(),
-    enabled: open,
-  });
-
   function resetDialog() {
     form.reset(DEFAULT_VALUES);
     setCreatedResult(null);
   }
 
   async function onSubmit(data: AdminInvitationValues) {
+    if (submitting.current) return;
+    submitting.current = true;
     try {
       const result = await executeAsync(data);
       if (result?.serverError) {
         toast.error(result.serverError);
+        return;
+      }
+      if (result?.validationErrors) {
+        toast.error('Revisá los datos de la invitación');
         return;
       }
       if (result?.data) {
@@ -88,6 +88,8 @@ export function InviteAdminDialog() {
       }
     } catch {
       toast.error('Ocurrió un error inesperado. Intentá de nuevo más tarde.');
+    } finally {
+      submitting.current = false;
     }
   }
 
@@ -116,6 +118,7 @@ export function InviteAdminDialog() {
     <Dialog
       open={open}
       onOpenChange={(value) => {
+        if (submitting.current) return;
         setOpen(value);
         if (!value) resetDialog();
       }}
@@ -140,7 +143,7 @@ export function InviteAdminDialog() {
             <p className="text-sm text-muted-foreground">
               {createdResult.emailSent
                 ? 'Email enviado. También podés copiar el link manualmente:'
-                : 'Si el email no llega en unos minutos, podés copiar el link manualmente:'}
+                : 'No se confirmó el envío del email. Podés copiar el link manualmente:'}
             </p>
             <div className="rounded-md border bg-muted/50 p-3">
               <code ref={codeRef} className="block break-all text-xs">
@@ -193,7 +196,7 @@ export function InviteAdminDialog() {
                       Email <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} autoComplete="off" />
+                      <Input type="email" maxLength={254} {...field} autoComplete="off" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -214,30 +217,8 @@ export function InviteAdminDialog() {
                 )}
               />
 
-              <div className="rounded-md border bg-muted/30 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-medium">Invitaciones pendientes creadas por vos</p>
-                  {isLoadingPending ? <Spinner className="h-3 w-3" /> : null}
-                </div>
-                {pendingInvitations && pendingInvitations.length > 0 ? (
-                  <ul className="max-h-48 space-y-1 overflow-y-auto text-xs">
-                    {pendingInvitations.map((row) => (
-                      <li key={row.id} className="flex flex-col rounded border bg-background p-2">
-                        <span className="font-medium">{row.name}</span>
-                        <span className="text-muted-foreground">{row.email}</span>
-                        <span className="text-muted-foreground">
-                          {new Date(row.createdAt).toLocaleDateString('es-AR')}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No hay invitaciones pendientes.</p>
-                )}
-              </div>
-
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                <Button type="button" variant="outline" disabled={isExecuting} onClick={() => setOpen(false)}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isExecuting}>

@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
 
 import { acceptInvitation, validateInvitation } from '@/app/services/invitations';
@@ -8,6 +9,7 @@ import {
   loginUser as loginUserService,
   resetPassword as resetPasswordService,
 } from '@/app/services/users';
+import { cacheTags } from '@/lib/cache-tags';
 import { actionClient } from '@/lib/safe-action';
 import { forgotPasswordSchema } from '@/schemas/auth/forgot-password-schema';
 import { loginSchema } from '@/schemas/auth/login-schema';
@@ -47,6 +49,11 @@ export const registerUser = actionClient.schema(registerSchema).action(async ({ 
   const { invitation } = invitationResult;
 
   await acceptInvitation(token, invitation.name, email, password);
+  revalidatePath('/backoffice/invitations');
+  revalidatePath('/backoffice/tenants');
+  revalidateTag(cacheTags.adminBackofficeInvitations());
+  revalidateTag(cacheTags.adminBackofficeTenants());
+  revalidateTag(cacheTags.adminBackofficeDashboard());
 
   return { success: true };
 });
