@@ -1,10 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { XCircle } from 'lucide-react';
 import { useAction } from 'next-safe-action/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, useWatch, type DefaultValues } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import type { SaleClientOption } from '@/app/services/sales';
 import { ClientModal } from '@/components/clients/client-modal';
@@ -31,6 +33,7 @@ import { useFormDraft } from '@/hooks/use-form-draft';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useServerActionQuery } from '@/hooks/use-server-action-query';
 import { queryKeys } from '@/lib/query-keys';
+import { planSaleStockRefresh } from '@/lib/sale-stock-refresh';
 import type { Client } from '@/payload-types';
 import { saleSchema, type SaleValues } from '@/schemas/sales/sale-schema';
 
@@ -79,23 +82,27 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const canUseContactFields = user.capabilities?.includes('client.contact-fields') ?? false;
   const canManageZones = user.capabilities?.includes('zones.manage') ?? false;
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
+  const forceRefreshRef = useRef(false);
 
-  const { data: sellerOptions, isPending: isLoadingSellerOptions } = useServerActionQuery({
+  const sellerQuery = useServerActionQuery({
     queryKey: queryKeys.sales.options('seller'),
-    queryFn: () => getSaleOptionsAction(),
+    queryFn: () => getSaleOptionsAction({ forceRefresh: forceRefreshRef.current }),
     enabled: isOpen && !isOwner,
     staleTime: 60_000,
   });
 
-  const { data: ownerOptions, isPending: isLoadingOwnerOptions } = useServerActionQuery({
+  const ownerQuery = useServerActionQuery({
     queryKey: queryKeys.sales.options('owner'),
-    queryFn: () => getSaleOptionsAsOwnerAction(),
+    queryFn: () => getSaleOptionsAsOwnerAction({ forceRefresh: forceRefreshRef.current }),
     enabled: isOpen && isOwner,
     staleTime: 60_000,
   });
 
-  const isLoadingOptions = isOwner ? isLoadingOwnerOptions : isLoadingSellerOptions;
-  const optionsResult = isOwner ? ownerOptions : sellerOptions;
+  const optionsQuery = isOwner ? ownerQuery : sellerQuery;
+  const isLoadingOptions = optionsQuery.isPending;
+  const optionsResult = optionsQuery.data;
+  const isRefreshingStock = optionsQuery.isFetching;
   const { executeAsync: submitSale, isExecuting: isSubmitting } = useAction(createSaleAction);
 
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -169,6 +176,51 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
   const handleOpenAddProduct = () => {
     setAddProductKey((k) => k + 1);
     setIsAddProductOpen(true);
+  };
+
+  const handleRefreshStock = async () => {
+    if (forceRefreshRef.current || isRefreshingStock) return;
+
+    forceRefreshRef.current = true;
+    try {
+      const result = await optionsQuery.refetch({
+        throwOnError: true,
+        cancelRefetch: false,
+      });
+      if (!result.data) {
+        throw new Error('No se recibieron datos del servidor');
+      }
+
+      const plan = planSaleStockRefresh(variants, result.data.variants, form.getValues('items'));
+      queryClient.setQueryData(queryKeys.sales.options(isOwner ? 'owner' : 'seller'), {
+        ...result.data,
+        variants: plan.variants,
+      });
+      for (const adjustment of plan.adjustments) {
+        form.setValue(`items.${adjustment.index}.quantity`, adjustment.quantity, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+
+      toast.success('Stock actualizado');
+      if (plan.adjustments.length > 0) {
+        toast.warning(
+          'Se ajustaron las cantidades al stock disponible. Revisá los productos sin stock antes de registrar.',
+        );
+      }
+      if (plan.missingVariantIds.length > 0) {
+        toast.warning('No se encontraron algunos productos. Se conservaron sus datos sin actualizar el stock.');
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? `No se pudo recargar el stock: ${error.message}`
+          : 'No se pudo recargar el stock. Intentá nuevamente.',
+      );
+    } finally {
+      forceRefreshRef.current = false;
+    }
   };
 
   const handleNewClientSuccess = (newClient: Client) => {
@@ -294,6 +346,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                         </div>
                         <TabsContent value="products" className="mt-0 px-6 py-4">
                           <ProductsTab
+                            onRefreshStock={handleRefreshStock}
+                            isRefreshingStock={isRefreshingStock}
                             form={form}
                             fields={fields}
                             remove={remove}
@@ -316,6 +370,8 @@ export function NewSaleDialog({ isOpen, onClose, onSuccess }: NewSaleDialogProps
                       <div className="grid h-full grid-cols-1 gap-4 lg:grid-cols-2">
                         <div className="flex min-h-0 min-w-0 flex-col">
                           <ProductsTab
+                            onRefreshStock={handleRefreshStock}
+                            isRefreshingStock={isRefreshingStock}
                             form={form}
                             fields={fields}
                             remove={remove}

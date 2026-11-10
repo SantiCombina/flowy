@@ -10,6 +10,7 @@ import {
   FileText,
   PackageSearch,
   Plus,
+  RefreshCw,
   Store,
   Trash2,
   User,
@@ -644,6 +645,8 @@ interface ProductsTabProps {
   remove: (index: number) => void;
   variants: SaleVariantOption[];
   onAddProduct: () => void;
+  onRefreshStock?: () => void;
+  isRefreshingStock?: boolean;
   itemError?: string;
   canUsePersonalStock?: boolean;
 }
@@ -654,6 +657,8 @@ function ProductsTab({
   remove,
   variants,
   onAddProduct,
+  onRefreshStock,
+  isRefreshingStock = false,
   itemError,
   canUsePersonalStock,
 }: ProductsTabProps) {
@@ -664,17 +669,33 @@ function ProductsTab({
     <div className="flex flex-col gap-4 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-3 sm:px-2">
         <h3 className="text-sm font-medium text-muted-foreground">Lista de productos</h3>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onAddProduct}
-          disabled={variants.length === 0}
-          className="gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Agregar
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {onRefreshStock && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={onRefreshStock}
+              disabled={isRefreshingStock}
+              aria-label="Recargar stock"
+              title="Recargar stock"
+              aria-busy={isRefreshingStock}
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', isRefreshingStock && 'animate-spin')} />
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onAddProduct}
+            disabled={variants.length === 0}
+            className="gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Agregar
+          </Button>
+        </div>
       </div>
 
       {itemCount === 0 ? (

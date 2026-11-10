@@ -161,7 +161,11 @@ async function _getSaleOptions(sellerId: number, ownerId: number): Promise<SaleO
   return { variants, clients };
 }
 
-export async function getSaleOptions(sellerId: number, ownerId: number): Promise<SaleOptions> {
+export async function getSaleOptions(sellerId: number, ownerId: number, forceRefresh = false): Promise<SaleOptions> {
+  if (forceRefresh) {
+    return _getSaleOptions(sellerId, ownerId);
+  }
+
   return unstable_cache(async () => _getSaleOptions(sellerId, ownerId), ['sale-options', String(ownerId)], {
     revalidate: 60 * 2,
     tags: [cacheTags.saleOptions(ownerId)],

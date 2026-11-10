@@ -26,10 +26,11 @@ import { collectSaleSchema } from '@/schemas/sales/collect-sale-schema';
 import { deleteSaleSchema } from '@/schemas/sales/delete-sale-schema';
 import { editSaleFullSchema } from '@/schemas/sales/edit-sale-full-schema';
 import { markAsDeliveredSchema } from '@/schemas/sales/mark-as-delivered-schema';
+import { saleOptionsSchema, type SaleOptionsValues } from '@/schemas/sales/sale-options-schema';
 import { saleSchema } from '@/schemas/sales/sale-schema';
 import { getSalesListSchema } from '@/schemas/sales/sales-list-schema';
 
-export const getSaleOptionsAction = actionClient.action(async () => {
+const getSellerSaleOptionsAction = actionClient.schema(saleOptionsSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'seller') {
@@ -44,10 +45,14 @@ export const getSaleOptionsAction = actionClient.action(async () => {
     throw new Error('El vendedor no tiene un dueño asignado');
   }
 
-  const options = await getSaleOptions(user.id, ownerId);
+  const options = await getSaleOptions(user.id, ownerId, parsedInput?.forceRefresh);
 
   return { success: true, ...options };
 });
+
+export async function getSaleOptionsAction(input?: SaleOptionsValues) {
+  return getSellerSaleOptionsAction(input);
+}
 
 export const getSaleOptionsForOwnerAction = actionClient
   .schema(z.object({ sellerId: z.number() }))
@@ -65,7 +70,7 @@ export const getSaleOptionsForOwnerAction = actionClient
     return { success: true, ...options };
   });
 
-export const getSaleOptionsAsOwnerAction = actionClient.action(async () => {
+const getOwnerSaleOptionsAction = actionClient.schema(saleOptionsSchema).action(async ({ parsedInput }) => {
   const user = await getCurrentUser();
 
   if (!user || user.role !== 'owner') {
@@ -74,10 +79,14 @@ export const getSaleOptionsAsOwnerAction = actionClient.action(async () => {
 
   await assertUserCapability(user, 'sale.create');
 
-  const options = await getSaleOptions(user.id, user.id);
+  const options = await getSaleOptions(user.id, user.id, parsedInput?.forceRefresh);
 
   return { success: true, ...options };
 });
+
+export async function getSaleOptionsAsOwnerAction(input?: SaleOptionsValues) {
+  return getOwnerSaleOptionsAction(input);
+}
 
 const PAYLOAD_FIELD_LABELS: Record<string, string> = {
   Monto: 'El monto debe ser mayor a 0',
