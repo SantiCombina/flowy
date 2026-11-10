@@ -70,7 +70,7 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
     if (!variant || !type || !quantity) return null;
 
     const qty = parseInt(quantity, 10);
-    if (isNaN(qty) || qty <= 0) return null;
+    if (isNaN(qty) || qty < 0 || (type !== 'adjustment' && qty === 0)) return null;
 
     switch (type) {
       case 'entry':
@@ -163,7 +163,13 @@ export function StockMovementModal({ isOpen, onClose, variant, onSuccess }: Stoc
             <Label>
               {type === 'adjustment' ? 'Nuevo stock' : 'Cantidad'} <span className="text-destructive">*</span>
             </Label>
-            <Input type="number" min="0" step="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <Input
+              type="number"
+              min={type === 'adjustment' ? 0 : 1}
+              step="1"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
           </div>
 
           {newStock !== null && (

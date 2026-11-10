@@ -305,28 +305,66 @@ export async function createVariant(data: CreateVariantData, ownerId: number): P
 
 export async function updateVariant(id: number, data: UpdateVariantData, ownerId: number): Promise<ProductVariant> {
   const payload = await getPayloadClient();
-
-  const existing = await payload.findByID({
-    collection: 'product-variants',
-    id,
-    depth: 0,
-    overrideAccess: true,
-  });
-  if (!existing || resolveId(existing.owner) !== ownerId) {
-    throw new Error('Variante no encontrada');
+  const transactionID = await payload.db.beginTransaction();
+  if (!transactionID) {
+    throw new Error('No se pudo iniciar la transacción de base de datos');
   }
 
-  const variant = await payload.update({
-    collection: 'product-variants',
-    id,
-    data,
-    overrideAccess: true,
-  });
+  let variant: ProductVariant;
+  let stockChanged = false;
+
+  try {
+    const existing = await payload.findByID({
+      collection: 'product-variants',
+      id,
+      depth: 0,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+    if (!existing || resolveId(existing.owner) !== ownerId) {
+      throw new Error('Variante no encontrada');
+    }
+
+    variant = await payload.update({
+      collection: 'product-variants',
+      id,
+      data,
+      overrideAccess: true,
+      req: { transactionID },
+    });
+
+    stockChanged = variant.stock !== existing.stock;
+    if (stockChanged) {
+      await payload.create({
+        collection: 'stock-movements',
+        data: {
+          variant: id,
+          type: 'adjustment',
+          quantity: variant.stock - existing.stock,
+          previousStock: existing.stock,
+          newStock: variant.stock,
+          reason: 'Edición de producto',
+          owner: ownerId,
+          createdBy: ownerId,
+        },
+        overrideAccess: true,
+        req: { transactionID },
+      });
+    }
+
+    await payload.db.commitTransaction(transactionID);
+  } catch (error) {
+    await payload.db.rollbackTransaction(transactionID);
+    throw error;
+  }
 
   const variantOwnerId = resolveId(variant.owner) ?? 0;
   try {
     revalidateTag(cacheTags.products(variantOwnerId));
     revalidateTag(cacheTags.saleOptions(variantOwnerId));
+    if (stockChanged) {
+      revalidateTag(cacheTags.history(variantOwnerId));
+    }
   } catch {}
   return variant;
 }
